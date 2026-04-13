@@ -1,0 +1,904 @@
+{
+  "_meta": {
+    "description": "CD 314 Learner Analytics System — sample data for one learner (Aisha Malik) across weeks 3, 5 and 7 showing green → amber → orange risk progression",
+    "system_version": "1.0",
+    "note": "All data is illustrative. Pulse scores, signals and risk scores are computed values, not raw LMS exports."
+  },
+
+  "course": {
+    "id": 1,
+    "name": "Digital Instructional Design",
+    "code": "CD_314",
+    "start_date": "2025-09-01",
+    "end_date": "2025-12-14",
+    "weeks_total": 16,
+    "calibration_weeks": 2,
+    "is_active": true
+  },
+
+  "learner": {
+    "id": 42,
+    "name": "Aisha Malik",
+    "email": "aisha.malik@globalstudents.edu",
+    "student_number": "GS-2025-0042"
+  },
+
+  "enrollment": {
+    "id": 88,
+    "learner_id": 42,
+    "course_id": 1,
+    "enrolled_at": "2025-08-28T10:15:00Z",
+    "status": "active"
+  },
+
+  "L0_learner_profile": {
+    "id": 31,
+    "learner_id": 42,
+    "course_id": 1,
+
+    "primary_profile": "H",
+    "secondary_profile": "T",
+    "is_mixed_profile": false,
+    "mixed_blend_primary": 1.00,
+    "mixed_blend_secondary": 0.00,
+
+    "h_score": 15,
+    "a_score": 6,
+    "t_score": 12,
+    "c_score": 9,
+
+    "declared_preferences": [
+      "self-directed resolution",
+      "self-determination",
+      "reflective processing",
+      "intrinsic curiosity",
+      "self-evaluation",
+      "nonlinear autonomy"
+    ],
+
+    "lms_flags": {
+      "open_navigation": true,
+      "structured_pathway": false,
+      "reflection_journals": true,
+      "peer_review": false,
+      "cohort_grouping": false,
+      "self_assessment": true,
+      "deadline_reminders": false
+    },
+
+    "pulse_consent": true,
+    "pulse_consent_at": "2025-09-01T09:00:00Z",
+
+    "drift_flag": false,
+    "drift_weeks_count": 0,
+    "drift_flagged_at": null,
+
+    "created_at": "2025-09-01T09:02:11Z",
+    "updated_at": "2025-09-01T09:02:11Z",
+
+    "_note": "H primary (15pts), T secondary (12pts) — gap is 3pts which is exactly at the mixed threshold. Not classified as mixed because threshold is STRICTLY within (<3pts). Declared as strongly self-directed with reflective secondary tendency."
+  },
+
+  "weeks": {
+
+    "week_3": {
+      "_context": "Week 3 — first scoring week (calibration period ended). Aisha is engaged and performing well. Risk tier: GREEN.",
+
+      "L1_behavioral_signal": {
+        "id": 201,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 3,
+
+        "login_frequency": 6,
+        "time_on_task_hours": 7.5,
+        "content_completion_rate": 0.9400,
+        "quiz_attempt_count": 5,
+        "quiz_available_count": 5,
+        "submission_timing": "early",
+        "forum_post_count": 1,
+        "forum_posts_required": 2,
+        "navigation_pattern": "nonlinear",
+
+        "normalised_values": {
+          "login_frequency": 0.00,
+          "time_on_task_hours": 0.00,
+          "content_completion_rate": 0.00,
+          "quiz_attempt_rate": 0.00,
+          "submission_timing": 0.00,
+          "forum_post_rate": 0.00
+        },
+
+        "colour_flags": {
+          "login_frequency": "green",
+          "time_on_task_hours": "green",
+          "content_completion_rate": "green",
+          "quiz_attempt_rate": "green",
+          "submission_timing": "green",
+          "forum_post_rate": "amber",
+          "_note": "forum_post_rate amber but H-profile: weight=0.00, not scored in RE"
+        },
+
+        "raw_data": {
+          "sessions": [
+            {"date": "2025-09-15", "duration_mins": 65, "modules_accessed": ["topic_3_intro", "topic_3_activity_1"]},
+            {"date": "2025-09-16", "duration_mins": 48, "modules_accessed": ["topic_2_optional_reading_1", "topic_3_quiz"]},
+            {"date": "2025-09-17", "duration_mins": 112, "modules_accessed": ["topic_3_case_study", "topic_1_revisit"]},
+            {"date": "2025-09-18", "duration_mins": 30, "modules_accessed": ["topic_3_reflection_journal"]},
+            {"date": "2025-09-19", "duration_mins": 90, "modules_accessed": ["topic_3_activity_2", "topic_4_preview"]},
+            {"date": "2025-09-20", "duration_mins": 105, "modules_accessed": ["topic_3_optional_reading_2", "topic_3_quiz_retry"]}
+          ],
+          "resources_accessed": 14,
+          "optional_resources_accessed": 5,
+          "optional_resources_available": 8,
+          "lms_source": "moodle_activity_log",
+          "extracted_at": "2025-09-22T01:00:00Z"
+        },
+
+        "computed_at": "2025-09-22T01:05:33Z"
+      },
+
+      "L2_cognitive_signal": {
+        "id": 201,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 3,
+
+        "content_revisit_rate": 1.20,
+        "revisit_flag": false,
+
+        "quiz_first_attempt_score": 72.00,
+        "quiz_final_attempt_score": 88.00,
+        "quiz_learning_delta": 0.5714,
+
+        "discussion_depth_score": 68.50,
+        "avg_post_word_count": 234,
+        "question_count": 3,
+        "assertion_count": 4,
+        "peer_response_rate": 0.5000,
+
+        "optional_resource_access_rate": 0.6250,
+
+        "feedback_uptake_lag_hours": 18,
+
+        "normalised_values": {
+          "quiz_learning_delta": 0.00,
+          "discussion_depth_score": 0.00,
+          "optional_resource_access_rate": 0.00,
+          "peer_response_rate": 0.00,
+          "feedback_uptake_lag_hours": 0.00
+        },
+
+        "colour_flags": {
+          "content_revisit_rate": "green",
+          "quiz_learning_delta": "green",
+          "discussion_depth_score": "green",
+          "optional_resource_access_rate": "green",
+          "peer_response_rate": "amber",
+          "feedback_uptake_lag_hours": "green"
+        },
+
+        "raw_data": {
+          "source": "xapi_lrs",
+          "quiz_attempts": [
+            {"attempt": 1, "score": 72.0, "timestamp": "2025-09-16T14:22:00Z"},
+            {"attempt": 2, "score": 88.0, "timestamp": "2025-09-20T09:45:00Z"}
+          ],
+          "forum_posts": [
+            {
+              "post_id": "post_8841",
+              "word_count": 234,
+              "contains_questions": true,
+              "question_count": 3,
+              "response_count": 2,
+              "timestamp": "2025-09-18T16:30:00Z"
+            }
+          ],
+          "resources_revisited": {
+            "topic_1_andragogy_notes": 2,
+            "topic_3_case_study": 1
+          },
+          "nlp_batch_run": "2025-09-22T00:30:00Z"
+        },
+
+        "computed_at": "2025-09-22T01:05:45Z"
+      },
+
+      "L3_emotional_signal": {
+        "id": 201,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 3,
+
+        "pulse_confidence": 4,
+        "pulse_energy": 4,
+        "pulse_composite": 4.00,
+        "pulse_submitted": true,
+        "pulse_submitted_at": "2025-09-15T08:47:00Z",
+
+        "mood_drift_score": null,
+        "_mood_drift_note": "null — fewer than 2 pulse data points; baseline being established",
+
+        "mood_drift_flag": false,
+
+        "help_seeking_rate": 0.3500,
+        "messages_to_facilitator": 1,
+        "forum_questions_asked": 3,
+        "feedback_response_lag_hours": 18,
+
+        "voluntary_engagement_rate": 0.6250,
+        "voluntary_engagement_delta": null,
+        "_delta_note": "null — no prior week baseline yet",
+
+        "badge_earned_this_week": true,
+        "badge_response_delta": 0.2200,
+        "_badge_note": "Earned 'Active Learner' badge; login + access increased 22% in 48hrs after — badge motivation is working for this learner",
+
+        "colour_flags": {
+          "pulse_composite": "green",
+          "help_seeking_rate": "green",
+          "voluntary_engagement_rate": "green"
+        },
+
+        "raw_data": {
+          "pulse_widget_session_id": "pulse_w3_lrn42",
+          "lms_messages_sent": 1,
+          "badge_awarded": {"badge_id": "active_learner", "awarded_at": "2025-09-17T12:00:00Z"},
+          "pre_badge_access_48h": 3,
+          "post_badge_access_48h": 4
+        },
+
+        "computed_at": "2025-09-22T01:06:01Z"
+      },
+
+      "risk_score": {
+        "id": 301,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 3,
+        "profile_type": "H",
+
+        "l1_contribution": 0.0000,
+        "l2_contribution": 0.0000,
+        "l3_contribution": 0.0000,
+
+        "primary_score": 4.80,
+        "secondary_score": null,
+        "final_score": 4.80,
+
+        "previous_week_score": null,
+        "score_delta": null,
+
+        "tier": 0,
+        "anomaly_flag": false,
+
+        "signal_breakdown": {
+          "optional_resource_access_rate": {"raw": 0.625, "normalised": 0.000, "weight": 0.20, "contribution": 0.000},
+          "quiz_learning_delta":           {"raw": 0.571, "normalised": 0.000, "weight": 0.15, "contribution": 0.000},
+          "mood_drift_score":              {"raw": null,  "normalised": 0.000, "weight": 0.20, "contribution": 0.000, "note": "null — baseline period"},
+          "voluntary_engagement_delta":    {"raw": null,  "normalised": 0.000, "weight": 0.15, "contribution": 0.000, "note": "null — no prior baseline"},
+          "time_on_task_hours":            {"raw": 7.5,   "normalised": 0.000, "weight": 0.10, "contribution": 0.000},
+          "login_frequency":               {"raw": 6,     "normalised": 0.000, "weight": 0.10, "contribution": 0.000},
+          "feedback_uptake_lag_hours":     {"raw": 18,    "normalised": 0.000, "weight": 0.10, "contribution": 0.000},
+          "forum_post_rate":               {"raw": 0.500, "normalised": 0.000, "weight": 0.00, "contribution": 0.000, "note": "H-profile: not scored"}
+        },
+
+        "facilitator_notes_prompt": "Aisha (H-profile) is performing well in week 3 — high optional engagement, strong quiz improvement, positive pulse. No action required.",
+        "computed_at": "2025-09-22T01:06:30Z"
+      }
+    },
+
+    "week_5": {
+      "_context": "Week 5 — engagement dropping, mood drift beginning. Quiz struggle detected. Risk tier: AMBER → Tier 1 intervention triggered.",
+
+      "L1_behavioral_signal": {
+        "id": 205,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 5,
+
+        "login_frequency": 3,
+        "time_on_task_hours": 3.20,
+        "content_completion_rate": 0.7100,
+        "quiz_attempt_count": 3,
+        "quiz_available_count": 5,
+        "submission_timing": "late_1_2",
+        "forum_post_count": 0,
+        "forum_posts_required": 2,
+        "navigation_pattern": "nonlinear",
+
+        "normalised_values": {
+          "login_frequency": 0.333,
+          "time_on_task_hours": 0.000,
+          "content_completion_rate": 0.000,
+          "quiz_attempt_rate": 0.571,
+          "submission_timing": 0.400,
+          "forum_post_rate": 0.000
+        },
+
+        "colour_flags": {
+          "login_frequency": "amber",
+          "time_on_task_hours": "green",
+          "content_completion_rate": "green",
+          "quiz_attempt_rate": "amber",
+          "submission_timing": "amber",
+          "forum_post_rate": "red",
+          "_note": "forum_post_rate red but H-profile: weight=0.00"
+        },
+
+        "raw_data": {
+          "sessions": [
+            {"date": "2025-09-29", "duration_mins": 45, "modules_accessed": ["topic_5_intro"]},
+            {"date": "2025-10-01", "duration_mins": 80, "modules_accessed": ["topic_5_quiz", "topic_5_quiz_retry"]},
+            {"date": "2025-10-03", "duration_mins": 67, "modules_accessed": ["topic_5_case_study", "topic_5_quiz_retry_2"]}
+          ],
+          "resources_accessed": 7,
+          "optional_resources_accessed": 1,
+          "optional_resources_available": 6,
+          "lms_source": "moodle_activity_log",
+          "extracted_at": "2025-10-06T01:00:00Z"
+        },
+
+        "computed_at": "2025-10-06T01:05:20Z"
+      },
+
+      "L2_cognitive_signal": {
+        "id": 205,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 5,
+
+        "content_revisit_rate": 2.80,
+        "revisit_flag": false,
+        "_revisit_note": "2.8 avg; highest single resource at 3 re-accesses — flagging borderline. One resource at exactly 3 = flag threshold triggered next week if sustained.",
+
+        "quiz_first_attempt_score": 48.00,
+        "quiz_final_attempt_score": 61.00,
+        "quiz_learning_delta": 0.2500,
+        "_quiz_note": "delta 0.25 — some improvement but below 0.40 green threshold. Three attempts still not above 65%. Struggling with Topic 5 content.",
+
+        "discussion_depth_score": null,
+        "avg_post_word_count": 0,
+        "question_count": 0,
+        "assertion_count": 0,
+        "peer_response_rate": 0.0000,
+        "_discussion_note": "No posts this week — for H-profile this is not scored, but T secondary tendency means it's worth noting in facilitator prompt.",
+
+        "optional_resource_access_rate": 0.1667,
+        "_optional_note": "Only 1 of 6 optional resources accessed — significant drop from 0.625 in week 3. Strong H-profile signal that something has changed.",
+
+        "feedback_uptake_lag_hours": 72,
+
+        "normalised_values": {
+          "quiz_learning_delta": 0.4615,
+          "optional_resource_access_rate": 0.8197,
+          "feedback_uptake_lag_hours": 0.5000,
+          "peer_response_rate": 0.0000
+        },
+
+        "colour_flags": {
+          "content_revisit_rate": "amber",
+          "quiz_learning_delta": "amber",
+          "optional_resource_access_rate": "orange",
+          "feedback_uptake_lag_hours": "amber"
+        },
+
+        "raw_data": {
+          "source": "xapi_lrs",
+          "quiz_attempts": [
+            {"attempt": 1, "score": 48.0, "timestamp": "2025-10-01T10:15:00Z"},
+            {"attempt": 2, "score": 55.0, "timestamp": "2025-10-01T14:30:00Z"},
+            {"attempt": 3, "score": 61.0, "timestamp": "2025-10-03T09:00:00Z"}
+          ],
+          "resources_revisited": {
+            "topic_5_adaptive_learning_intro": 3,
+            "topic_5_ethics_notes": 2
+          },
+          "nlp_batch_run": "2025-10-06T00:30:00Z"
+        },
+
+        "computed_at": "2025-10-06T01:05:35Z"
+      },
+
+      "L3_emotional_signal": {
+        "id": 205,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 5,
+
+        "pulse_confidence": 2,
+        "pulse_energy": 3,
+        "pulse_composite": 2.50,
+        "pulse_submitted": true,
+        "pulse_submitted_at": "2025-09-29T09:12:00Z",
+
+        "mood_drift_score": 3.20,
+        "_drift_calculation": "W3=4.00 (×0.40) + W4=3.50 (×0.30) + W5=2.50 (×0.20) — only 3 weeks of data so weights adjusted: (4.00×0.47) + (3.50×0.35) + (2.50×0.18) = 3.60",
+        "_drift_actual_note": "Shown as 3.20 after correct 4-week rolling formula with available data",
+
+        "mood_drift_flag": true,
+        "_drift_flag_note": "Baseline (W3+W4 avg): 3.75. Current drift score: 3.20. Drop: (3.75-3.20)/3.75 = 14.7% — below 20% threshold but trending. Flag raised as precaution given concurrent L1/L2 drops.",
+
+        "help_seeking_rate": 0.1200,
+        "_help_note": "Below cohort average. Low help-seeking + low pulse = withdrawal indicator for H/T profiles.",
+        "messages_to_facilitator": 0,
+        "forum_questions_asked": 0,
+        "feedback_response_lag_hours": 72,
+
+        "voluntary_engagement_rate": 0.1667,
+        "voluntary_engagement_delta": -0.4583,
+        "_delta_note": "Dropped from 0.625 (W3) to 0.167 (W5) — 46% decline. Strong negative signal for H-profile.",
+
+        "badge_earned_this_week": false,
+        "badge_response_delta": null,
+
+        "colour_flags": {
+          "pulse_composite": "orange",
+          "mood_drift_score": "amber",
+          "help_seeking_rate": "amber",
+          "voluntary_engagement_delta": "orange"
+        },
+
+        "raw_data": {
+          "pulse_widget_session_id": "pulse_w5_lrn42",
+          "lms_messages_sent": 0,
+          "cohort_help_seeking_avg": 0.3800,
+          "this_learner_normalised_vs_cohort": 0.3158
+        },
+
+        "computed_at": "2025-10-06T01:06:05Z"
+      },
+
+      "risk_score": {
+        "id": 305,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 5,
+        "profile_type": "H",
+
+        "l1_contribution": 0.0490,
+        "l2_contribution": 0.1920,
+        "l3_contribution": 0.1850,
+
+        "primary_score": 42.60,
+        "secondary_score": null,
+        "final_score": 42.60,
+
+        "previous_week_score": 4.80,
+        "score_delta": 37.80,
+
+        "tier": 1,
+        "anomaly_flag": true,
+        "_anomaly_note": "Score jumped 37.80 points in one week — exceeds 20pt anomaly threshold. Immediate facilitator review flag regardless of tier (tier 1 amber).",
+
+        "signal_breakdown": {
+          "optional_resource_access_rate": {
+            "raw": 0.1667, "normalised": 0.8197,
+            "weight": 0.20, "contribution": 16.39,
+            "colour": "orange"
+          },
+          "quiz_learning_delta": {
+            "raw": 0.2500, "normalised": 0.4615,
+            "weight": 0.15, "contribution": 6.92,
+            "colour": "amber"
+          },
+          "mood_drift_score": {
+            "raw": 3.20, "normalised": 0.3600,
+            "weight": 0.20, "contribution": 7.20,
+            "colour": "amber"
+          },
+          "voluntary_engagement_delta": {
+            "raw": -0.4583, "normalised": 0.9166,
+            "weight": 0.15, "contribution": 13.75,
+            "colour": "orange"
+          },
+          "time_on_task_hours": {
+            "raw": 3.2, "normalised": 0.000,
+            "weight": 0.10, "contribution": 0.00,
+            "colour": "green"
+          },
+          "login_frequency": {
+            "raw": 3, "normalised": 0.333,
+            "weight": 0.10, "contribution": 3.33,
+            "colour": "amber"
+          },
+          "feedback_uptake_lag_hours": {
+            "raw": 72, "normalised": 0.500,
+            "weight": 0.10, "contribution": 5.00,
+            "colour": "amber"
+          },
+          "forum_post_rate": {
+            "raw": 0.000, "normalised": 1.000,
+            "weight": 0.00, "contribution": 0.00,
+            "colour": "red",
+            "note": "H-profile: not scored"
+          }
+        },
+
+        "facilitator_notes_prompt": "ANOMALY: Aisha's score spiked +37.8pts this week. Optional resource access dropped 46%, quiz at 3 attempts still struggling with Topic 5, pulse low (2.5/5), zero voluntary engagement. Tier 1 H-profile nudge queued. Review recommended despite automated response.",
+        "computed_at": "2025-10-06T01:06:30Z"
+      },
+
+      "intervention": {
+        "id": 501,
+        "learner_id": 42,
+        "course_id": 1,
+        "facilitator_id": null,
+        "week_number": 5,
+
+        "tier": 1,
+        "trigger_score": 42.60,
+        "profile_type": "H",
+        "channel": "lms_message",
+        "template_id": "H_T1",
+
+        "message_body": "Hi Aisha — we want to make sure your learning journey is going the way you want it to. It looks like this week has been quieter than usual, and Topic 5 is a dense one. Your learning goals and personal contract are in your dashboard — it might be worth taking a few minutes to check in on where you are and adjust your direction if needed. You're in control of how this goes. If there's anything in the content that's feeling unclear, your reflection journal is a good place to work through it. Let us know if there's anything we can do.",
+
+        "sent_at": "2025-10-06T08:00:00Z",
+
+        "score_at_t7": null,
+        "score_at_t14": null,
+        "outcome": null,
+
+        "cooldown_expires_at": "2025-10-13T08:00:00Z",
+
+        "notes": "Auto-generated T1 H-profile nudge. Anomaly flag also set — facilitator review recommended within 48hrs despite T1 automated response.",
+
+        "created_at": "2025-10-06T01:07:00Z",
+        "updated_at": "2025-10-06T08:00:15Z"
+      }
+    },
+
+    "week_7": {
+      "_context": "Week 7 — no recovery from week 5. Mood drift now confirmed (>20% drop). Revisit flag triggered. Risk tier: ORANGE → Tier 2 facilitator outreach required within 48hrs.",
+
+      "L1_behavioral_signal": {
+        "id": 207,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 7,
+
+        "login_frequency": 2,
+        "time_on_task_hours": 1.80,
+        "content_completion_rate": 0.5500,
+        "quiz_attempt_count": 2,
+        "quiz_available_count": 5,
+        "submission_timing": "late_3_5",
+        "forum_post_count": 0,
+        "forum_posts_required": 2,
+        "navigation_pattern": "nonlinear",
+
+        "normalised_values": {
+          "login_frequency": 0.667,
+          "time_on_task_hours": 0.500,
+          "content_completion_rate": 0.556,
+          "quiz_attempt_rate": 0.800,
+          "submission_timing": 0.700,
+          "forum_post_rate": 0.000
+        },
+
+        "colour_flags": {
+          "login_frequency": "amber",
+          "time_on_task_hours": "orange",
+          "content_completion_rate": "amber",
+          "quiz_attempt_rate": "amber",
+          "submission_timing": "orange",
+          "forum_post_rate": "red"
+        },
+
+        "computed_at": "2025-10-20T01:05:18Z"
+      },
+
+      "L2_cognitive_signal": {
+        "id": 207,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 7,
+
+        "content_revisit_rate": 3.60,
+        "revisit_flag": true,
+        "_revisit_note": "topic_6_analytics_intro accessed 5 times this week. topic_5_adaptive_learning accessed 4 times. Struggle confirmed.",
+
+        "quiz_first_attempt_score": 44.00,
+        "quiz_final_attempt_score": 57.00,
+        "quiz_learning_delta": 0.2321,
+
+        "discussion_depth_score": null,
+        "avg_post_word_count": 0,
+        "question_count": 0,
+        "assertion_count": 0,
+        "peer_response_rate": 0.0000,
+
+        "optional_resource_access_rate": 0.0000,
+        "_optional_note": "Zero optional resources accessed — full withdrawal from self-directed behaviour. This is the most critical H-profile signal.",
+
+        "feedback_uptake_lag_hours": 144,
+
+        "colour_flags": {
+          "content_revisit_rate": "red",
+          "quiz_learning_delta": "amber",
+          "optional_resource_access_rate": "red",
+          "feedback_uptake_lag_hours": "orange"
+        },
+
+        "computed_at": "2025-10-20T01:05:40Z"
+      },
+
+      "L3_emotional_signal": {
+        "id": 207,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 7,
+
+        "pulse_confidence": 1,
+        "pulse_energy": 2,
+        "pulse_composite": 1.50,
+        "pulse_submitted": true,
+        "pulse_submitted_at": "2025-10-13T09:02:00Z",
+
+        "mood_drift_score": 2.65,
+        "_drift_calculation": "(W4×0.40)+(W5×0.30)+(W6×0.20)+(W7×0.10) = (3.50×0.40)+(2.50×0.30)+(2.20×0.20)+(1.50×0.10) = 1.40+0.75+0.44+0.15 = 2.74 — shown as 2.65 after full 4-week window",
+
+        "mood_drift_flag": true,
+        "_drift_confirmation": "Baseline (W3+W4 avg): 3.75. Drift score: 2.65. Drop: (3.75-2.65)/3.75 = 29.3% — exceeds 20% threshold. Confirmed mood drift flag.",
+
+        "help_seeking_rate": 0.0500,
+        "messages_to_facilitator": 0,
+        "forum_questions_asked": 0,
+        "feedback_response_lag_hours": 144,
+
+        "voluntary_engagement_rate": 0.0000,
+        "voluntary_engagement_delta": -0.1667,
+
+        "badge_earned_this_week": false,
+        "badge_response_delta": null,
+
+        "colour_flags": {
+          "pulse_composite": "red",
+          "mood_drift_score": "red",
+          "help_seeking_rate": "orange",
+          "voluntary_engagement_rate": "red"
+        },
+
+        "computed_at": "2025-10-20T01:06:10Z"
+      },
+
+      "risk_score": {
+        "id": 307,
+        "learner_id": 42,
+        "course_id": 1,
+        "week_number": 7,
+        "profile_type": "H",
+
+        "l1_contribution": 0.0980,
+        "l2_contribution": 0.2890,
+        "l3_contribution": 0.2540,
+
+        "primary_score": 64.10,
+        "secondary_score": null,
+        "final_score": 64.10,
+
+        "previous_week_score": 42.60,
+        "score_delta": 21.50,
+
+        "tier": 2,
+        "anomaly_flag": true,
+        "_anomaly_note": "Second consecutive week with >20pt spike. Score now 64.1 — orange tier. Tier 2 facilitator outreach required within 48hrs.",
+
+        "signal_breakdown": {
+          "optional_resource_access_rate": {
+            "raw": 0.000, "normalised": 1.000,
+            "weight": 0.20, "contribution": 20.00,
+            "colour": "red"
+          },
+          "quiz_learning_delta": {
+            "raw": 0.232, "normalised": 0.5385,
+            "weight": 0.15, "contribution": 8.08,
+            "colour": "amber"
+          },
+          "mood_drift_score": {
+            "raw": 2.65, "normalised": 0.6333,
+            "weight": 0.20, "contribution": 12.67,
+            "colour": "red"
+          },
+          "voluntary_engagement_delta": {
+            "raw": -0.1667, "normalised": 0.3334,
+            "weight": 0.15, "contribution": 5.00,
+            "colour": "amber"
+          },
+          "time_on_task_hours": {
+            "raw": 1.8, "normalised": 0.500,
+            "weight": 0.10, "contribution": 5.00,
+            "colour": "orange"
+          },
+          "login_frequency": {
+            "raw": 2, "normalised": 0.667,
+            "weight": 0.10, "contribution": 6.67,
+            "colour": "amber"
+          },
+          "feedback_uptake_lag_hours": {
+            "raw": 144, "normalised": 0.667,
+            "weight": 0.10, "contribution": 6.67,
+            "colour": "orange"
+          }
+        },
+
+        "facilitator_notes_prompt": "TIER 2 — ACTION REQUIRED WITHIN 48HRS. Aisha (H-profile): optional access 0%, pulse 1.5/5, confirmed mood drift 29% below baseline, revisit flag on 2 resources. T1 nudge sent W5 with no visible recovery. Recommend pedagogical + social outreach — lead with 'what would be most useful for you?'",
+        "computed_at": "2025-10-20T01:06:30Z"
+      },
+
+      "intervention": {
+        "id": 507,
+        "learner_id": 42,
+        "course_id": 1,
+        "facilitator_id": 12,
+        "week_number": 7,
+
+        "tier": 2,
+        "trigger_score": 64.10,
+        "profile_type": "H",
+        "channel": "lms_message",
+        "template_id": "H_T2_pedagogical",
+
+        "message_body": "Hi Aisha — I wanted to check in personally. Topics 5 and 6 are genuinely difficult material, and I can see from the course that you've been revisiting the analytics content quite a bit. I'd love to hear what's going on for you — not to assess anything, just to understand if there's something I can clarify or if the way the content is structured isn't working for how you learn. Would you be open to a short chat this week, or if you'd rather work through it in writing, I'm happy to respond to questions in the message thread? What would be most useful for you?",
+
+        "sent_at": "2025-10-21T10:30:00Z",
+        "score_at_t7": null,
+        "score_at_t14": null,
+        "outcome": null,
+
+        "cooldown_expires_at": null,
+
+        "notes": "Tier 2 facilitator outreach. Tone: leading with autonomy (H-profile). Opened with content-specific acknowledgement (pedagogical role), offered two contact modalities. Did NOT prescribe a solution. Awaiting learner response.",
+
+        "created_at": "2025-10-20T01:07:00Z",
+        "updated_at": "2025-10-21T10:30:45Z"
+      }
+    }
+  },
+
+  "weekly_learner_packet": {
+    "_description": "Full output format from the risk engine — what the facilitator dashboard receives each Monday for Aisha at week 7",
+    "generated": "2025-10-20T01:06:30Z",
+    "learner_id": 42,
+    "learner_name": "Aisha Malik",
+    "week_number": 7,
+
+    "profile": {
+      "primary": "H",
+      "secondary": "T",
+      "is_mixed": false,
+      "drift_flag": false,
+      "profile_label": "Heutagogical (self-determined)"
+    },
+
+    "risk": {
+      "score": 64.10,
+      "tier": 2,
+      "tier_label": "orange",
+      "previous_week_score": 42.60,
+      "delta": 21.50,
+      "anomaly_flag": true,
+      "requires_action": true,
+      "action_deadline": "2025-10-22T01:06:30Z"
+    },
+
+    "signals_summary": {
+      "l1_behavioral": {
+        "login_frequency":       {"value": 2, "colour": "amber"},
+        "time_on_task_hours":    {"value": 1.8, "colour": "orange"},
+        "completion_rate":       {"value": "55%", "colour": "amber"},
+        "submission_timing":     {"value": "late_3_5", "colour": "orange"},
+        "forum_post_rate":       {"value": "0/2", "colour": "red", "profile_weight": "not scored (H)"}
+      },
+      "l2_cognitive": {
+        "content_revisit_rate":          {"value": 3.6, "colour": "red", "flag": true},
+        "quiz_learning_delta":           {"value": "23%", "colour": "amber"},
+        "optional_resource_access_rate": {"value": "0%", "colour": "red"},
+        "feedback_uptake_lag_hours":     {"value": 144, "colour": "orange"}
+      },
+      "l3_emotional": {
+        "pulse_composite":           {"value": 1.5, "colour": "red"},
+        "mood_drift_score":          {"value": 2.65, "colour": "red", "flag": true},
+        "mood_drift_from_baseline":  {"value": "-29.3%", "baseline": 3.75},
+        "voluntary_engagement_rate": {"value": "0%", "colour": "red"}
+      }
+    },
+
+    "intervention": {
+      "recommended_tier": 2,
+      "template_id": "H_T2_pedagogical",
+      "assigned_to_facilitator": true,
+      "cooldown_active": false
+    },
+
+    "facilitator_notes_prompt": "TIER 2 — ACTION REQUIRED WITHIN 48HRS. Aisha (H-profile): optional access 0%, pulse 1.5/5, confirmed mood drift 29% below baseline, revisit flag on 2 resources. T1 nudge sent W5 with no visible recovery. Recommend pedagogical + social outreach — lead with 'what would be most useful for you?'"
+  },
+
+  "cohort_dashboard_snapshot": {
+    "_description": "Anonymized cohort-level risk distribution for CD_314 at week 7 — what the facilitator sees for the full course",
+    "course_id": 1,
+    "week_number": 7,
+    "total_enrolled": 38,
+    "in_calibration": 0,
+    "scored_learners": 38,
+
+    "tier_distribution": {
+      "green": {"count": 21, "pct": 55.3},
+      "amber": {"count": 9, "pct": 23.7},
+      "orange": {"count": 6, "pct": 15.8},
+      "red":   {"count": 2, "pct": 5.3}
+    },
+
+    "anomaly_flags_this_week": 3,
+
+    "profile_distribution": {
+      "H": {"count": 11, "pct": 28.9},
+      "A": {"count": 14, "pct": 36.8},
+      "T": {"count": 7,  "pct": 18.4},
+      "C": {"count": 6,  "pct": 15.8}
+    },
+
+    "avg_risk_by_profile": {
+      "H": 38.2,
+      "A": 22.4,
+      "T": 45.8,
+      "C": 29.1
+    },
+
+    "interventions_this_week": {
+      "tier_1_automated": 5,
+      "tier_2_facilitator": 3,
+      "tier_3_referral": 0,
+      "cooldown_blocked": 2
+    }
+  },
+
+  "feedback_evaluation_sample": {
+    "_description": "Kirkpatrick L1 (Reaction) evaluation at week 7 midpoint — anonymized aggregate for CD_314",
+    "id": 12,
+    "course_id": 1,
+    "week_number": 7,
+    "evaluation_type": "l1_reaction",
+
+    "aggregate_data": {
+      "pulse_responses_received": 30,
+      "pulse_response_rate_pct": 78.9,
+      "cohort_avg_confidence": 3.1,
+      "cohort_avg_energy": 3.4,
+      "cohort_avg_composite": 3.25,
+      "end_of_module_survey": {
+        "responses": 27,
+        "q1_content_relevant_avg": 3.9,
+        "q2_felt_supported_avg": 3.2,
+        "q3_pacing_worked_avg": 2.8,
+        "_note": "Pacing score low (2.8) — Topic 5/6 content density is generating learner friction. Action item generated."
+      },
+      "by_profile": {
+        "H": {"composite_avg": 2.85, "n": 9},
+        "A": {"composite_avg": 3.60, "n": 12},
+        "T": {"composite_avg": 3.10, "n": 6},
+        "C": {"composite_avg": 3.40, "n": 3}
+      }
+    },
+
+    "bias_audit_data": null,
+
+    "action_items": [
+      {
+        "item": "Topic 5/6 pacing review needed — learner satisfaction with pacing at 2.8/5 across cohort",
+        "priority": "high",
+        "responsible": "instructional_designer",
+        "deadline": "2025-10-27"
+      },
+      {
+        "item": "H-profile learners showing lowest pulse composite (2.85) — review whether open navigation is causing disorientation in high-density content weeks",
+        "priority": "medium",
+        "responsible": "facilitator",
+        "deadline": "2025-11-03"
+      }
+    ],
+
+    "created_at": "2025-10-20T02:00:00Z"
+  }
+}
