@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft, Users, Settings, BookOpen, BarChart2, Activity,
   ChevronDown, Edit3, Eye, EyeOff, Star, MoreHorizontal,
-  FileText, Award, BarChart, Flag, CheckSquare, Database
+  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CourseContent } from '../components/course/CourseContent';
@@ -86,9 +86,9 @@ export default function CourseView() {
             <h1 className="text-2xl font-bold">{course.name}</h1>
             <p className="text-indigo-200 text-sm mt-1">{course.shortName} �� {course.categoryName}</p>
             <div className="flex items-center gap-4 mt-3 text-indigo-200 text-sm">
-              <span className="flex items-center gap-1"><Users className="w-4 h-4" />{course.enrolledStudents} students</span>
-              <span className="flex items-center gap-1"><BookOpen className="w-4 h-4" />{course.sections.length} sections</span>
-              <span>{course.instructor}</span>
+              <span className="flex items-center gap-1"><Users className="w-4 h-4" />{course.enrolledStudents ?? 0} students</span>
+              <span className="flex items-center gap-1"><BookOpen className="w-4 h-4" />{(course.sections ?? []).length} sections</span>
+              <span>{typeof course.instructor === 'object' && course.instructor ? (course.instructor as {name: string}).name : course.instructor}</span>
             </div>
           </div>
           <div className="flex gap-2 flex-shrink-0 flex-wrap">
@@ -170,43 +170,127 @@ export default function CourseView() {
 
 function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<ReturnType<typeof useApp>['getCourse']> & object; updateCourse: (id: string, u: any) => void }) {
   if (!course) return null;
-  const [form, setForm] = useState({ name: course.name, shortName: course.shortName, description: course.description, startDate: course.startDate, endDate: course.endDate, maxStudents: course.maxStudents?.toString() || '', visibility: course.visibility });
-  const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const [form, setForm] = useState({
+    name: '',
+    shortName: '',
+    description: '',
+    startDate: '',
+    endDate: '',
+    maxStudents: '',
+    visibility: 'shown' as 'shown' | 'hidden',
+    format: 'topics' as 'topics' | 'weekly' | 'social',
+    language: 'English',
+    tags: '',
+    categoryId: '',
+  });
   const [saved, setSaved] = useState(false);
 
+  // Sync form with course data when it loads/changes
+  useEffect(() => {
+    if (!course) return;
+    setForm({
+      name: course.name || '',
+      shortName: course.shortName || '',
+      description: course.description || '',
+      startDate: course.startDate || '',
+      endDate: course.endDate || '',
+      maxStudents: course.maxStudents?.toString() || '',
+      visibility: (course.visibility as 'shown' | 'hidden') || 'shown',
+      format: (course.format as 'topics' | 'weekly' | 'social') || 'topics',
+      language: course.language || 'English',
+      tags: Array.isArray(course.tags) ? course.tags.join(', ') : (course.tags || ''),
+      categoryId: course.categoryId || '',
+    });
+  }, [course]);
+
+  const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+
   const handleSave = () => {
-    updateCourse(course.id, { ...form, maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined });
+    updateCourse(course.id, {
+      ...form,
+      maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
+      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+    });
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
+  const formatOptions = [
+    { value: 'topics', label: 'Topics format', icon: LayoutGrid },
+    { value: 'weekly', label: 'Weekly format', icon: BookOpen },
+    { value: 'social', label: 'Social format', icon: Users },
+  ];
+
   return (
     <div className="max-w-2xl space-y-5">
       <h2 className="font-semibold text-gray-900">Course Settings</h2>
-      {[
-        { label: 'Course Full Name', key: 'name', type: 'text' },
-        { label: 'Short Name', key: 'shortName', type: 'text' },
-        { label: 'Description', key: 'description', type: 'textarea' },
-        { label: 'Start Date', key: 'startDate', type: 'date' },
-        { label: 'End Date', key: 'endDate', type: 'date' },
-        { label: 'Max Students', key: 'maxStudents', type: 'number' },
-      ].map(f => (
-        <div key={f.key}>
-          <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
-          {f.type === 'textarea' ? (
-            <textarea value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          ) : (
-            <input type={f.type} value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          )}
-        </div>
-      ))}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
-        <select value={form.visibility} onChange={e => setF('visibility', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-          <option value="shown">Shown to students</option>
-          <option value="hidden">Hidden from students</option>
-        </select>
+
+      {/* Basic Info */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Basic Information</h3>
+        {[
+          { label: 'Course Full Name', key: 'name', type: 'text' },
+          { label: 'Short Name', key: 'shortName', type: 'text' },
+          { label: 'Description', key: 'description', type: 'textarea' },
+        ].map(f => (
+          <div key={f.key}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+            {f.type === 'textarea' ? (
+              <textarea value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            ) : (
+              <input type={f.type} value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            )}
+          </div>
+        ))}
       </div>
+
+      {/* Course Format & Language */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Format & Language</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Course Format</label>
+          <select value={form.format} onChange={e => setF('format', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            {formatOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+            <Globe className="w-4 h-4" /> Language
+          </label>
+          <input type="text" value={form.language} onChange={e => setF('language', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
+            <Tag className="w-4 h-4" /> Tags (comma separated)
+          </label>
+          <input type="text" value={form.tags} onChange={e => setF('tags', e.target.value)} placeholder="e.g. programming, beginner, python" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        </div>
+      </div>
+
+      {/* Schedule & Enrollment */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Schedule & Enrollment</h3>
+        {[
+          { label: 'Start Date', key: 'startDate', type: 'date' },
+          { label: 'End Date', key: 'endDate', type: 'date' },
+          { label: 'Max Students (empty = unlimited)', key: 'maxStudents', type: 'number' },
+        ].map(f => (
+          <div key={f.key}>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
+            <input type={f.type} value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          </div>
+        ))}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+          <select value={form.visibility} onChange={e => setF('visibility', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            <option value="shown">Shown to students</option>
+            <option value="hidden">Hidden from students</option>
+          </select>
+        </div>
+      </div>
+
       <button onClick={handleSave} className={`px-6 py-2 text-sm font-semibold rounded-xl transition-colors ${saved ? 'bg-green-500 text-white' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}>
         {saved ? '✓ Saved!' : 'Save Changes'}
       </button>

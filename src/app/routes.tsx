@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { createBrowserRouter, Outlet } from 'react-router';
+import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { Layout } from './components/Layout';
 import { useApp } from './context/AppContext';
 import { OnboardingTutorial } from './components/onboarding/OnboardingTutorial';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { useAuth } from './context/AuthContext';
 import Dashboard from './pages/Dashboard';
 import MyCourses from './pages/MyCourses';
 import CreateCourse from './pages/CreateCourse';
@@ -13,13 +15,27 @@ import Administration from './pages/Administration';
 import Notifications from './pages/Notifications';
 import Messaging from './pages/Messaging';
 import Profile from './pages/Profile';
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+import VerifyEmail from './pages/auth/VerifyEmail';
 
-function PageWrapper({ children }: { children: React.ReactNode }) {
-  return <Layout>{children}</Layout>;
+// Landing page: redirects to login if not authenticated, dashboard if authenticated
+function LandingRedirect() {
+  const { isAuthenticated, isLoading } = useAuth();
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="w-8 h-8 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+  return <Navigate to={isAuthenticated ? '/dashboard' : '/login'} replace />;
 }
 
 // Root component rendered inside the Router — so useNavigate works here and in children
-function RootWithOnboarding() {
+function RootWithOnboarding({ children }: { children?: React.ReactNode }) {
   const { showOnboarding, setShowOnboarding, onboardingCompleted } = useApp();
   const [showOnboardingPrompt, setShowOnboardingPrompt] = useState(false);
 
@@ -32,7 +48,7 @@ function RootWithOnboarding() {
 
   return (
     <>
-      <Outlet />
+      {children ?? <Outlet />}
       {showOnboarding && (
         <OnboardingTutorial onDismiss={() => setShowOnboarding(false)} />
       )}
@@ -70,33 +86,53 @@ function RootWithOnboarding() {
   );
 }
 
+// Layout wrapper that includes onboarding and protected layout
+function ProtectedLayout() {
+  return (
+    <RootWithOnboarding>
+      <Outlet />
+    </RootWithOnboarding>
+  );
+}
+
 export const router = createBrowserRouter([
+  // Public routes - no layout
+  { path: '/login', element: <Login /> },
+  { path: '/register', element: <Register /> },
+  { path: '/forgot-password', element: <ForgotPassword /> },
+  { path: '/reset-password', element: <ResetPassword /> },
+  { path: '/verify-email/:id/:hash', element: <VerifyEmail /> },
+
+  // Landing redirect
+  { index: true, element: <LandingRedirect /> },
+
+  // Protected routes with layout
   {
     path: '/',
-    element: <RootWithOnboarding />,
+    element: <ProtectedRoute><ProtectedLayout /></ProtectedRoute>,
     children: [
-      { index: true, element: <PageWrapper><Dashboard /></PageWrapper> },
-      { path: 'courses', element: <PageWrapper><MyCourses /></PageWrapper> },
-      { path: 'courses/create', element: <PageWrapper><CreateCourse /></PageWrapper> },
-      { path: 'courses/:id', element: <PageWrapper><CourseView /></PageWrapper> },
-      { path: 'categories', element: <PageWrapper><CategoryManagement /></PageWrapper> },
-      { path: 'ai-insights', element: <PageWrapper><AIInsights /></PageWrapper> },
-      { path: 'administration', element: <PageWrapper><Administration /></PageWrapper> },
-      { path: 'notifications', element: <PageWrapper><Notifications /></PageWrapper> },
-      { path: 'messaging', element: <PageWrapper><Messaging /></PageWrapper> },
-      { path: 'profile', element: <PageWrapper><Profile /></PageWrapper> },
-      {
-        path: '*',
-        element: (
-          <PageWrapper>
-            <div className="text-center py-24">
-              <p className="text-6xl font-bold text-gray-200">404</p>
-              <p className="text-gray-500 mt-4 text-lg font-medium">Page not found</p>
-              <a href="/" className="mt-4 inline-block text-indigo-600 hover:text-indigo-800 font-medium">← Go to Dashboard</a>
-            </div>
-          </PageWrapper>
-        ),
-      },
+      { path: 'dashboard', element: <Layout><Dashboard /></Layout> },
+      { path: 'courses', element: <Layout><MyCourses /></Layout> },
+      { path: 'courses/create', element: <Layout><CreateCourse /></Layout> },
+      { path: 'courses/:id', element: <Layout><CourseView /></Layout> },
+      { path: 'categories', element: <Layout><CategoryManagement /></Layout> },
+      { path: 'ai-insights', element: <Layout><AIInsights /></Layout> },
+      { path: 'administration', element: <Layout><Administration /></Layout> },
+      { path: 'notifications', element: <Layout><Notifications /></Layout> },
+      { path: 'messaging', element: <Layout><Messaging /></Layout> },
+      { path: 'profile', element: <Layout><Profile /></Layout> },
     ],
+  },
+
+  // 404 catch-all - must be last
+  {
+    path: '*',
+    element: (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50">
+        <p className="text-6xl font-bold text-gray-200">404</p>
+        <p className="text-gray-500 mt-4 text-lg font-medium">Page not found</p>
+        <a href="/" className="mt-4 inline-block text-indigo-600 hover:text-indigo-800 font-medium">← Go to Login</a>
+      </div>
+    ),
   },
 ]);

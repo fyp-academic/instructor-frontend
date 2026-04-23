@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Brain, TrendingUp, TrendingDown, AlertTriangle, Lightbulb, BookOpen,
   Users, Zap, RefreshCw, ChevronRight, Star, Target, MessageSquare, CheckCircle,
@@ -9,6 +9,7 @@ import {
   LineChart, Line,
 } from 'recharts';
 import { useApp } from '../context/AppContext';
+import { aiApi, dashboardApi } from '../services/api';
 
 // ─── Chart / analytics data ───────────────────────────────────────────────
 const performanceData = [
@@ -198,18 +199,73 @@ const atRiskStudents: AtRiskStudent[] = [
 // ─── Component ────────────────────────────────────────────────────────────
 export default function AIInsights() {
   const { courses } = useApp();
-  const [selectedCourse, setSelectedCourse] = useState(courses[0]?.id || '');
+  const activeCourses = courses.filter(c => (c as unknown as Record<string,unknown>).status === 'active');
+  const [selectedCourse, setSelectedCourse] = useState(() => {
+    const c = activeCourses[0] as unknown as Record<string,unknown>;
+    return c ? String(c.id) : '';
+  });
   const [generating, setGenerating] = useState(false);
   const [generatedItems, setGeneratedItems] = useState<typeof generatedQuestions>([]);
   const [activeInsight, setActiveInsight] = useState<'performance' | 'atRisk' | 'recommendations' | 'generate'>('performance');
 
+  // ── API-driven state ──
+  const [apiPerformance, setApiPerformance]       = useState<typeof performanceData>(performanceData);
+  const [apiSkills, setApiSkills]                 = useState<typeof skillsData>(skillsData);
+  const [apiAtRisk, setApiAtRisk]                 = useState<typeof atRiskStudents>(atRiskStudents);
+  const [apiRecs, setApiRecs]                     = useState<typeof recommendations>(recommendations);
+  const [apiContentRecs, setApiContentRecs]       = useState<typeof contentRecommendations>(contentRecommendations);
+  const [apiProfiles, setApiProfiles]             = useState<typeof profileDistribution>(profileDistribution);
+  const [snapshotStats, setSnapshotStats]         = useState<Record<string,unknown>>({});
+
+  useEffect(() => {
+    if (!selectedCourse) return;
+    const id = selectedCourse;
+    aiApi.snapshots(id).then(r => {
+      const d: Record<string,unknown>[] = r.data.data ?? r.data ?? [];
+      if (d.length) {
+        setApiPerformance(d.map((w, i) => ({
+          week:       String(w.period ?? `W${i+1}`),
+          avg:        Number(w.avg_grade        ?? 0),
+          completion: Number(w.completion_rate  ?? 0),
+          engagement: Number(w.engagement_score ?? 0),
+        })));
+        const last = d[d.length - 1] as Record<string,unknown>;
+        setSnapshotStats(last);
+      }
+    }).catch(() => {});
+    aiApi.skillMetrics(id).then(r => {
+      const d: Record<string,unknown>[] = r.data.data ?? r.data ?? [];
+      if (d.length) setApiSkills(d.map(m => ({ subject: String(m.metric ?? m.skill ?? ''), A: Number(m.score ?? 0), fullMark: 100 })));
+    }).catch(() => {});
+    aiApi.atRisk(id).then(r => {
+      const d: Record<string,unknown>[] = r.data.data ?? r.data ?? [];
+      if (d.length) setApiAtRisk(d as unknown as typeof atRiskStudents);
+    }).catch(() => {});
+    aiApi.suggestions(id).then(r => {
+      const d: Record<string,unknown>[] = r.data.data ?? r.data ?? [];
+      if (d.length) setApiRecs(d as unknown as typeof recommendations);
+    }).catch(() => {});
+    aiApi.contentRecs(id).then(r => {
+      const d: Record<string,unknown>[] = r.data.data ?? r.data ?? [];
+      if (d.length) setApiContentRecs(d as unknown as typeof contentRecommendations);
+    }).catch(() => {});
+    dashboardApi.instructorSnapshot(id).then(r => {
+      const d: Record<string,unknown> = r.data.data ?? r.data ?? {};
+      if (d.profile_distribution) setApiProfiles(d.profile_distribution as typeof profileDistribution);
+    }).catch(() => {});
+  }, [selectedCourse]);
+
   const handleGenerate = () => {
+    if (!selectedCourse) return;
     setGenerating(true);
-    setTimeout(() => { setGeneratedItems(generatedQuestions); setGenerating(false); }, 2000);
+    aiApi.generatedQuestions(selectedCourse)
+      .then(r => setGeneratedItems((r.data.data ?? r.data ?? []) as typeof generatedQuestions))
+      .catch(() => setGeneratedItems(generatedQuestions))
+      .finally(() => setGenerating(false));
   };
 
-  const totalStudents = profileDistribution.reduce((s, p) => s + p.count, 0);
-  const criticalCount = atRiskStudents.filter(s => s.tier >= 2).length;
+  const totalStudents = apiProfiles.reduce((s, p) => s + p.count, 0);
+  const criticalCount = apiAtRisk.filter(s => s.tier >= 2).length;
 
   return (
     <div className="space-y-6">
@@ -231,7 +287,10 @@ export default function AIInsights() {
             onChange={e => setSelectedCourse(e.target.value)}
             className="text-sm border border-gray-300 rounded-xl px-3 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
           >
-            {courses.filter(c => c.status === 'active').map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            {activeCourses.map(c => {
+              const cr = c as unknown as Record<string,unknown>;
+              return <option key={String(cr.id)} value={String(cr.id)}>{String(cr.name ?? '')}</option>;
+            })}
           </select>
           <button className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-xl text-sm text-gray-700 hover:bg-gray-50">
             <RefreshCw className="w-4 h-4" /> Refresh
@@ -246,24 +305,24 @@ export default function AIInsights() {
             <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse" />
             <div>
               <p className="font-semibold">Analytics Pipeline Active</p>
-              <p className="text-indigo-200 text-sm">L0 profiles loaded · L1/L2/L3 signals computed · RE scores updated 5 min ago</p>
+              <p className="text-indigo-200 text-sm">L0 profiles loaded · L1/L2/L3 signals computed · RE scores updated</p>
             </div>
           </div>
           <div className="text-right hidden sm:block">
-            <p className="text-xl font-bold">73%</p>
+            <p className="text-xl font-bold">{snapshotStats.completion_rate ? `${Number(snapshotStats.completion_rate).toFixed(0)}%` : '—'}</p>
             <p className="text-indigo-200 text-xs">Avg. Completion</p>
           </div>
         </div>
         {/* Pipeline step indicators */}
         <div className="flex gap-2 mt-4 flex-wrap">
           {[
-            { id: 'L0', label: 'Profiles', desc: '8 learners' },
-            { id: 'L1', label: 'Behavioural', desc: 'Logged' },
-            { id: 'L2', label: 'Cognitive', desc: 'Computed' },
-            { id: 'L3', label: 'Emotional', desc: 'Pulse in' },
-            { id: 'RE', label: 'Risk Engine', desc: 'Scored' },
-            { id: 'IE', label: 'Interventions', desc: '3 sent' },
-            { id: 'FL', label: 'Feedback Loop', desc: 'Active' },
+            { id: 'L0', label: 'Profiles',     desc: `${totalStudents} learners` },
+            { id: 'L1', label: 'Behavioural',   desc: 'Logged'   },
+            { id: 'L2', label: 'Cognitive',      desc: 'Computed' },
+            { id: 'L3', label: 'Emotional',      desc: 'Pulse in' },
+            { id: 'RE', label: 'Risk Engine',    desc: 'Scored'   },
+            { id: 'IE', label: 'Interventions',  desc: `${criticalCount} sent` },
+            { id: 'FL', label: 'Feedback Loop',  desc: 'Active'   },
           ].map(step => (
             <div key={step.id} className="flex items-center gap-1.5 bg-white/10 rounded-lg px-2.5 py-1.5">
               <span className="text-xs font-bold text-white">{step.id}</span>
@@ -305,7 +364,7 @@ export default function AIInsights() {
             {[
               { label: 'Avg. Grade',      value: '76%',   change: '+4%',  up: true,  icon: Star         },
               { label: 'Completion Rate', value: '73%',   change: '+8%',  up: true,  icon: Target       },
-              { label: 'At-Risk',         value: String(atRiskStudents.filter(s => s.tier > 0).length), change: 'T2+T3: 2', up: false, icon: AlertTriangle },
+              { label: 'At-Risk',         value: String(apiAtRisk.filter(s => s.tier > 0).length), change: `T2+T3: ${criticalCount}`, up: false, icon: AlertTriangle },
               { label: 'Avg. Pulse (L3)', value: '3.1/5', change: '-0.4', up: false, icon: Zap          },
             ].map(kpi => (
               <div key={kpi.label} className="bg-white border border-gray-200 rounded-xl p-4">
@@ -327,7 +386,7 @@ export default function AIInsights() {
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h3 className="font-semibold text-gray-900 mb-4">Weekly Trends</h3>
               <ResponsiveContainer width="100%" height={220}>
-                <LineChart data={performanceData}>
+                <LineChart data={apiPerformance}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="week" tick={{ fontSize: 12 }} />
                   <YAxis domain={[50, 100]} tick={{ fontSize: 12 }} />
@@ -341,7 +400,7 @@ export default function AIInsights() {
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h3 className="font-semibold text-gray-900 mb-4">Skill Distribution</h3>
               <ResponsiveContainer width="100%" height={220}>
-                <RadarChart data={skillsData}>
+                <RadarChart data={apiSkills}>
                   <PolarGrid />
                   <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
                   <Radar name="Class Average" dataKey="A" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
@@ -379,7 +438,7 @@ export default function AIInsights() {
               <span className="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-lg font-medium">{totalStudents} students</span>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {profileDistribution.map(p => {
+              {apiProfiles.map(p => {
                 const pm = profileMeta[p.profile];
                 const pct = Math.round((p.count / totalStudents) * 100);
                 return (
@@ -406,7 +465,7 @@ export default function AIInsights() {
             <h3 className="font-semibold text-gray-900 mb-1">AI Content Recommendations</h3>
             <p className="text-xs text-gray-400 mb-4">Based on student performance patterns, consider adding these resources</p>
             <div className="space-y-3">
-              {contentRecommendations.map((rec, i) => (
+              {apiContentRecs.map((rec, i) => (
                 <div key={i} className="flex items-center gap-4 p-3 border border-gray-100 rounded-xl hover:bg-gray-50">
                   <div className="w-10 h-10 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
                     <BookOpen className="w-5 h-5 text-indigo-600" />
@@ -442,7 +501,7 @@ export default function AIInsights() {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {([3, 2, 1, 0] as TierLevel[]).map(tier => {
               const tm = tierMeta[tier];
-              const count = atRiskStudents.filter(s => s.tier === tier).length;
+              const count = apiAtRisk.filter(s => s.tier === tier).length;
               return (
                 <div key={tier} className={`${tm.bg} border ${tm.border} rounded-xl p-3 text-center`}>
                   <div className={`text-2xl font-black ${tm.text}`}>{count}</div>
@@ -471,7 +530,7 @@ export default function AIInsights() {
 
           {/* Student cards */}
           <div className="space-y-4">
-            {atRiskStudents.map(student => {
+            {apiAtRisk.map(student => {
               const tm = tierMeta[student.tier];
               const pm = profileMeta[student.profile];
               return (
@@ -671,12 +730,12 @@ export default function AIInsights() {
           <div className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
             <Brain className="w-6 h-6 text-indigo-600" />
             <div>
-              <p className="text-sm font-semibold text-gray-800">GPT-o4 has analysed your course and generated {recommendations.length} actionable suggestions</p>
+              <p className="text-sm font-semibold text-gray-800">GPT-o4 has analysed your course and generated {apiRecs.length} actionable suggestions</p>
               <p className="text-xs text-gray-400">Based on engagement data, grade distributions, and pedagogical best practices</p>
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {recommendations.map((rec, i) => (
+            {apiRecs.map((rec, i) => (
               <div key={i} className={`border rounded-xl p-4 ${rec.color.split(' ').slice(0, 2).join(' ')}`}>
                 <div className="flex items-start gap-3">
                   <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${rec.color.split(' ')[0]}`}>

@@ -1,10 +1,21 @@
 import React, { useState } from 'react';
 import { Bell, CheckCheck, Filter, Trash2, Info, AlertTriangle, CheckCircle, AlertCircle, Clock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { notificationsApi } from '../services/api';
 
 export default function Notifications() {
   const { notifications, markNotificationRead, markAllRead } = useApp();
   const [filter, setFilter] = useState<'all' | 'unread' | 'info' | 'warning' | 'success' | 'danger'>('all');
+
+  const handleMarkRead = (id: string) => {
+    markNotificationRead(id);
+    notificationsApi.markRead(id).catch(() => {});
+  };
+
+  const handleMarkAllRead = () => {
+    markAllRead();
+    notificationsApi.markAllRead().catch(() => {});
+  };
 
   const filtered = notifications.filter(n => {
     if (filter === 'all') return true;
@@ -29,7 +40,7 @@ export default function Notifications() {
           <p className="text-sm text-gray-500">{unreadCount} unread · {notifications.length} total</p>
         </div>
         <button
-          onClick={markAllRead}
+          onClick={handleMarkAllRead}
           className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 border border-indigo-200 px-3 py-2 rounded-xl hover:bg-indigo-50"
         >
           <CheckCheck className="w-4 h-4" /> Mark all as read
@@ -73,7 +84,7 @@ export default function Notifications() {
             return (
               <div
                 key={notif.id}
-                onClick={() => markNotificationRead(notif.id)}
+                onClick={() => handleMarkRead(String((notif as unknown as Record<string,unknown>).id ?? ''))}
                 className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-sm ${
                   !notif.read ? `${config.bg} ${config.border}` : 'bg-white border-gray-200 opacity-70 hover:opacity-100'
                 }`}

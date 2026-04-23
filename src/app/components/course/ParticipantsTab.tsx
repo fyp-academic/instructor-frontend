@@ -1,13 +1,35 @@
-import React, { useState } from 'react';
-import { Search, UserPlus, Filter, Trash2, Shield, Mail, MoreVertical, ChevronDown } from 'lucide-react';
-import { mockParticipants, Participant } from '../../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { Search, UserPlus, Trash2, Shield, Mail, MoreVertical, Loader2 } from 'lucide-react';
+import { Participant } from '../../data/mockData';
+import { coursesApi } from '../../services/api';
 
 interface ParticipantsTabProps {
   courseId: string;
 }
 
 export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
-  const [participants, setParticipants] = useState<Participant[]>(mockParticipants);
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    coursesApi.participants(courseId)
+      .then(r => {
+        const raw: Record<string, unknown>[] = r.data.data ?? r.data ?? [];
+        setParticipants(raw.map(p => ({
+          id:           String(p.id),
+          name:         String(p.name ?? ''),
+          email:        String(p.email ?? ''),
+          role:         (p.role as Participant['role']) ?? 'student',
+          enrolledDate: String(p.enrolledDate ?? p.enrolled_date ?? ''),
+          lastAccess:   String(p.lastAccess ?? p.last_access ?? 'Never'),
+          progress:     Number(p.progress ?? 0),
+          groups:       (p.groups as string[]) ?? [],
+        })));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [courseId]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [showEnrollModal, setShowEnrollModal] = useState(false);
@@ -43,20 +65,31 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
 
   const handleEnroll = () => {
     if (!newEmail) return;
-    const newP: Participant = {
-      id: `p_${Date.now()}`,
-      name: newEmail.split('@')[0].replace(/\./g, ' ').replace(/\b\w/g, c => c.toUpperCase()),
-      email: newEmail,
-      role: newRole as Participant['role'],
-      enrolledDate: new Date().toISOString().split('T')[0],
-      lastAccess: 'Never',
-      progress: 0,
-      groups: [],
-    };
-    setParticipants(prev => [...prev, newP]);
+    coursesApi.enroll(courseId, { email: newEmail, role: newRole })
+      .then(r => {
+        const p: Record<string, unknown> = r.data.data ?? r.data ?? {};
+        const newP: Participant = {
+          id:           String(p.id ?? p.user_id ?? Date.now()),
+          name:         String(p.name ?? newEmail.split('@')[0]),
+          email:        String(p.email ?? newEmail),
+          role:         (newRole as Participant['role']),
+          enrolledDate: new Date().toISOString().split('T')[0],
+          lastAccess:   'Never',
+          progress:     0,
+          groups:       [],
+        };
+        setParticipants(prev => [...prev, newP]);
+      })
+      .catch(() => {});
     setNewEmail('');
     setShowEnrollModal(false);
   };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+    </div>
+  );
 
   return (
     <div className="space-y-4" onClick={() => setMenuOpenId(null)}>
@@ -160,7 +193,10 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
                           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Mail className="w-4 h-4 text-gray-400" /> Message</button>
                           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Shield className="w-4 h-4 text-gray-400" /> Change Role</button>
                           <div className="border-t border-gray-100 mt-1 pt-1">
-                            <button onClick={() => setParticipants(prev => prev.filter(x => x.id !== p.id))} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <button onClick={() => {
+                              coursesApi.unenroll(courseId, p.id).catch(() => {});
+                              setParticipants(prev => prev.filter(x => x.id !== p.id));
+                            }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50">
                               <Trash2 className="w-4 h-4" /> Unenroll
                             </button>
                           </div>

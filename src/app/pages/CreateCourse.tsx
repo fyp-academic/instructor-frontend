@@ -1,9 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import { ArrowLeft, Save, BookOpen, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Course } from '../data/mockData';
 import { RichTextEditor } from '../components/RichTextEditor';
+
+const inputClass = (hasError?: string) =>
+  `w-full border ${hasError ? 'border-red-400' : 'border-gray-300'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white`;
+
+const FormField = ({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) => (
+  <div className="space-y-1.5">
+    <label className="block text-sm font-medium text-gray-700">
+      {label} {required && <span className="text-red-500">*</span>}
+    </label>
+    {children}
+    {error && <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error}</p>}
+  </div>
+);
 
 export default function CreateCourse() {
   const navigate = useNavigate();
@@ -14,9 +27,9 @@ export default function CreateCourse() {
   const [form, setForm] = useState({
     name: '',
     shortName: '',
-    categoryId: 'cat1',
-    visibility: 'hidden' as 'shown' | 'hidden',
-    startDate: new Date().toISOString().split('T')[0],
+    categoryId: '',
+    visibility: 'shown' as 'shown' | 'hidden',
+    startDate: '',
     endDate: '',
     format: 'topics' as 'topics' | 'weekly' | 'social',
     language: 'English',
@@ -33,9 +46,18 @@ export default function CreateCourse() {
     gradeDisplayType: 'percentage',
     gradePassingGrade: '50',
     completionTracking: true,
+    image: '',
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Set default category when categories load
+  useEffect(() => {
+    if (categories.length > 0 && !form.categoryId) {
+      setForm(f => ({ ...f, categoryId: categories[0].id }));
+    }
+  }, [categories]);
 
   const set = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }));
 
@@ -47,37 +69,57 @@ export default function CreateCourse() {
     return e;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
 
-    const course: Course = {
-      id: `course_${Date.now()}`,
-      name: form.name,
-      shortName: form.shortName.toUpperCase(),
-      description: form.description || 'No description provided',
-      categoryId: form.categoryId,
-      categoryName: categories.find(c => c.id === form.categoryId)?.name || '',
-      instructor: currentUser.name,
-      instructorId: currentUser.id,
-      enrolledStudents: 0,
-      status: 'draft',
-      visibility: form.visibility,
-      format: form.format,
-      startDate: form.startDate,
-      endDate: form.endDate,
-      language: form.language,
-      maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
-      tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-      sections: [
-        { id: 'sec0', title: 'General', visible: true, activities: [] },
-        { id: 'sec1', title: 'Topic 1', visible: true, activities: [] },
-      ],
-    };
+    try {
+      // Build course data - status depends on visibility
+      const isVisible = form.visibility === 'shown';
+      const courseData: Course = {
+        id: 'temp', // will be replaced by API response
+        name: form.name,
+        shortName: form.shortName.toUpperCase(),
+        description: form.description || 'No description provided',
+        categoryId: form.categoryId,
+        categoryName: categories.find(c => c.id === form.categoryId)?.name || '',
+        instructor: currentUser.name,
+        instructorId: currentUser.id,
+        enrolledStudents: 0,
+        status: isVisible ? 'active' : 'draft',
+        visibility: form.visibility,
+        format: form.format,
+        startDate: form.startDate,
+        endDate: form.endDate,
+        language: form.language,
+        maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
+        tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+        image: form.image,
+        sections: [
+          { id: 'sec0', title: 'General', visible: true, activities: [] },
+          { id: 'sec1', title: 'Topic 1', visible: true, activities: [] },
+        ],
+      };
 
-    addCourse(course);
-    setSaved(true);
-    setTimeout(() => navigate(`/courses/${course.id}`), 800);
+      // If image file selected, upload separately or include as base64
+      if (imageFile) {
+        const reader = new FileReader();
+        reader.onloadend = async () => {
+          const base64Image = reader.result as string;
+          const courseWithImage = { ...courseData, image: base64Image };
+          const created = await addCourse(courseWithImage);
+          setSaved(true);
+          setTimeout(() => navigate(`/courses/${created.id}`), 600);
+        };
+        reader.readAsDataURL(imageFile);
+      } else {
+        const created = await addCourse(courseData);
+        setSaved(true);
+        setTimeout(() => navigate(`/courses/${created.id}`), 600);
+      }
+    } catch (err) {
+      alert('Failed to create course. Please try again.');
+    }
   };
 
   const sections = [
@@ -91,19 +133,6 @@ export default function CreateCourse() {
     { id: 'enrollment', label: 'Enrollment' },
     { id: 'grading', label: 'Grading' },
   ];
-
-  const FormField = ({ label, required, error, children }: { label: string; required?: boolean; error?: string; children: React.ReactNode }) => (
-    <div className="space-y-1.5">
-      <label className="block text-sm font-medium text-gray-700">
-        {label} {required && <span className="text-red-500">*</span>}
-      </label>
-      {children}
-      {error && <p className="text-xs text-red-600 flex items-center gap-1"><AlertCircle className="w-3 h-3" />{error}</p>}
-    </div>
-  );
-
-  const inputClass = (hasError?: string) =>
-    `w-full border ${hasError ? 'border-red-400' : 'border-gray-300'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white`;
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -178,6 +207,46 @@ export default function CreateCourse() {
               </FormField>
               <FormField label="Tags (comma separated)">
                 <input type="text" value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="e.g. python, programming, beginner" className={inputClass()} />
+              </FormField>
+              <FormField label="Course Image">
+                <div className="flex items-center gap-4">
+                  {form.image && (
+                    <img src={form.image} alt="Preview" className="w-24 h-24 object-cover rounded-lg border" />
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={e => {
+                        const file = e.target.files?.[0] || null;
+                        setImageFile(file);
+                        if (file) {
+                          const reader = new FileReader();
+                          reader.onloadend = () => set('image', reader.result as string);
+                          reader.readAsDataURL(file);
+                        }
+                      }}
+                      className="hidden"
+                      id="course-image"
+                    />
+                    <label
+                      htmlFor="course-image"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded-lg cursor-pointer text-sm text-gray-700 transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      {form.image ? 'Change Image' : 'Upload Image'}
+                    </label>
+                    {form.image && (
+                      <button
+                        onClick={() => { setImageFile(null); set('image', ''); }}
+                        className="ml-2 text-xs text-red-600 hover:underline"
+                      >
+                        Remove
+                      </button>
+                    )}
+                    <p className="text-xs text-gray-400 mt-1">Recommended: 1200x400px, JPG or PNG</p>
+                  </div>
+                </div>
               </FormField>
             </div>
           )}

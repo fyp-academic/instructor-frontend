@@ -48,40 +48,48 @@ export default function CategoryManagement() {
     return e;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
 
-    if (editingCategory) {
-      updateCategory(editingCategory.id, {
-        name: form.name,
-        description: form.description,
-        parentId: form.parentId || undefined,
-        idNumber: form.idNumber,
-      });
-    } else {
-      const newCat: Category = {
-        id: `cat_${Date.now()}`,
-        name: form.name,
-        description: form.description,
-        parentId: form.parentId || undefined,
-        idNumber: form.idNumber,
-        courseCount: 0,
-        childCount: 0,
-      };
-      addCategory(newCat);
+    try {
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, {
+          name: form.name,
+          description: form.description,
+          parentId: form.parentId || undefined,
+          idNumber: form.idNumber,
+        });
+      } else {
+        const newCat: Category = {
+          id: `temp_${Date.now()}`,
+          name: form.name,
+          description: form.description,
+          parentId: form.parentId || undefined,
+          idNumber: form.idNumber,
+          courseCount: 0,
+          childCount: 0,
+        };
+        await addCategory(newCat);
+      }
+      setShowModal(false);
+    } catch (err) {
+      alert('Failed to save category. Please try again.');
     }
-    setShowModal(false);
   };
 
-  const handleDelete = (id: string, name: string) => {
+  const handleDelete = async (id: string, name: string) => {
     const hasChildren = categories.some(c => c.parentId === id);
     if (hasChildren) {
       alert('Cannot delete a category that has subcategories. Please delete or move subcategories first.');
       return;
     }
     if (confirm(`Delete category "${name}"?`)) {
-      deleteCategory(id);
+      try {
+        await deleteCategory(id);
+      } catch (err) {
+        alert('Failed to delete category. Please try again.');
+      }
     }
   };
 

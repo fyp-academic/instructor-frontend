@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import {
   Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
   List, ListOrdered, Link, Image, Code, Strikethrough, Type
@@ -16,6 +16,15 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
   const editorRef = useRef<HTMLDivElement>(null);
   const [linkUrl, setLinkUrl] = useState('');
   const [showLink, setShowLink] = useState(false);
+
+  // Seed initial content once on mount only — never update from props after that
+  // so React doesn't reset the DOM (which caused the single-char input bug)
+  useEffect(() => {
+    if (editorRef.current && value) {
+      editorRef.current.innerHTML = value;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const exec = (command: string, val?: string) => {
     document.execCommand(command, false, val);
@@ -129,7 +138,6 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
         data-placeholder={placeholder}
         style={{ minHeight }}
         className="p-3 text-sm text-gray-800 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
-        dangerouslySetInnerHTML={value ? { __html: value } : undefined}
       />
     </div>
   );

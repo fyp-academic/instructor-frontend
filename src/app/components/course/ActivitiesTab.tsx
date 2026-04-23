@@ -1,28 +1,68 @@
-import React, { useState } from 'react';
-import { HelpCircle, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout, CheckCircle, Clock, XCircle } from 'lucide-react';
-import { useApp } from '../../context/AppContext';
-import { ActivityType, activityTypeInfo, Activity } from '../../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { HelpCircle, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout, CheckCircle, Clock, XCircle, Loader2 } from 'lucide-react';
+import { ActivityType, activityTypeInfo } from '../../data/mockData';
+import { sectionsApi, activitiesApi } from '../../services/api';
 
-const activityIcons: Record<ActivityType, React.ElementType> = {
+const activityIcons: Record<string, React.ElementType> = {
   quiz: HelpCircle, assignment: FileText, forum: MessageSquare,
   url: Link, file: File, scorm: Package, h5p: Layers,
   workshop: Users, label: Hash, page: Layout,
+  video: File, resource: File, interactive: Layers, lab: Package,
 };
+
+const defaultTypeInfo = { label: 'Activity', color: 'bg-gray-100', iconColor: 'text-gray-600' };
+
+interface ApiActivity {
+  id: string;
+  name: string;
+  type: string;
+  description?: string;
+  dueDate?: string;
+  visible: boolean;
+  completionStatus?: 'completed' | 'incomplete' | 'none';
+  gradeMax?: number;
+  sectionTitle: string;
+}
 
 interface ActivitiesTabProps {
   courseId: string;
 }
 
 export function ActivitiesTab({ courseId }: ActivitiesTabProps) {
-  const { getCourse } = useApp();
-  const course = getCourse(courseId);
+  const [allActivities, setAllActivities] = useState<ApiActivity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sectionCount, setSectionCount] = useState(0);
   const [filter, setFilter] = useState<'all' | ActivityType>('all');
 
-  if (!course) return null;
-
-  const allActivities: (Activity & { sectionTitle: string })[] = course.sections.flatMap(s =>
-    s.activities.map(a => ({ ...a, sectionTitle: s.title }))
-  );
+  useEffect(() => {
+    setLoading(true);
+    sectionsApi.list(courseId)
+      .then(async r => {
+        const sections: Record<string, unknown>[] = r.data.data ?? r.data ?? [];
+        setSectionCount(sections.length);
+        const results = await Promise.allSettled(
+          sections.map(async sec => {
+            const ar = await activitiesApi.list(String(sec.id));
+            const acts: Record<string, unknown>[] = ar.data.data ?? ar.data ?? [];
+            return acts.map(a => ({
+              id:               String(a.id),
+              name:             String(a.name ?? a.title ?? ''),
+              type:             String(a.type ?? a.activity_type ?? 'resource').toLowerCase(),
+              description:      a.description ? String(a.description) : undefined,
+              dueDate:          a.due_date ? String(a.due_date).split('T')[0] : undefined,
+              visible:          a.visible !== false,
+              completionStatus: (a.completion_status ?? a.completionStatus ?? 'none') as ApiActivity['completionStatus'],
+              gradeMax:         a.grade_max ? Number(a.grade_max) : undefined,
+              sectionTitle:     String(sec.title ?? sec.name ?? ''),
+            } as ApiActivity));
+          })
+        );
+        const flat = results.flatMap(r => r.status === 'fulfilled' ? r.value : []);
+        setAllActivities(flat);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [courseId]);
 
   const filtered = filter === 'all' ? allActivities : allActivities.filter(a => a.type === filter);
 
@@ -34,12 +74,18 @@ export function ActivitiesTab({ courseId }: ActivitiesTabProps) {
     none: allActivities.filter(a => !a.completionStatus || a.completionStatus === 'none').length,
   };
 
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h2 className="font-semibold text-gray-900">Activities Overview</h2>
-          <p className="text-sm text-gray-500">{allActivities.length} total activities across {course.sections.length} sections</p>
+          <p className="text-sm text-gray-500">{allActivities.length} total activities across {sectionCount} sections</p>
         </div>
       </div>
 
@@ -91,8 +137,8 @@ export function ActivitiesTab({ courseId }: ActivitiesTabProps) {
           </div>
         ) : (
           filtered.map(activity => {
-            const Icon = activityIcons[activity.type];
-            const info = activityTypeInfo[activity.type];
+            const Icon = activityIcons[activity.type] ?? File;
+            const info = activityTypeInfo[activity.type as ActivityType] ?? defaultTypeInfo;
             const compStatus = activity.completionStatus || 'none';
             const compColors = {
               completed: 'border-l-green-400',

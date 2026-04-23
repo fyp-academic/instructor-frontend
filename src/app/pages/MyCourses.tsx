@@ -2,7 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { Plus, Search, Filter, BookOpen, Users, Grid, List, MoreVertical, Edit, Trash2, Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useApp } from '../context/AppContext';
-import { Course } from '../data/mockData';
 
 export default function MyCourses() {
   const navigate = useNavigate();
@@ -15,11 +14,15 @@ export default function MyCourses() {
 
   const filtered = useMemo(() => {
     return courses.filter(c => {
-      const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-        c.shortName.toLowerCase().includes(search.toLowerCase()) ||
-        c.instructor.toLowerCase().includes(search.toLowerCase());
-      const matchStatus = statusFilter === 'all' || c.status === statusFilter;
-      const matchCat = categoryFilter === 'all' || c.categoryId === categoryFilter;
+      const cr = c as unknown as Record<string, unknown>;
+      const shortName = String(cr.short_name ?? cr.shortName ?? '');
+      const instructor = String(cr.instructor_name ?? cr.instructor ?? '');
+      const categoryId = String(cr.category_id ?? cr.categoryId ?? '');
+      const matchSearch = (c.name ?? '').toLowerCase().includes(search.toLowerCase()) ||
+        shortName.toLowerCase().includes(search.toLowerCase()) ||
+        instructor.toLowerCase().includes(search.toLowerCase());
+      const matchStatus = statusFilter === 'all' || (cr.status as string) === statusFilter;
+      const matchCat = categoryFilter === 'all' || categoryId === categoryFilter;
       return matchSearch && matchStatus && matchCat;
     });
   }, [courses, search, statusFilter, categoryFilter]);
@@ -30,7 +33,15 @@ export default function MyCourses() {
     return 'bg-red-100 text-red-600 border-red-200';
   };
 
-  const CourseCard = ({ course }: { course: Course }) => (
+  const CourseCard = ({ course }: { course: Record<string, unknown> }) => {
+    const shortName    = String(course.short_name   ?? course.shortName   ?? '');
+    const instructor   = String(course.instructor_name ?? course.instructor ?? '');
+    const categoryName = String(course.category_name ?? course.categoryName ?? '');
+    const enrolled     = Number(course.enrolled_students ?? course.enrolledStudents ?? 0);
+    const sections     = (course.sections as unknown[]) ?? [];
+    const visibility   = String(course.visibility ?? 'shown');
+    const status       = String(course.status ?? 'draft');
+    return (
     <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all group overflow-hidden">
       {/* Color strip */}
       <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600" />
@@ -41,41 +52,41 @@ export default function MyCourses() {
             className="flex-1 cursor-pointer min-w-0"
           >
             <div className="flex items-center gap-2 mb-1">
-              <span className={`text-[11px] border px-2 py-0.5 rounded-full font-medium ${getStatusColor(course.status)}`}>
-                {course.status}
+              <span className={`text-[11px] border px-2 py-0.5 rounded-full font-medium ${getStatusColor(status)}`}>
+                {status}
               </span>
-              {course.visibility === 'hidden' && (
+              {visibility === 'hidden' && (
                 <EyeOff className="w-3 h-3 text-gray-400" />
               )}
             </div>
-            <h3 className="text-sm font-semibold text-gray-900 leading-tight group-hover:text-indigo-700 line-clamp-2">{course.name}</h3>
-            <p className="text-xs text-gray-400 mt-0.5 font-mono">{course.shortName}</p>
+            <h3 className="text-sm font-semibold text-gray-900 leading-tight group-hover:text-indigo-700 line-clamp-2">{String(course.name ?? '')}</h3>
+            <p className="text-xs text-gray-400 mt-0.5 font-mono">{shortName}</p>
           </div>
           <div className="relative flex-shrink-0">
             <button
-              onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === course.id ? null : course.id); }}
+              onClick={(e) => { e.stopPropagation(); setMenuOpenId(menuOpenId === String(course.id) ? null : String(course.id)); }}
               className="p-1 rounded hover:bg-gray-100 text-gray-400"
             >
               <MoreVertical className="w-4 h-4" />
             </button>
-            {menuOpenId === course.id && (
+            {menuOpenId === String(course.id) && (
               <div className="absolute right-0 top-6 w-40 bg-white border border-gray-200 rounded-lg shadow-xl z-20 py-1">
-                <button onClick={() => { navigate(`/courses/${course.id}`); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <button onClick={() => { navigate(`/courses/${String(course.id)}`); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                   <Eye className="w-4 h-4 text-gray-400" /> View
                 </button>
-                <button onClick={() => { navigate(`/courses/${course.id}?tab=settings`); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <button onClick={() => { navigate(`/courses/${String(course.id)}?tab=settings`); setMenuOpenId(null); }} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
                   <Edit className="w-4 h-4 text-gray-400" /> Settings
                 </button>
                 <button
-                  onClick={() => { updateCourse(course.id, { visibility: course.visibility === 'shown' ? 'hidden' : 'shown' }); setMenuOpenId(null); }}
+                  onClick={() => { updateCourse(String(course.id ?? ''), { visibility: visibility === 'shown' ? 'hidden' : 'shown' } as never); setMenuOpenId(null); }}
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
                 >
-                  {course.visibility === 'shown' ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
-                  {course.visibility === 'shown' ? 'Hide' : 'Show'}
+                  {visibility === 'shown' ? <EyeOff className="w-4 h-4 text-gray-400" /> : <Eye className="w-4 h-4 text-gray-400" />}
+                  {visibility === 'shown' ? 'Hide' : 'Show'}
                 </button>
                 <div className="border-t border-gray-100 mt-1 pt-1">
                   <button
-                    onClick={() => { if (confirm('Delete this course?')) { deleteCourse(course.id); setMenuOpenId(null); } }}
+                    onClick={() => { if (confirm('Delete this course?')) { deleteCourse(String(course.id ?? '')); setMenuOpenId(null); } }}
                     className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
                     <Trash2 className="w-4 h-4" /> Delete
@@ -86,47 +97,57 @@ export default function MyCourses() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{course.description}</p>
+        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{String(course.description ?? '')}</p>
 
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs text-gray-400">
-            <span className="flex items-center gap-1"><Users className="w-3 h-3" />{course.enrolledStudents}</span>
-            <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{course.sections.length} sections</span>
+            <span className="flex items-center gap-1"><Users className="w-3 h-3" />{enrolled}</span>
+            <span className="flex items-center gap-1"><BookOpen className="w-3 h-3" />{sections.length} sections</span>
           </div>
-          <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{course.categoryName}</span>
+          <span className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full">{categoryName}</span>
         </div>
         <div className="mt-2">
-          <p className="text-xs text-gray-400">Instructor: <span className="text-gray-600">{course.instructor}</span></p>
+          <p className="text-xs text-gray-400">Instructor: <span className="text-gray-600">{instructor}</span></p>
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
-  const CourseRow = ({ course }: { course: Course }) => (
+  const CourseRow = ({ course }: { course: Record<string, unknown> }) => {
+    const shortName    = String(course.short_name   ?? course.shortName   ?? '');
+    const instructor   = String(course.instructor_name ?? course.instructor ?? '');
+    const categoryName = String(course.category_name ?? course.categoryName ?? '');
+    const enrolled     = Number(course.enrolled_students ?? course.enrolledStudents ?? 0);
+    const sections     = (course.sections as unknown[]) ?? [];
+    const status       = String(course.status ?? 'draft');
+    const startDate    = String(course.start_date ?? course.startDate ?? '');
+    return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all flex items-center gap-4 group">
       <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
         <BookOpen className="w-5 h-5 text-white" />
       </div>
       <div className="flex-1 min-w-0 cursor-pointer" onClick={() => navigate(`/courses/${course.id}`)}>
         <div className="flex items-center gap-2">
-          <h3 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-700 truncate">{course.name}</h3>
-          <span className={`text-[11px] border px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${getStatusColor(course.status)}`}>{course.status}</span>
+          <h3 className="text-sm font-semibold text-gray-900 group-hover:text-indigo-700 truncate">{String(course.name ?? '')}</h3>
+          <span className={`text-[11px] border px-2 py-0.5 rounded-full font-medium flex-shrink-0 ${getStatusColor(status)}`}>{status}</span>
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{course.shortName} · {course.categoryName} · {course.instructor}</p>
+        <p className="text-xs text-gray-400 mt-0.5">{shortName} · {categoryName} · {instructor}</p>
       </div>
       <div className="hidden md:flex items-center gap-6 text-xs text-gray-500">
-        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{course.enrolledStudents} students</span>
-        <span>{course.sections.length} sections</span>
-        <span className="text-gray-400">{course.startDate}</span>
+        <span className="flex items-center gap-1"><Users className="w-3 h-3" />{enrolled} students</span>
+        <span>{sections.length} sections</span>
+        <span className="text-gray-400">{startDate}</span>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        <button onClick={() => navigate(`/courses/${course.id}`)} className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100">Open</button>
-        <button onClick={() => deleteCourse(course.id)} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
+        <button onClick={() => navigate(`/courses/${String(course.id ?? '')}`)} className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100">Open</button>
+        <button onClick={() => deleteCourse(String(course.id ?? ''))} className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
     </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6" onClick={() => setMenuOpenId(null)}>
@@ -211,11 +232,11 @@ export default function MyCourses() {
         </div>
       ) : viewMode === 'grid' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filtered.map(course => <CourseCard key={course.id} course={course} />)}
+          {filtered.map(course => <CourseCard key={String(course.id)} course={course as unknown as Record<string,unknown>} />)}
         </div>
       ) : (
         <div className="space-y-3">
-          {filtered.map(course => <CourseRow key={course.id} course={course} />)}
+          {filtered.map(course => <CourseRow key={String(course.id)} course={course as unknown as Record<string,unknown>} />)}
         </div>
       )}
     </div>

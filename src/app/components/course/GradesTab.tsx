@@ -1,13 +1,52 @@
-import React, { useState } from 'react';
-import { Download, Search, ChevronDown, CheckCircle, Clock, AlertCircle, XCircle } from 'lucide-react';
-import { mockGrades, GradeItem, StudentGrade } from '../../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { Download, Search, CheckCircle, Clock, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { GradeItem, StudentGrade } from '../../data/mockData';
+import { gradesApi } from '../../services/api';
 
 interface GradesTabProps {
   courseId: string;
 }
 
 export function GradesTab({ courseId }: GradesTabProps) {
-  const [grades] = useState<GradeItem[]>(mockGrades);
+  const [grades, setGrades] = useState<GradeItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setLoading(true);
+    gradesApi.gradebook(courseId)
+      .then(r => {
+        const raw: Record<string, unknown>[] = r.data.data ?? r.data ?? [];
+        setGrades(raw.map(item => {
+          const gradeMax = Number(item.gradeMax ?? item.grade_max ?? 100);
+          const students: StudentGrade[] = ((item.students as Record<string, unknown>[]) ?? []).map(sg => {
+            const grade = sg.grade !== null && sg.grade !== undefined ? Number(sg.grade) : null;
+            const pct   = grade !== null && gradeMax > 0 ? Math.round((grade / gradeMax) * 100) : null;
+            return {
+              studentId:     String(sg.studentId   ?? sg.student_id   ?? ''),
+              studentName:   String(sg.studentName  ?? sg.student_name ?? ''),
+              grade,
+              percentage:    pct,
+              feedback:      sg.feedback ? String(sg.feedback) : undefined,
+              submittedDate: sg.submittedAt ? String(sg.submittedAt).split('T')[0] : undefined,
+              status: grade !== null
+                ? 'graded'
+                : sg.submittedAt
+                  ? 'submitted'
+                  : 'not_submitted',
+            } as StudentGrade;
+          });
+          return {
+            id:           String(item.id),
+            activityName: String(item.activityName ?? item.activity_name ?? ''),
+            activityType: String(item.activityType ?? item.activity_type ?? 'quiz') as GradeItem['activityType'],
+            gradeMax,
+            students,
+          } as GradeItem;
+        }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [courseId]);
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'gradebook' | 'single'>('gradebook');
   const [selectedItem, setSelectedItem] = useState<GradeItem | null>(null);
@@ -68,6 +107,18 @@ export function GradesTab({ courseId }: GradesTabProps) {
     if (percentage >= 50) return 'bg-amber-50';
     return 'bg-red-50';
   };
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-16">
+      <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+    </div>
+  );
+
+  if (grades.length === 0) return (
+    <div className="text-center py-16 text-gray-400">
+      <p className="text-sm">No grade items found for this course.</p>
+    </div>
+  );
 
   return (
     <div className="space-y-4">

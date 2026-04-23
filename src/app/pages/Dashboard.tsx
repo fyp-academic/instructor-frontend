@@ -1,47 +1,67 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   BookOpen, Users, Activity, TrendingUp, Plus, FolderPlus,
-  ChevronRight, Clock, Award, AlertCircle, CheckCircle, Bell
+  ChevronRight, Clock, Bell
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { dashboardApi } from '../services/api';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-const engagementData = [
-  { day: 'Mon', active: 120, submissions: 45 },
-  { day: 'Tue', active: 138, submissions: 60 },
-  { day: 'Wed', active: 105, submissions: 38 },
-  { day: 'Thu', active: 156, submissions: 72 },
-  { day: 'Fri', active: 144, submissions: 55 },
-  { day: 'Sat', active: 89, submissions: 30 },
-  { day: 'Sun', active: 67, submissions: 22 },
+const FALLBACK_ENGAGEMENT = [
+  { day: 'Mon', active: 0, submissions: 0 },
+  { day: 'Tue', active: 0, submissions: 0 },
+  { day: 'Wed', active: 0, submissions: 0 },
+  { day: 'Thu', active: 0, submissions: 0 },
+  { day: 'Fri', active: 0, submissions: 0 },
+  { day: 'Sat', active: 0, submissions: 0 },
+  { day: 'Sun', active: 0, submissions: 0 },
 ];
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const { courses, notifications, currentUser } = useApp();
+  const [snapshot, setSnapshot] = useState<Record<string, unknown> | null>(null);
 
-  const totalStudents = courses.reduce((s, c) => s + c.enrolledStudents, 0);
-  const activeCourses = courses.filter(c => c.status === 'active').length;
-  const totalActivities = courses.reduce((s, c) => s + c.sections.reduce((ss, sec) => ss + sec.activities.length, 0), 0);
+  useEffect(() => {
+    dashboardApi.instructorSnapshot()
+      .then(r => setSnapshot(r.data.data ?? r.data))
+      .catch(() => {});
+  }, []);
+
+  const engagementData: { day: string; active: number; submissions: number }[] =
+    (snapshot?.weekly_engagement as typeof FALLBACK_ENGAGEMENT | undefined) ?? FALLBACK_ENGAGEMENT;
+
+  const totalStudents = (snapshot?.total_students as number | undefined) ??
+    courses.reduce((s, c) => s + ((c as unknown as Record<string, number>).enrolled_students ?? (c as unknown as Record<string, number>).enrolledStudents ?? 0), 0);
+  const activeCourses = (snapshot?.active_courses as number | undefined) ??
+    courses.filter(c => (c as unknown as Record<string, string>).status === 'active').length;
+  const totalActivities = (snapshot?.total_activities as number | undefined) ?? 0;
+  const completionRate  = (snapshot?.completion_rate as string | undefined) ?? '—';
 
   const recentCourses = courses.slice(0, 4);
-  const recentNotifs = notifications.slice(0, 4);
+  const recentNotifs  = notifications.slice(0, 4);
+
+  const quickStats = [
+    { label: 'Upcoming Deadlines', value: (snapshot?.upcoming_deadlines as number | undefined) ?? '—', color: 'text-red-600 bg-red-50'       },
+    { label: 'Pending Grading',    value: (snapshot?.pending_grading    as number | undefined) ?? '—', color: 'text-amber-600 bg-amber-50'   },
+    { label: 'New Enrollments',    value: (snapshot?.new_enrollments    as number | undefined) ?? '—', color: 'text-green-600 bg-green-50'   },
+    { label: 'Forum Posts',        value: (snapshot?.forum_posts        as number | undefined) ?? '—', color: 'text-indigo-600 bg-indigo-50' },
+  ];
 
   const stats = [
-    { label: 'Total Courses', value: courses.length, sub: `${activeCourses} active`, icon: BookOpen, color: 'bg-indigo-500', light: 'bg-indigo-50 text-indigo-600' },
-    { label: 'Enrolled Students', value: totalStudents.toLocaleString(), sub: 'Across all courses', icon: Users, color: 'bg-emerald-500', light: 'bg-emerald-50 text-emerald-600' },
-    { label: 'Total Activities', value: totalActivities, sub: 'Quizzes, assignments & more', icon: Activity, color: 'bg-purple-500', light: 'bg-purple-50 text-purple-600' },
-    { label: 'Completion Rate', value: '73%', sub: '+5% from last week', icon: TrendingUp, color: 'bg-amber-500', light: 'bg-amber-50 text-amber-600' },
+    { label: 'Total Courses',      value: courses.length,                sub: `${activeCourses} active`,          icon: BookOpen,  color: 'bg-indigo-500' },
+    { label: 'Enrolled Students',  value: totalStudents,                 sub: 'Across all courses',               icon: Users,     color: 'bg-emerald-500' },
+    { label: 'Total Activities',   value: totalActivities,               sub: 'Quizzes, assignments & more',       icon: Activity,  color: 'bg-purple-500' },
+    { label: 'Completion Rate',    value: completionRate,                sub: 'Average across all courses',        icon: TrendingUp,color: 'bg-amber-500' },
   ];
 
-  const activityFeed = [
-    { icon: CheckCircle, text: 'Alice Thompson submitted Quiz 1: Python Basics', time: '2 min ago', color: 'text-green-500' },
-    { icon: AlertCircle, text: 'Assignment 1: FizzBuzz due in 24 hours', time: '1 hr ago', color: 'text-amber-500' },
-    { icon: Users, text: '5 new students enrolled in Introduction to Python', time: '3 hr ago', color: 'text-indigo-500' },
-    { icon: Award, text: 'Carol White achieved 100% on Assignment 1', time: '5 hr ago', color: 'text-purple-500' },
-    { icon: Bell, text: 'Bob Martinez posted a question in Discussion Forum', time: '1 day ago', color: 'text-blue-500' },
-  ];
+  const activityFeed = notifications.slice(0, 5).map(n => ({
+    text:  (n as unknown as Record<string, string>).title   ?? '',
+    time:  (n as unknown as Record<string, string>).timestamp ?? '',
+    color: 'text-indigo-500',
+    icon:  Bell,
+  }));
 
   const getStatusBadge = (status: string) => {
     if (status === 'active') return 'bg-green-100 text-green-700';
@@ -54,7 +74,7 @@ export default function Dashboard() {
       {/* Welcome banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {currentUser.name.split(' ')[1]}! 👋</h1>
+          <h1 className="text-2xl font-bold">Welcome back, {String((currentUser as Record<string,unknown>).name ?? 'there').split(' ')[0]}! 👋</h1>
           <p className="text-indigo-200 mt-1">Here's what's happening with your courses today.</p>
         </div>
         <div className="flex gap-3 flex-wrap">
@@ -168,8 +188,8 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate group-hover:text-indigo-700">{course.name}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusBadge(course.status)}`}>{course.status}</span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1"><Users className="w-3 h-3" />{course.enrolledStudents}</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusBadge((course as unknown as Record<string,string>).status ?? '')}`}>{(course as unknown as Record<string,string>).status}</span>
+                    <span className="text-xs text-gray-400 flex items-center gap-1"><Users className="w-3 h-3" />{(course as unknown as Record<string,number>).enrolled_students ?? (course as unknown as Record<string,number>).enrolledStudents ?? 0}</span>
                   </div>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500" />
@@ -219,12 +239,7 @@ export default function Dashboard() {
 
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { label: 'Upcoming Deadlines', value: '7', color: 'text-red-600 bg-red-50' },
-          { label: 'Pending Grading', value: '23', color: 'text-amber-600 bg-amber-50' },
-          { label: 'New Enrollments', value: '15', color: 'text-green-600 bg-green-50' },
-          { label: 'Forum Posts', value: '42', color: 'text-indigo-600 bg-indigo-50' },
-        ].map(item => (
+        {quickStats.map(item => (
           <div key={item.label} className={`${item.color} rounded-xl p-4 text-center`}>
             <p className="text-2xl font-bold">{item.value}</p>
             <p className="text-xs font-medium mt-1 opacity-80">{item.label}</p>
