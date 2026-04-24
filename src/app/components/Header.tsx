@@ -6,11 +6,18 @@ import {
   CheckCheck, Menu, Puzzle
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const { editMode, toggleEditMode, unreadCount, totalUnreadMessages, notifications, markNotificationRead, markAllRead, setGlobalSearch, globalSearch, currentUser, conversations } = useApp();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
@@ -213,7 +220,7 @@ export function Header() {
               className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
             >
               <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                {currentUser.initials}
+                {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
               </div>
               <ChevronDown className="w-3 h-3 hidden sm:block" />
             </button>
@@ -232,7 +239,7 @@ export function Header() {
                     <Settings className="w-4 h-4 text-gray-400" /> Administration
                   </button>
                   <div className="border-t border-gray-100 mt-1 pt-1">
-                    <button className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <button onClick={handleLogout} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                       <LogOut className="w-4 h-4" /> Sign Out
                     </button>
                   </div>
