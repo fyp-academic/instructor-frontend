@@ -173,11 +173,6 @@ export default function ForgotPassword() {
                 Sign in
               </Link>
             </p>
-            <p className="flex items-center justify-center gap-1.5 text-sm text-gray-400">
-              <BookOpen className="w-3.5 h-3.5" />
-              Student?{' '}
-              <span className="text-indigo-600 font-medium">Use the student portal</span>
-            </p>
           </div>
         </div>
       </div>
