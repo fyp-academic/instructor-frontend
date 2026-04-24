@@ -106,10 +106,6 @@ export default function Login() {
             <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
               <Brain className="w-6 h-6 text-white" />
             </div>
-            <div>
-              <p className="text-lg font-bold leading-none">EduAI LMS</p>
-              <p className="text-indigo-300 text-xs mt-0.5">Instructor &amp; Admin Portal</p>
-            </div>
           </div>
 
           <h1 className="text-4xl font-extrabold leading-tight mb-4">
@@ -134,7 +130,7 @@ export default function Login() {
         <div className="relative z-10">
           <div className="h-px bg-white/10 mb-4" />
           <p className="text-indigo-400 text-xs">
-            © 2026 EduAI LMS · GPT-o4 Analytics Pipeline
+            &copy; · GPT-o4 Analytics Pipeline
           </p>
         </div>
       </div>
@@ -147,10 +143,6 @@ export default function Login() {
           <div className="flex items-center gap-2.5 mb-8 lg:hidden">
             <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
               <Brain className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-gray-900 leading-none">EduAI LMS</p>
-              <p className="text-xs text-gray-500">Instructor &amp; Admin Portal</p>
             </div>
           </div>
 
@@ -296,13 +288,6 @@ export default function Login() {
           <div className="mt-6 space-y-3 text-center text-sm text-gray-500">
             <p className="text-gray-400">
               Instructor accounts are created by administrators.
-            </p>
-            <p className="flex items-center justify-center gap-1.5">
-              <BookOpen className="w-3.5 h-3.5 text-gray-400" />
-              Student?{' '}
-              <a href={STUDENT_URL} className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
-                Go to student portal
-              </a>
             </p>
           </div>
         </div>
