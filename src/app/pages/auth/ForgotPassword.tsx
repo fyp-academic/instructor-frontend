@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router';
-import { Loader2, Brain, Mail, ArrowLeft, CheckCircle, BarChart3, Shield, Users, BookOpen } from 'lucide-react';
+import { Loader2, Sparkles, Mail, ArrowLeft, CheckCircle, BarChart3, Shield, Users, BookOpen } from 'lucide-react';
 import { authApi } from '../../services/api';
 
 const FEATURES = [
-  { icon: Brain,    label: 'AI-powered course insights & analytics' },
+  { icon: Sparkles,    label: 'AI-powered course insights & analytics' },
   { icon: BarChart3, label: 'Real-time student performance tracking' },
   { icon: Users,    label: 'Manage participants & grade submissions' },
   { icon: Shield,   label: 'Role-based access & administration panel' },
@@ -45,16 +45,6 @@ export default function ForgotPassword() {
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-14">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-lg font-bold leading-none">EduAI LMS</p>
-              <p className="text-indigo-300 text-xs mt-0.5">Instructor & Admin Portal</p>
-            </div>
-          </div>
-
           <h1 className="text-4xl font-extrabold leading-tight mb-4">
             Reset your<br />password
           </h1>
@@ -81,19 +71,8 @@ export default function ForgotPassword() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-gray-50">
+      <div className="flex-1 flex items-start sm:items-center justify-center p-6 sm:p-10 bg-gray-50">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-gray-900 leading-none">EduAI LMS</p>
-              <p className="text-xs text-gray-500">Instructor & Admin Portal</p>
-            </div>
-          </div>
-
           <Link
             to="/login"
             className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-indigo-600 mb-6 transition-colors"

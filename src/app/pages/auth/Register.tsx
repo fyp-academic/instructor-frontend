@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Eye, EyeOff, Loader2, Brain, CheckCircle2, Mail, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Loader2, UserCheck, CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface FormData {
@@ -54,7 +54,7 @@ export default function Register() {
   const [registered,  setRegistered]  = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState('');
 
-  const STUDENT_URL = import.meta.env.VITE_STUDENT_URL ?? 'http://localhost:5173';
+  const STUDENT_URL = import.meta.env.VITE_STUDENT_URL ?? 'https://apesudom.codagenz.com';
 
   const set = (key: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm(p => ({ ...p, [key]: e.target.value }));
@@ -108,16 +108,6 @@ export default function Register() {
         </div>
 
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-14">
-            <div className="w-11 h-11 bg-white/20 backdrop-blur rounded-xl flex items-center justify-center">
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <p className="text-lg font-bold leading-none">EduAI LMS</p>
-              <p className="text-indigo-300 text-xs mt-0.5">Instructor &amp; Admin Portal</p>
-            </div>
-          </div>
-
           <h1 className="text-4xl font-extrabold leading-tight mb-4">
             Start teaching<br />smarter today
           </h1>
@@ -147,19 +137,8 @@ export default function Register() {
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-center justify-center p-6 sm:p-10 bg-gray-50 overflow-y-auto">
+      <div className="flex-1 flex items-start sm:items-center justify-center p-6 sm:p-10 bg-gray-50 overflow-y-auto">
         <div className="w-full max-w-md py-6">
-
-          {/* Mobile logo */}
-          <div className="flex items-center gap-2.5 mb-8 lg:hidden">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-600 to-purple-700 rounded-xl flex items-center justify-center">
-              <Brain className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <p className="text-base font-bold text-gray-900 leading-none">EduAI LMS</p>
-              <p className="text-xs text-gray-500">Instructor &amp; Admin Portal</p>
-            </div>
-          </div>
 
           {registered ? (
             <div className="text-center">
@@ -235,7 +214,7 @@ export default function Register() {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1.5">Account type</label>
               <div className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-sm text-indigo-700 font-medium flex items-center gap-2">
-                <Brain className="w-4 h-4" />
+                <UserCheck className="w-4 h-4" />
                 Instructor
               </div>
               <p className="mt-1.5 text-xs text-gray-400">Admin accounts are created by system administrators.</p>
