@@ -15,14 +15,13 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Redirect to login on 401
+// Clear stale auth state on 401 so ProtectedRoute can redirect gracefully
 api.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('auth_token');
       localStorage.removeItem('auth_user');
-      window.location.href = '/login';
     }
     return Promise.reject(err);
   }
