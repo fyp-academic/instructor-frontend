@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router';
-import { Loader2, Sparkles, Eye, EyeOff, Lock, CheckCircle, ArrowLeft, BarChart3, Shield, Users } from 'lucide-react';
+import { Loader2, Eye, EyeOff, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
 import { authApi } from '../../services/api';
 
 interface FormData {
@@ -21,13 +21,6 @@ const PASSWORD_RULES = [
   { label: '8+ characters', test: (p: string) => p.length >= 8 },
   { label: 'Uppercase letter', test: (p: string) => /[A-Z]/.test(p) },
   { label: 'Number', test: (p: string) => /[0-9]/.test(p) },
-];
-
-const FEATURES = [
-  { icon: Sparkles,    label: 'AI-powered course insights & analytics' },
-  { icon: BarChart3, label: 'Real-time student performance tracking' },
-  { icon: Users,    label: 'Manage participants & grade submissions' },
-  { icon: Shield,   label: 'Role-based access & administration panel' },
 ];
 
 export default function ResetPassword() {
@@ -97,42 +90,7 @@ export default function ResetPassword() {
   }
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left branding panel ── */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-16 -left-16 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-0 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative z-10">
-          <h1 className="text-4xl font-extrabold leading-tight mb-4">
-            Create new<br />password
-          </h1>
-          <p className="text-indigo-200 text-base mb-12 max-w-xs">
-            Choose a strong password to keep your account secure.
-          </p>
-
-          <div className="space-y-5">
-            {FEATURES.map(f => (
-              <div key={f.label} className="flex items-center gap-4">
-                <div className="w-9 h-9 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center flex-shrink-0">
-                  <f.icon className="w-4 h-4 text-indigo-100" />
-                </div>
-                <p className="text-indigo-100 text-sm">{f.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="h-px bg-white/10 mb-4" />
-          <p className="text-indigo-400 text-xs"> &copy; 2026 apes-udom· GPT-o4 Analytics Pipeline</p>
-        </div>
-      </div>
-
-      {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-start sm:items-center justify-center p-6 sm:p-10 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center p-6 sm:p-10 bg-gray-50">
         <div className="w-full max-w-md">
           <Link
             to="/login"
@@ -240,7 +198,6 @@ export default function ResetPassword() {
             </form>
           )}
         </div>
-      </div>
     </div>
   );
 }

@@ -1,14 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Mail, CheckCircle, XCircle, Loader2, ArrowRight, RefreshCw, Sparkles, BarChart3, Shield, Users } from 'lucide-react';
+import { Mail, CheckCircle, XCircle, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
 import { authApi } from '../../services/api';
-
-const FEATURES = [
-  { icon: Sparkles,    label: 'AI-powered course insights & analytics' },
-  { icon: BarChart3, label: 'Real-time student performance tracking' },
-  { icon: Users,    label: 'Manage participants & grade submissions' },
-  { icon: Shield,   label: 'Role-based access & administration panel' },
-];
 
 export default function VerifyEmail() {
   const navigate = useNavigate();
@@ -72,42 +65,7 @@ export default function VerifyEmail() {
   }[status];
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left branding panel ── */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-16 -left-16 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-0 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative z-10">
-          <h1 className="text-4xl font-extrabold leading-tight mb-4">
-            Email<br />verification
-          </h1>
-          <p className="text-indigo-200 text-base mb-12 max-w-xs">
-            Enter the verification code sent to your email to activate your account.
-          </p>
-
-          <div className="space-y-5">
-            {FEATURES.map(f => (
-              <div key={f.label} className="flex items-center gap-4">
-                <div className="w-9 h-9 bg-white/15 backdrop-blur rounded-xl flex items-center justify-center flex-shrink-0">
-                  <f.icon className="w-4 h-4 text-indigo-100" />
-                </div>
-                <p className="text-indigo-100 text-sm">{f.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="relative z-10">
-          <div className="h-px bg-white/10 mb-4" />
-          <p className="text-indigo-400 text-xs">© 2026 EduAI LMS · GPT-o4 Analytics Pipeline</p>
-        </div>
-      </div>
-
-      {/* ── Right content panel ── */}
-      <div className="flex-1 flex items-start sm:items-center justify-center p-6 sm:p-10 bg-gray-50">
+    <div className="min-h-screen flex items-center justify-center p-6 sm:p-10 bg-gray-50">
         <div className="w-full max-w-md text-center">
           <div className={`w-20 h-20 ${bgColor} rounded-full flex items-center justify-center mx-auto mb-6`}>
             {icon}
@@ -189,7 +147,6 @@ export default function VerifyEmail() {
             </div>
           )}
         </div>
-      </div>
     </div>
   );
 }
