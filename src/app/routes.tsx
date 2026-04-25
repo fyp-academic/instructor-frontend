@@ -101,7 +101,7 @@ export const router = createBrowserRouter([
   { path: '/register', element: <Register /> },
   { path: '/forgot-password', element: <ForgotPassword /> },
   { path: '/reset-password', element: <ResetPassword /> },
-  { path: '/verify-email/:id/:hash', element: <VerifyEmail /> },
+  { path: '/verify-email', element: <VerifyEmail /> },
 
   // Landing redirect
   { index: true, element: <LandingRedirect /> },

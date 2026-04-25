@@ -75,10 +75,10 @@ export default function Login() {
     setResending(true);
     setResendSuccess(false);
     try {
-      await authApi.resendVerification();
+      await authApi.resendVerification(unverifiedEmail);
       setResendSuccess(true);
     } catch {
-      setApiError('Failed to resend verification email. Please try again.');
+      setApiError('Failed to resend verification code. Please try again.');
     } finally {
       setResending(false);
     }
@@ -179,11 +179,19 @@ export default function Login() {
                   <p className="font-semibold text-amber-800 mb-1">Email not verified</p>
                   <p className="text-sm text-amber-700 mb-3">
                     Please verify <strong>{unverifiedEmail}</strong> before logging in.
-                    Check your inbox for the verification link.
+                    Check your inbox for the 6-digit verification code.
                   </p>
+                  <div className="flex items-center gap-3 mb-3">
+                    <Link
+                      to={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
+                      className="text-sm text-indigo-600 font-semibold hover:text-indigo-800 inline-flex items-center gap-1"
+                    >
+                      <ArrowRight className="w-3 h-3" /> Enter verification code
+                    </Link>
+                  </div>
                   {resendSuccess ? (
                     <p className="text-sm text-emerald-700 font-medium">
-                      ✓ Verification email sent! Check your inbox.
+                      ✓ Verification code sent! Check your inbox.
                     </p>
                   ) : (
                     <button
@@ -195,7 +203,7 @@ export default function Login() {
                       {resending ? (
                         <><Loader2 className="w-3 h-3 animate-spin" /> Sending…</>
                       ) : (
-                        <><ArrowRight className="w-3 h-3" /> Resend verification email</>
+                        <><ArrowRight className="w-3 h-3" /> Resend verification code</>
                       )}
                     </button>
                   )}

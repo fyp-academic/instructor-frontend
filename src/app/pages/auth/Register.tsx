@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Eye, EyeOff, Loader2, Brain, CheckCircle2, Mail } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Brain, CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface FormData {
@@ -168,9 +168,15 @@ export default function Register() {
               </div>
               <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify your email</h2>
               <p className="text-gray-500 mb-6">
-                We've sent a verification link to <strong>{registeredEmail}</strong>.
-                Please check your inbox and click the link to activate your account.
+                We've sent a 6-digit verification code to <strong>{registeredEmail}</strong>.
+                Please check your inbox and enter the code below to activate your account.
               </p>
+              <Link
+                to={`/verify-email?email=${encodeURIComponent(registeredEmail)}`}
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors mb-6"
+              >
+                Enter Verification Code <ArrowRight className="w-4 h-4" />
+              </Link>
               <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 mb-6">
                 <p className="text-sm text-indigo-700">
                   Didn't receive the email? Check your spam folder or{' '}

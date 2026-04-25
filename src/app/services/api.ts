@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL ?? 'https://api.codagenz.com/api/v1';
 
 export const api = axios.create({
   baseURL: BASE_URL,
@@ -38,8 +38,10 @@ export const authApi = {
   logout: () => api.post('/auth/logout'),
   forgotPassword: (email: string) => api.post('/auth/forgot-password', { email }),
   resetPassword: (data: Record<string, unknown>) => api.post('/auth/reset-password', data),
-  resendVerification: () => api.post('/auth/email/resend'),
-  verifyEmail: (id: string, hash: string) => api.get(`/auth/verify-email/${id}/${hash}`),
+  resendVerification: (email?: string) => api.post('/auth/verify-email/resend', email ? { email } : {}),
+  verifyEmailCode: (email: string, code: string) => api.post('/auth/verify-email-code', { email, code }),
+  parseRegistration: (registrationNumber: string) =>
+    api.post('/auth/parse-registration', { registration_number: registrationNumber }),
 };
 
 // ─── Dashboards ──────────────────────────────────────────────────────────────
@@ -123,6 +125,26 @@ export const usersApi = {
   list:   () => api.get('/users'),
   create: (data: Record<string, unknown>) => api.post('/auth/register', data),
   adminStats: () => api.get('/dashboard/admin'),
+};
+
+// ─── Colleges & Degree Programmes ─────────────────────────────────────────────
+export const collegesApi = {
+  list:   () => api.get('/colleges'),
+  create: (data: Record<string, unknown>) => api.post('/colleges', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/colleges/${id}`, data),
+  delete: (id: string) => api.delete(`/colleges/${id}`),
+};
+
+export const degreeProgrammesApi = {
+  list:   (collegeId?: string) => api.get('/degree-programmes', { params: collegeId ? { college_id: collegeId } : {} }),
+  show:   (id: string) => api.get(`/degree-programmes/${id}`),
+  create: (data: Record<string, unknown>) => api.post('/degree-programmes', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/degree-programmes/${id}`, data),
+  delete: (id: string) => api.delete(`/degree-programmes/${id}`),
+  assignInstructors: (id: string, instructorIds: string[]) =>
+    api.post(`/degree-programmes/${id}/instructors`, { instructor_ids: instructorIds }),
+  students: (id: string) => api.get(`/degree-programmes/${id}/students`),
+  courses:  (id: string) => api.get(`/degree-programmes/${id}/courses`),
 };
 
 // ─── Profile ──────────────────────────────────────────────────────────────────

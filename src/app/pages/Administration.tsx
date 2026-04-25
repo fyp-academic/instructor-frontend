@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2 } from 'lucide-react';
+import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useNavigate } from 'react-router';
-import { usersApi, dashboardApi } from '../services/api';
+import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi } from '../services/api';
 
-type AdminTab = 'users' | 'courses' | 'categories' | 'system';
+type AdminTab = 'users' | 'courses' | 'categories' | 'colleges' | 'degreeProgrammes' | 'system';
 
 type UserRow = Record<string, unknown>;
 
 const ROLES = ['student', 'instructor', 'admin'];
 
-const emptyForm = { name: '', email: '', password: '', role: 'student', department: '', institution: '', country: '', language: '' };
+const emptyForm = { name: '', email: '', password: '', role: 'student', registration_number: '', department: '', institution: '', country: '', language: '' };
 
 export default function Administration() {
   const { courses, deleteCourse, categories } = useApp();
@@ -27,6 +27,29 @@ export default function Administration() {
   const [addLoading, setAddLoading]     = useState(false);
   const [addError, setAddError]         = useState('');
 
+  // Colleges & degree programmes state
+  const [colleges, setColleges] = useState<Array<{id: string; name: string; code: string; description?: string}>>([]);
+  const [programmes, setProgrammes] = useState<Array<{id: string; name: string; code: string; college_id: string; college?: {name: string}}>>([]);
+  const [loadingData, setLoadingData] = useState(false);
+
+  const [showCollegeModal, setShowCollegeModal] = useState(false);
+  const [collegeForm, setCollegeForm] = useState({ name: '', code: '', description: '' });
+  const [collegeLoading, setCollegeLoading] = useState(false);
+  const [collegeError, setCollegeError] = useState('');
+
+  const [showProgrammeModal, setShowProgrammeModal] = useState(false);
+  const [programmeForm, setProgrammeForm] = useState({ name: '', code: '', college_id: '', description: '' });
+  const [programmeLoading, setProgrammeLoading] = useState(false);
+  const [programmeError, setProgrammeError] = useState('');
+
+  // Degree programme action modals
+  const [modalProgId, setModalProgId] = useState<string | null>(null);
+  const [modalType, setModalType] = useState<'students' | 'courses' | 'instructors' | null>(null);
+  const [modalData, setModalData] = useState<Array<Record<string, unknown>>>([]);
+  const [modalLoading, setModalLoading] = useState(false);
+  const [instructorIds, setInstructorIds] = useState<string[]>([]);
+  const [assignLoading, setAssignLoading] = useState(false);
+
   useEffect(() => {
     dashboardApi.adminOverview().then(r => {
       setAdminStats(r.data ?? {});
@@ -37,7 +60,25 @@ export default function Administration() {
       const data = r.data.data ?? r.data ?? [];
       setUsers(data);
     }).catch(() => {});
+
+    loadCollegesAndProgrammes();
   }, []);
+
+  const loadCollegesAndProgrammes = async () => {
+    setLoadingData(true);
+    try {
+      const [cRes, pRes] = await Promise.all([
+        collegesApi.list(),
+        degreeProgrammesApi.list(),
+      ]);
+      setColleges(cRes.data.data ?? []);
+      setProgrammes(pRes.data.data ?? []);
+    } catch {
+      // ignore
+    } finally {
+      setLoadingData(false);
+    }
+  };
 
   const filteredUsers = users.filter(u => {
     const name  = String(u.name ?? '').toLowerCase();
@@ -64,6 +105,8 @@ export default function Administration() {
     { id: 'users', label: 'Users', icon: Users },
     { id: 'courses', label: 'Courses', icon: BookOpen },
     { id: 'categories', label: 'Categories', icon: FolderOpen },
+    { id: 'colleges', label: 'Colleges', icon: Building2 },
+    { id: 'degreeProgrammes', label: 'Degree Programmes', icon: GraduationCap },
     { id: 'system', label: 'System', icon: Settings },
   ];
 
@@ -85,8 +128,8 @@ export default function Administration() {
         {[
           { label: 'Total Users',       value: Number(adminStats.total_users       ?? users.length),                              icon: Users,    color: 'text-indigo-600 bg-indigo-50' },
           { label: 'Active Courses',    value: Number(adminStats.active_courses    ?? courses.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
-          { label: 'Categories',        value: Number(adminStats.total_categories  ?? categories.length),                         icon: FolderOpen, color: 'text-amber-600 bg-amber-50'  },
-          { label: 'Total Enrollments', value: Number(adminStats.total_enrollments ?? courses.reduce((s, c) => s + c.enrolledStudents, 0)), icon: UserPlus, color: 'text-purple-600 bg-purple-50' },
+          { label: 'Colleges',          value: Number(adminStats.total_colleges    ?? colleges.length),                             icon: Building2, color: 'text-amber-600 bg-amber-50'  },
+          { label: 'Degree Programmes', value: Number(adminStats.total_programmes  ?? programmes.length),                            icon: GraduationCap, color: 'text-purple-600 bg-purple-50' },
         ].map(stat => (
           <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
             <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
@@ -137,19 +180,21 @@ export default function Administration() {
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">User</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Email</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Last Access</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Reg. No</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Programme</th>
                       <th className="px-4 py-3"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredUsers.length === 0 ? (
-                      <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">No users found. Use "Add User" to create accounts.</td></tr>
+                      <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">No users found. Use "Add User" to create accounts.</td></tr>
                     ) : filteredUsers.slice(0, 10).map((user, ui) => {
                       const uid     = String(user.id ?? ui);
                       const uname   = String(user.name ?? '');
                       const uemail  = String(user.email ?? '');
                       const urole   = String(user.role ?? 'student');
-                      const ulast   = String(user.last_login ?? user.lastAccess ?? 'Never');
+                      const ureg    = String(user.registration_number ?? '');
+                      const uprog   = String((user.degree_programme as {name?: string})?.name ?? user.degree_programme_id ?? '—');
                       const initials = uname.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                       return (
                         <tr key={uid} className="hover:bg-gray-50">
@@ -163,7 +208,8 @@ export default function Administration() {
                           <td className="px-4 py-3">
                             <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${roleColors[urole] ?? 'bg-gray-100 text-gray-600'}`}>{urole}</span>
                           </td>
-                          <td className="px-4 py-3 text-sm text-gray-400 hidden md:table-cell">{ulast}</td>
+                          <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{ureg || '—'}</td>
+                          <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{uprog}</td>
                           <td className="px-4 py-3">
                             <div className="relative" onClick={e => e.stopPropagation()}>
                               <button onClick={() => setMenuOpenId(menuOpenId === uid ? null : uid)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">
@@ -268,6 +314,144 @@ export default function Administration() {
                         <td className="px-4 py-3 text-gray-400 font-mono text-xs hidden sm:table-cell">{cat.idNumber}</td>
                         <td className="px-4 py-3 text-gray-600">{cat.courseCount}</td>
                         <td className="px-4 py-3 text-gray-600 hidden md:table-cell">{cat.childCount}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Colleges Tab */}
+          {activeTab === 'colleges' && (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <button onClick={() => { setCollegeForm({ name: '', code: '', description: '' }); setCollegeError(''); setShowCollegeModal(true); }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+                  <Plus className="w-4 h-4" /> Add College
+                </button>
+              </div>
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Description</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {colleges.length === 0 ? (
+                      <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">No colleges found. Use "Add College" to create one.</td></tr>
+                    ) : colleges.map(college => (
+                      <tr key={college.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{college.name}</td>
+                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{college.code}</td>
+                        <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{college.description || '—'}</td>
+                        <td className="px-4 py-3">
+                          <button onClick={async () => {
+                            if (confirm(`Delete college "${college.name}"?`)) {
+                              try { await collegesApi.delete(college.id); setColleges(prev => prev.filter(c => c.id !== college.id)); } catch {}
+                            }
+                          }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* Degree Programmes Tab */}
+          {activeTab === 'degreeProgrammes' && (
+            <div className="space-y-4">
+              <div className="flex justify-end">
+                <button onClick={() => { setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '' }); setProgrammeError(''); setShowProgrammeModal(true); }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+                  <Plus className="w-4 h-4" /> Add Degree Programme
+                </button>
+              </div>
+              <div className="border border-gray-200 rounded-xl overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">College</th>
+                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                      <th className="px-4 py-3"></th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {programmes.length === 0 ? (
+                      <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">No degree programmes found. Use "Add Degree Programme" to create one.</td></tr>
+                    ) : programmes.map(p => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
+                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.code}</td>
+                        <td className="px-4 py-3 text-gray-500">{p.college?.name ?? colleges.find(c => c.id === p.college_id)?.name ?? '—'}</td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={async () => {
+                                setModalProgId(p.id);
+                                setModalType('students');
+                                setModalLoading(true);
+                                try {
+                                  const r = await degreeProgrammesApi.students(p.id);
+                                  setModalData(r.data.data ?? []);
+                                } catch { setModalData([]); }
+                                finally { setModalLoading(false); }
+                              }}
+                              className="text-[11px] px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium"
+                            >
+                              Students
+                            </button>
+                            <button
+                              onClick={async () => {
+                                setModalProgId(p.id);
+                                setModalType('courses');
+                                setModalLoading(true);
+                                try {
+                                  const r = await degreeProgrammesApi.courses(p.id);
+                                  setModalData(r.data.data ?? []);
+                                } catch { setModalData([]); }
+                                finally { setModalLoading(false); }
+                              }}
+                              className="text-[11px] px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
+                            >
+                              Courses
+                            </button>
+                            <button
+                              onClick={async () => {
+                                setModalProgId(p.id);
+                                setModalType('instructors');
+                                setInstructorIds([]);
+                                setModalLoading(true);
+                                try {
+                                  const res = await degreeProgrammesApi.show(p.id);
+                                  const instructors = res.data.data?.instructors ?? res.data.instructors ?? [];
+                                  setInstructorIds(instructors.map((inst: any) => String(inst.id ?? inst)));
+                                } catch { /* ignore */ }
+                                finally { setModalLoading(false); }
+                              }}
+                              className="text-[11px] px-2 py-1 rounded-md bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
+                            >
+                              Instructors
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button onClick={async () => {
+                            if (confirm(`Delete degree programme "${p.name}"?`)) {
+                              try { await degreeProgrammesApi.delete(p.id); setProgrammes(prev => prev.filter(x => x.id !== p.id)); } catch {}
+                            }
+                          }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -387,6 +571,223 @@ export default function Administration() {
               >
                 {addLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                 Create User
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add College Modal */}
+      {showCollegeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !collegeLoading && setShowCollegeModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Add New College</h2>
+              <button onClick={() => setShowCollegeModal(false)} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
+            </div>
+            {collegeError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{collegeError}</p>}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
+                <input type="text" value={collegeForm.name} onChange={e => setCollegeForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g., College of Informatics and Virtual Education" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Code</label>
+                <input type="text" value={collegeForm.code} onChange={e => setCollegeForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g., CIVE" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
+                <input type="text" value={collegeForm.description} onChange={e => setCollegeForm(p => ({ ...p, description: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Optional description" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setShowCollegeModal(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600">Cancel</button>
+              <button
+                disabled={!collegeForm.name || !collegeForm.code || collegeLoading}
+                onClick={async () => {
+                  setCollegeLoading(true); setCollegeError('');
+                  try {
+                    const r = await collegesApi.create(collegeForm);
+                    const created = r.data.data ?? r.data;
+                    setColleges(prev => [created, ...prev]);
+                    setShowCollegeModal(false);
+                    setCollegeForm({ name: '', code: '', description: '' });
+                  } catch (e: unknown) {
+                    const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to create college.';
+                    setCollegeError(msg);
+                  } finally { setCollegeLoading(false); }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {collegeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create College
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Degree Programme Action Modal */}
+      {modalType && modalProgId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => { setModalType(null); setModalProgId(null); }} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">
+                {modalType === 'students' && 'Students'}
+                {modalType === 'courses' && 'Courses'}
+                {modalType === 'instructors' && 'Assign Instructors'}
+                {' — '}
+                {programmes.find(p => p.id === modalProgId)?.name}
+              </h2>
+              <button onClick={() => { setModalType(null); setModalProgId(null); }} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
+            </div>
+
+            {modalLoading ? (
+              <div className="flex items-center justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-indigo-600" /></div>
+            ) : (
+              <>
+                {modalType === 'instructors' ? (
+                  <div className="space-y-4">
+                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl">
+                      {users.filter(u => String(u.role) === 'instructor').length === 0 ? (
+                        <p className="p-4 text-sm text-gray-500">No instructors found.</p>
+                      ) : (
+                        users.filter(u => String(u.role) === 'instructor').map(inst => (
+                          <label key={String(inst.id)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0">
+                            <input
+                              type="checkbox"
+                              checked={instructorIds.includes(String(inst.id))}
+                              onChange={e => {
+                                const id = String(inst.id);
+                                setInstructorIds(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id));
+                              }}
+                              className="w-4 h-4 text-indigo-600 rounded border-gray-300"
+                            />
+                            <span className="text-sm text-gray-700">{String(inst.name)}</span>
+                            <span className="text-xs text-gray-400">{String(inst.email)}</span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => { setModalType(null); setModalProgId(null); }}
+                        className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        disabled={assignLoading}
+                        onClick={async () => {
+                          setAssignLoading(true);
+                          try {
+                            await degreeProgrammesApi.assignInstructors(modalProgId, instructorIds);
+                            setModalType(null); setModalProgId(null);
+                          } catch {
+                            alert('Failed to assign instructors.');
+                          } finally { setAssignLoading(false); }
+                        }}
+                        className="px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2"
+                      >
+                        {assignLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                        Assign Selected
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border border-gray-200 rounded-xl overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                          <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">
+                            {modalType === 'students' ? 'Name' : 'Course'}
+                          </th>
+                          <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">
+                            {modalType === 'students' ? 'Email' : 'Instructor'}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {modalData.length === 0 ? (
+                          <tr><td colSpan={2} className="px-4 py-6 text-center text-sm text-gray-400">No {modalType} found.</td></tr>
+                        ) : modalData.map((item, idx) => (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 font-medium text-gray-900">
+                              {modalType === 'students' ? String(item.name ?? '') : String(item.name ?? item.title ?? '')}
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">
+                              {modalType === 'students' ? String(item.email ?? '') : String(item.instructor_name ?? item.instructor ?? '')}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Degree Programme Modal */}
+      {showProgrammeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !programmeLoading && setShowProgrammeModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Add Degree Programme</h2>
+              <button onClick={() => setShowProgrammeModal(false)} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
+            </div>
+            {programmeError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{programmeError}</p>}
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Name</label>
+                <input type="text" value={programmeForm.name} onChange={e => setProgrammeForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g., Bachelor of Science in Computer Science" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Code</label>
+                <input type="text" value={programmeForm.code} onChange={e => setProgrammeForm(p => ({ ...p, code: e.target.value.toUpperCase() }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g., CS" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">College</label>
+                <select
+                  value={programmeForm.college_id}
+                  onChange={e => setProgrammeForm(p => ({ ...p, college_id: e.target.value }))}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                >
+                  <option value="">Select a college</option>
+                  {colleges.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
+                <input type="text" value={programmeForm.description} onChange={e => setProgrammeForm(p => ({ ...p, description: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Optional description" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <button onClick={() => setShowProgrammeModal(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600">Cancel</button>
+              <button
+                disabled={!programmeForm.name || !programmeForm.code || !programmeForm.college_id || programmeLoading}
+                onClick={async () => {
+                  setProgrammeLoading(true); setProgrammeError('');
+                  try {
+                    const r = await degreeProgrammesApi.create(programmeForm);
+                    const created = r.data.data ?? r.data;
+                    setProgrammes(prev => [created, ...prev]);
+                    setShowProgrammeModal(false);
+                    setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '' });
+                  } catch (e: unknown) {
+                    const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to create degree programme.';
+                    setProgrammeError(msg);
+                  } finally { setProgrammeLoading(false); }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {programmeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create Programme
               </button>
             </div>
           </div>
