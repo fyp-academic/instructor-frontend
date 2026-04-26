@@ -1,6 +1,29 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi } from '../services/api';
 
+interface DegreeProgramme {
+  id: string;
+  name: string;
+  code: string;
+  college_id: string;
+  college?: {
+    id: string;
+    name: string;
+    code: string;
+  };
+  duration_years?: number;
+}
+
+interface AuthPermissions {
+  can_manage_colleges: boolean;
+  can_manage_degree_programmes: boolean;
+  can_manage_courses: boolean;
+  can_manage_categories: boolean;
+  can_manage_instructors: boolean;
+  can_manage_students: boolean;
+  can_view_students: boolean;
+}
+
 interface AuthUser {
   id: string;
   name: string;
@@ -13,6 +36,19 @@ interface AuthUser {
   timezone?: string;
   language?: string;
   bio?: string;
+  degree_programme_id?: string;
+  registration_number?: string;
+  year_of_study?: number;
+  education_level?: string;
+  nationality?: string;
+}
+
+interface AuthData {
+  user: AuthUser;
+  permissions: AuthPermissions;
+  assigned_programme_ids?: string[];
+  assigned_programmes?: DegreeProgramme[];
+  degree_programme?: DegreeProgramme;
 }
 
 interface AuthContextType {
@@ -20,6 +56,11 @@ interface AuthContextType {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  permissions: AuthPermissions | null;
+  assignedProgrammes: DegreeProgramme[];
+  isAdmin: boolean;
+  isInstructor: boolean;
+  isStudent: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (data: Record<string, unknown>) => Promise<void>;
   logout: () => Promise<void>;
@@ -35,12 +76,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser]     = useState<AuthUser | null>(null);
   const [token, setToken]   = useState<string | null>(localStorage.getItem('auth_token'));
   const [isLoading, setIsLoading] = useState(true);
+  const [permissions, setPermissions] = useState<AuthPermissions | null>(null);
+  const [assignedProgrammes, setAssignedProgrammes] = useState<DegreeProgramme[]>([]);
+
+  const isAdmin = user?.role === 'admin';
+  const isInstructor = user?.role === 'instructor';
+  const isStudent = user?.role === 'student';
 
   useEffect(() => {
     const stored = localStorage.getItem('auth_user');
+    const storedPerms = localStorage.getItem('auth_permissions');
+    const storedProgrammes = localStorage.getItem('auth_programmes');
+
     if (stored) {
       try { setUser(JSON.parse(stored)); } catch { /* ignore */ }
     }
+    if (storedPerms) {
+      try { setPermissions(JSON.parse(storedPerms)); } catch { /* ignore */ }
+    }
+    if (storedProgrammes) {
+      try { setAssignedProgrammes(JSON.parse(storedProgrammes)); } catch { /* ignore */ }
+    }
+
     if (token) {
       authApi.me()
         .then((res) => {
@@ -51,8 +108,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           setToken(null);
           setUser(null);
+          setPermissions(null);
+          setAssignedProgrammes([]);
           localStorage.removeItem('auth_token');
           localStorage.removeItem('auth_user');
+          localStorage.removeItem('auth_permissions');
+          localStorage.removeItem('auth_programmes');
         })
         .finally(() => setIsLoading(false));
     } else {
@@ -65,10 +126,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = res.data;
     const t    = data.token ?? data.access_token;
     const u    = data.user  ?? data.data;
+    const perms = data.permissions ?? null;
+    const programmes = data.assigned_programmes ?? [];
+
     localStorage.setItem('auth_token', t);
     localStorage.setItem('auth_user',  JSON.stringify(u));
+    if (perms) {
+      localStorage.setItem('auth_permissions', JSON.stringify(perms));
+    }
+    if (programmes?.length) {
+      localStorage.setItem('auth_programmes', JSON.stringify(programmes));
+    }
+
     setToken(t);
     setUser(u);
+    setPermissions(perms);
+    setAssignedProgrammes(programmes);
   };
 
   const register = async (data: Record<string, unknown>) => {
@@ -80,8 +153,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try { await authApi.logout(); } catch { /* ignore */ }
     localStorage.removeItem('auth_token');
     localStorage.removeItem('auth_user');
+    localStorage.removeItem('auth_permissions');
+    localStorage.removeItem('auth_programmes');
     setToken(null);
     setUser(null);
+    setPermissions(null);
+    setAssignedProgrammes([]);
   };
 
   const forgotPassword = async (email: string) => {
@@ -103,6 +180,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{
       user, token, isAuthenticated: !!token, isLoading,
+      permissions, assignedProgrammes,
+      isAdmin, isInstructor, isStudent,
       login, register, logout,
       forgotPassword, resetPassword, resendVerification, verifyEmailCode
     }}>

@@ -45,6 +45,9 @@ export const authApi = {
 
 // ─── Dashboards ──────────────────────────────────────────────────────────────
 export const dashboardApi = {
+  // Unified dashboard - returns data based on user's role
+  getDashboard: () => api.get('/dashboard'),
+  // Role-specific endpoints
   adminOverview:      () => api.get('/dashboard/admin'),
   instructorSnapshot: (courseId?: string) =>
     api.get('/dashboard/instructor', { params: { course_id: courseId } }),

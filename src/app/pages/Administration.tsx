@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2 } from 'lucide-react';
+import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2, Lock } from 'lucide-react';
 import { useApp } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
 import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi } from '../services/api';
 
@@ -14,6 +15,7 @@ const emptyForm = { name: '', email: '', password: '', role: 'student', registra
 
 export default function Administration() {
   const { courses, deleteCourse, categories } = useApp();
+  const { user, permissions, isAdmin, isInstructor, assignedProgrammes } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
   const [users, setUsers]         = useState<UserRow[]>([]);
@@ -50,19 +52,34 @@ export default function Administration() {
   const [instructorIds, setInstructorIds] = useState<string[]>([]);
   const [assignLoading, setAssignLoading] = useState(false);
 
+  // Redirect if not admin or instructor
   useEffect(() => {
-    dashboardApi.adminOverview().then(r => {
-      setAdminStats(r.data ?? {});
+    if (!user || (!isAdmin && !isInstructor)) {
+      navigate('/dashboard');
+      return;
+    }
+  }, [user, isAdmin, isInstructor, navigate]);
+
+  useEffect(() => {
+    // Use unified dashboard for all roles
+    dashboardApi.getDashboard().then(r => {
+      const data = r.data ?? {};
+      setAdminStats(data.stats ?? {});
     }).catch(() => {});
 
-    // Fetch users list
-    usersApi.list().then(r => {
-      const data = r.data.data ?? r.data ?? [];
-      setUsers(data);
-    }).catch(() => {});
+    // Fetch users list (role-based filtering happens on backend)
+    if (permissions?.can_view_students) {
+      usersApi.list().then(r => {
+        const data = r.data.data ?? r.data ?? [];
+        setUsers(data);
+      }).catch(() => {});
+    }
 
-    loadCollegesAndProgrammes();
-  }, []);
+    // Only load colleges if admin
+    if (isAdmin) {
+      loadCollegesAndProgrammes();
+    }
+  }, [permissions, isAdmin]);
 
   const loadCollegesAndProgrammes = async () => {
     setLoadingData(true);
@@ -101,36 +118,61 @@ export default function Administration() {
     student: 'bg-blue-100 text-blue-700',
   };
 
-  const tabs: { id: AdminTab; label: string; icon: React.ElementType }[] = [
-    { id: 'users', label: 'Users', icon: Users },
-    { id: 'courses', label: 'Courses', icon: BookOpen },
-    { id: 'categories', label: 'Categories', icon: FolderOpen },
-    { id: 'colleges', label: 'Colleges', icon: Building2 },
-    { id: 'degreeProgrammes', label: 'Degree Programmes', icon: GraduationCap },
-    { id: 'system', label: 'System', icon: Settings },
+  // Filter tabs based on role permissions
+  type PermissionKey = 'can_manage_colleges' | 'can_manage_degree_programmes' | 'can_manage_courses' | 'can_manage_categories' | 'can_manage_instructors' | 'can_manage_students' | 'can_view_students';
+
+  const allTabs: { id: AdminTab; label: string; icon: React.ElementType; requiredPermission?: PermissionKey }[] = [
+    { id: 'users', label: isAdmin ? 'All Users' : 'My Students', icon: Users, requiredPermission: 'can_view_students' },
+    { id: 'courses', label: isAdmin ? 'All Courses' : 'My Courses', icon: BookOpen },
+    { id: 'categories', label: 'Categories', icon: FolderOpen, requiredPermission: 'can_manage_categories' },
+    { id: 'colleges', label: 'Colleges', icon: Building2, requiredPermission: 'can_manage_colleges' },
+    { id: 'degreeProgrammes', label: 'Degree Programmes', icon: GraduationCap, requiredPermission: 'can_manage_degree_programmes' },
+    { id: 'system', label: 'System', icon: Settings, requiredPermission: 'can_manage_colleges' },
   ];
+
+  const tabs = allTabs.filter(tab => {
+    if (!tab.requiredPermission) return true;
+    return permissions?.[tab.requiredPermission] ?? false;
+  });
 
   return (
     <div className="space-y-6" onClick={() => setMenuOpenId(null)}>
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Administration</h1>
-          <p className="text-sm text-gray-500">Manage users, courses, categories, and system settings</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {isAdmin ? 'Administration' : 'Programme Management'}
+          </h1>
+          <p className="text-sm text-gray-500">
+            {isAdmin
+              ? 'Manage users, courses, categories, and system settings'
+              : `Manage students and courses for your assigned programme${assignedProgrammes.length > 1 ? 's' : ''}`}
+          </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <Shield className="w-4 h-4 text-amber-600" />
-          Admin Mode
+        <div className={`flex items-center gap-2 text-xs rounded-lg px-3 py-2 ${isAdmin ? 'bg-amber-50 border border-amber-200 text-amber-700' : 'bg-indigo-50 border border-indigo-200 text-indigo-700'}`}>
+          {isAdmin ? <Shield className="w-4 h-4 text-amber-600" /> : <GraduationCap className="w-4 h-4 text-indigo-600" />}
+          {isAdmin ? 'Admin Mode' : 'Instructor Mode'}
         </div>
       </div>
 
-      {/* Overview stats */}
+      {/* Overview stats - role-based */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: 'Total Users',       value: Number(adminStats.total_users       ?? users.length),                              icon: Users,    color: 'text-indigo-600 bg-indigo-50' },
-          { label: 'Active Courses',    value: Number(adminStats.active_courses    ?? courses.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
-          { label: 'Colleges',          value: Number(adminStats.total_colleges    ?? colleges.length),                             icon: Building2, color: 'text-amber-600 bg-amber-50'  },
-          { label: 'Degree Programmes', value: Number(adminStats.total_programmes  ?? programmes.length),                            icon: GraduationCap, color: 'text-purple-600 bg-purple-50' },
-        ].map(stat => (
+        {(isAdmin ? (
+          // Admin sees all stats
+          [
+            { label: 'Total Users',       value: Number(adminStats.total_users       ?? users.length),                              icon: Users,    color: 'text-indigo-600 bg-indigo-50' },
+            { label: 'Active Courses',    value: Number(adminStats.active_courses    ?? courses.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
+            { label: 'Colleges',          value: Number(adminStats.total_colleges    ?? colleges.length),                             icon: Building2, color: 'text-amber-600 bg-amber-50'  },
+            { label: 'Degree Programmes', value: Number(adminStats.total_degree_programmes ?? programmes.length),                      icon: GraduationCap, color: 'text-purple-600 bg-purple-50' },
+          ]
+        ) : (
+          // Instructor sees programme-specific stats
+          [
+            { label: 'My Students',       value: Number(adminStats.total_students ?? users.length),                                 icon: Users,    color: 'text-indigo-600 bg-indigo-50' },
+            { label: 'Active Courses',    value: Number(adminStats.active_courses ?? courses.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
+            { label: 'Assigned Programmes', value: Number(adminStats.assigned_programmes ?? assignedProgrammes.length),               icon: GraduationCap, color: 'text-purple-600 bg-purple-50' },
+            { label: 'Total Enrollments', value: Number(adminStats.total_enrollments ?? 0),                                         icon: Users,    color: 'text-blue-600 bg-blue-50' },
+          ]
+        )).map(stat => (
           <div key={stat.label} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center gap-3">
             <div className={`w-10 h-10 ${stat.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
               <stat.icon className="w-5 h-5" />
