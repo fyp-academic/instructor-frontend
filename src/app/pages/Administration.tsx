@@ -95,6 +95,10 @@ export default function Administration() {
   const [collegeLoading, setCollegeLoading] = useState(false);
   const [collegeError, setCollegeError] = useState('');
 
+  // Pagination state
+  const [userPage, setUserPage] = useState(1);
+  const usersPerPage = 20;
+
   const [showProgrammeModal, setShowProgrammeModal] = useState(false);
   const [programmeForm, setProgrammeForm] = useState({ name: '', code: '', college_id: '', description: '' });
   const [programmeLoading, setProgrammeLoading] = useState(false);
@@ -159,6 +163,10 @@ export default function Administration() {
     const q     = userSearch.toLowerCase();
     return name.includes(q) || email.includes(q);
   });
+
+  // Pagination calculations
+  const totalUserPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const paginatedUsers = filteredUsers.slice((userPage - 1) * usersPerPage, userPage * usersPerPage);
 
   const filteredCourses = courses.filter(c => {
     const c2 = c as unknown as Record<string, unknown>;
@@ -265,7 +273,7 @@ export default function Administration() {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex-1 max-w-md">
                   <Search className="w-4 h-4 text-gray-400" />
-                  <input type="text" placeholder="Search users..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="bg-transparent text-sm outline-none flex-1" />
+                  <input type="text" placeholder="Search users..." value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1); }} className="bg-transparent text-sm outline-none flex-1" />
                 </div>
                 <button onClick={() => {
                   const defaultRole = isAdmin ? 'instructor' : 'student'; // Admins default to instructor, instructors can only add students
@@ -279,60 +287,114 @@ export default function Administration() {
                 </button>
               </div>
               <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">User</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden sm:table-cell">Email</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Role</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden lg:table-cell">Reg. No</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Programme</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {filteredUsers.length === 0 ? (
-                      <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">No users found. Use "Add User" to create accounts.</td></tr>
-                    ) : filteredUsers.slice(0, 10).map((user, ui) => {
-                      const uid     = String(user.id ?? ui);
-                      const uname   = String(user.name ?? '');
-                      const uemail  = String(user.email ?? '');
-                      const urole   = String(user.role ?? 'student');
-                      const ureg    = String(user.registration_number ?? '');
-                      const uprog   = String((user.degree_programme as {name?: string})?.name ?? user.degree_programme_id ?? '—');
-                      const initials = uname.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
-                      return (
-                        <tr key={uid} className="hover:bg-gray-50">
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2.5">
-                              <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold">{initials}</div>
-                              <span className="font-medium text-gray-900 text-sm">{uname}</span>
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-gray-500 text-sm hidden sm:table-cell">{uemail}</td>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${roleColors[urole] ?? 'bg-gray-100 text-gray-600'}`}>{urole}</span>
-                          </td>
-                          <td className="px-4 py-3 text-sm text-gray-500 hidden lg:table-cell">{ureg || '—'}</td>
-                          <td className="px-4 py-3 text-sm text-gray-500 hidden md:table-cell">{uprog}</td>
-                          <td className="px-4 py-3">
-                            <div className="relative" onClick={e => e.stopPropagation()}>
-                              <button onClick={() => setMenuOpenId(menuOpenId === uid ? null : uid)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">
-                                <MoreVertical className="w-4 h-4" />
-                              </button>
-                              {menuOpenId === uid && (
-                                <div className="absolute right-0 top-8 w-40 bg-white border border-gray-200 rounded-xl shadow-xl z-20 py-1">
-                                  <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Edit className="w-4 h-4 text-gray-400" />Edit</button>
-                                  <button onClick={() => setUsers(prev => prev.filter(u => String(u.id ?? '') !== uid))} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" />Delete</button>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[600px]">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">User</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Email</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Role</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Reg. No</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Programme</th>
+                        <th className="px-4 py-3"></th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {filteredUsers.length === 0 ? (
+                        <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">No users found. Use "Add User" to create accounts.</td></tr>
+                      ) : paginatedUsers.map((user, ui) => {
+                        const uid     = String(user.id ?? ui);
+                        const uname   = String(user.name ?? '');
+                        const uemail  = String(user.email ?? '');
+                        const urole   = String(user.role ?? 'student');
+                        const ureg    = String(user.registration_number ?? '');
+                        const uprog   = String((user.degree_programme as {name?: string})?.name ?? user.degree_programme_id ?? '—');
+                        const initials = uname.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+                        return (
+                          <tr key={uid} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">{initials}</div>
+                                <span className="font-medium text-gray-900 text-sm">{uname}</span>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">{uemail}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${roleColors[urole] ?? 'bg-gray-100 text-gray-600'}`}>{urole}</span>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ureg || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{uprog}</td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              <div className="relative" onClick={e => e.stopPropagation()}>
+                                <button onClick={() => setMenuOpenId(menuOpenId === uid ? null : uid)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">
+                                  <MoreVertical className="w-4 h-4" />
+                                </button>
+                                {menuOpenId === uid && (
+                                  <div className="absolute right-0 top-8 w-40 bg-white border border-gray-200 rounded-xl shadow-xl z-20 py-1">
+                                    <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Edit className="w-4 h-4 text-gray-400" />Edit</button>
+                                    <button onClick={() => setUsers(prev => prev.filter(u => String(u.id ?? '') !== uid))} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" />Delete</button>
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalUserPages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
+                    <div className="text-xs text-gray-500">
+                      Showing {((userPage - 1) * usersPerPage) + 1} to {Math.min(userPage * usersPerPage, filteredUsers.length)} of {filteredUsers.length} users
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                        disabled={userPage === 1}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: Math.min(5, totalUserPages) }, (_, i) => {
+                          let pageNum: number;
+                          if (totalUserPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (userPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (userPage >= totalUserPages - 2) {
+                            pageNum = totalUserPages - 4 + i;
+                          } else {
+                            pageNum = userPage - 2 + i;
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setUserPage(pageNum)}
+                              className={`w-7 h-7 text-xs rounded ${
+                                userPage === pageNum
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'border border-gray-200 bg-white hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setUserPage(p => Math.min(totalUserPages, p + 1))}
+                        disabled={userPage === totalUserPages}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
