@@ -634,8 +634,12 @@ export default function Administration() {
                                   setModalLoading(true);
                                   try {
                                     const r = await degreeProgrammesApi.students(p.id);
+                                    console.log('Students API response:', r.data);
                                     setModalData(r.data.data ?? []);
-                                  } catch { setModalData([]); }
+                                  } catch (e) {
+                                    console.error('Students API error:', e);
+                                    setModalData([]);
+                                  }
                                   finally { setModalLoading(false); }
                                 }}
                                 className="text-[11px] px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium"
@@ -649,8 +653,12 @@ export default function Administration() {
                                   setModalLoading(true);
                                   try {
                                     const r = await degreeProgrammesApi.courses(p.id);
+                                    console.log('Courses API response:', r.data);
                                     setModalData(r.data.data ?? []);
-                                  } catch { setModalData([]); }
+                                  } catch (e) {
+                                    console.error('Courses API error:', e);
+                                    setModalData([]);
+                                  }
                                   finally { setModalLoading(false); }
                                 }}
                                 className="text-[11px] px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
