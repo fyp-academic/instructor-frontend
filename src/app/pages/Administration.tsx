@@ -98,6 +98,10 @@ export default function Administration() {
   // Pagination state
   const [userPage, setUserPage] = useState(1);
   const usersPerPage = 20;
+  const [collegePage, setCollegePage] = useState(1);
+  const collegesPerPage = 20;
+  const [programmePage, setProgrammePage] = useState(1);
+  const programmesPerPage = 20;
 
   const [showProgrammeModal, setShowProgrammeModal] = useState(false);
   const [programmeForm, setProgrammeForm] = useState({ name: '', code: '', college_id: '', description: '' });
@@ -175,6 +179,13 @@ export default function Administration() {
     const q  = courseSearch.toLowerCase();
     return n.includes(q) || sn.includes(q);
   });
+
+  // Colleges and Programmes pagination
+  const totalCollegePages = Math.ceil(colleges.length / collegesPerPage);
+  const paginatedColleges = colleges.slice((collegePage - 1) * collegesPerPage, collegePage * collegesPerPage);
+
+  const totalProgrammePages = Math.ceil(programmes.length / programmesPerPage);
+  const paginatedProgrammes = programmes.slice((programmePage - 1) * programmesPerPage, programmePage * programmesPerPage);
 
   const roleColors: Record<string, string> = {
     admin: 'bg-red-100 text-red-700',
@@ -498,36 +509,90 @@ export default function Administration() {
                 </button>
               </div>
               <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase hidden md:table-cell">Description</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {colleges.length === 0 ? (
-                      <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">No colleges found. Use "Add College" to create one.</td></tr>
-                    ) : colleges.map(college => (
-                      <tr key={college.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{college.name}</td>
-                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{college.code}</td>
-                        <td className="px-4 py-3 text-gray-500 hidden md:table-cell">{college.description || '—'}</td>
-                        <td className="px-4 py-3">
-                          <button onClick={async () => {
-                            if (confirm(`Delete college "${college.name}"?`)) {
-                              try { await collegesApi.delete(college.id); setColleges(prev => prev.filter(c => c.id !== college.id)); } catch {}
-                            }
-                          }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[500px]">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Name</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Code</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Description</th>
+                        <th className="px-4 py-3"></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {colleges.length === 0 ? (
+                        <tr><td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">No colleges found. Use "Add College" to create one.</td></tr>
+                      ) : paginatedColleges.map(college => (
+                        <tr key={college.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{college.name}</td>
+                          <td className="px-4 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">{college.code}</td>
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{college.description || '—'}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <button onClick={async () => {
+                              if (confirm(`Delete college "${college.name}"?`)) {
+                                try { await collegesApi.delete(college.id); setColleges(prev => prev.filter(c => c.id !== college.id)); } catch {}
+                              }
+                            }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalCollegePages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
+                    <div className="text-xs text-gray-500">
+                      Showing {((collegePage - 1) * collegesPerPage) + 1} to {Math.min(collegePage * collegesPerPage, colleges.length)} of {colleges.length} colleges
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setCollegePage(p => Math.max(1, p - 1))}
+                        disabled={collegePage === 1}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: Math.min(5, totalCollegePages) }, (_, i) => {
+                          let pageNum: number;
+                          if (totalCollegePages <= 5) {
+                            pageNum = i + 1;
+                          } else if (collegePage <= 3) {
+                            pageNum = i + 1;
+                          } else if (collegePage >= totalCollegePages - 2) {
+                            pageNum = totalCollegePages - 4 + i;
+                          } else {
+                            pageNum = collegePage - 2 + i;
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setCollegePage(pageNum)}
+                              className={`w-7 h-7 text-xs rounded ${
+                                collegePage === pageNum
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'border border-gray-200 bg-white hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setCollegePage(p => Math.min(totalCollegePages, p + 1))}
+                        disabled={collegePage === totalCollegePages}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -541,88 +606,142 @@ export default function Administration() {
                 </button>
               </div>
               <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Name</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Code</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">College</th>
-                      <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase">Actions</th>
-                      <th className="px-4 py-3"></th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {programmes.length === 0 ? (
-                      <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">No degree programmes found. Use "Add Degree Programme" to create one.</td></tr>
-                    ) : programmes.map(p => (
-                      <tr key={p.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 font-medium text-gray-900">{p.name}</td>
-                        <td className="px-4 py-3 text-gray-500 font-mono text-xs">{p.code}</td>
-                        <td className="px-4 py-3 text-gray-500">{p.college?.name ?? colleges.find(c => c.id === p.college_id)?.name ?? '—'}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={async () => {
-                                setModalProgId(p.id);
-                                setModalType('students');
-                                setModalLoading(true);
-                                try {
-                                  const r = await degreeProgrammesApi.students(p.id);
-                                  setModalData(r.data.data ?? []);
-                                } catch { setModalData([]); }
-                                finally { setModalLoading(false); }
-                              }}
-                              className="text-[11px] px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium"
-                            >
-                              Students
-                            </button>
-                            <button
-                              onClick={async () => {
-                                setModalProgId(p.id);
-                                setModalType('courses');
-                                setModalLoading(true);
-                                try {
-                                  const r = await degreeProgrammesApi.courses(p.id);
-                                  setModalData(r.data.data ?? []);
-                                } catch { setModalData([]); }
-                                finally { setModalLoading(false); }
-                              }}
-                              className="text-[11px] px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
-                            >
-                              Courses
-                            </button>
-                            <button
-                              onClick={async () => {
-                                setModalProgId(p.id);
-                                setModalType('instructors');
-                                setInstructorIds([]);
-                                setModalLoading(true);
-                                try {
-                                  const res = await degreeProgrammesApi.show(p.id);
-                                  const instructors = res.data.data?.instructors ?? res.data.instructors ?? [];
-                                  setInstructorIds(instructors.map((inst: any) => String(inst.id ?? inst)));
-                                } catch { /* ignore */ }
-                                finally { setModalLoading(false); }
-                              }}
-                              className="text-[11px] px-2 py-1 rounded-md bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
-                            >
-                              Instructors
-                            </button>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button onClick={async () => {
-                            if (confirm(`Delete degree programme "${p.name}"?`)) {
-                              try { await degreeProgrammesApi.delete(p.id); setProgrammes(prev => prev.filter(x => x.id !== p.id)); } catch {}
-                            }
-                          }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[700px]">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Name</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Code</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">College</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Actions</th>
+                        <th className="px-4 py-3"></th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {programmes.length === 0 ? (
+                        <tr><td colSpan={5} className="px-4 py-8 text-center text-sm text-gray-400">No degree programmes found. Use "Add Degree Programme" to create one.</td></tr>
+                      ) : paginatedProgrammes.map(p => (
+                        <tr key={p.id} className="hover:bg-gray-50">
+                          <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{p.name}</td>
+                          <td className="px-4 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">{p.code}</td>
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.college?.name ?? colleges.find(c => c.id === p.college_id)?.name ?? '—'}</td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                onClick={async () => {
+                                  setModalProgId(p.id);
+                                  setModalType('students');
+                                  setModalLoading(true);
+                                  try {
+                                    const r = await degreeProgrammesApi.students(p.id);
+                                    setModalData(r.data.data ?? []);
+                                  } catch { setModalData([]); }
+                                  finally { setModalLoading(false); }
+                                }}
+                                className="text-[11px] px-2 py-1 rounded-md bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-medium"
+                              >
+                                Students
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setModalProgId(p.id);
+                                  setModalType('courses');
+                                  setModalLoading(true);
+                                  try {
+                                    const r = await degreeProgrammesApi.courses(p.id);
+                                    setModalData(r.data.data ?? []);
+                                  } catch { setModalData([]); }
+                                  finally { setModalLoading(false); }
+                                }}
+                                className="text-[11px] px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-medium"
+                              >
+                                Courses
+                              </button>
+                              <button
+                                onClick={async () => {
+                                  setModalProgId(p.id);
+                                  setModalType('instructors');
+                                  setInstructorIds([]);
+                                  setModalLoading(true);
+                                  try {
+                                    const res = await degreeProgrammesApi.show(p.id);
+                                    const instructors = res.data.data?.instructors ?? res.data.instructors ?? [];
+                                    setInstructorIds(instructors.map((inst: any) => String(inst.id ?? inst)));
+                                  } catch { /* ignore */ }
+                                  finally { setModalLoading(false); }
+                                }}
+                                className="text-[11px] px-2 py-1 rounded-md bg-purple-50 text-purple-700 hover:bg-purple-100 font-medium"
+                              >
+                                Instructors
+                              </button>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <button onClick={async () => {
+                              if (confirm(`Delete degree programme "${p.name}"?`)) {
+                                try { await degreeProgrammesApi.delete(p.id); setProgrammes(prev => prev.filter(x => x.id !== p.id)); } catch {}
+                              }
+                            }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalProgrammePages > 1 && (
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-t border-gray-200">
+                    <div className="text-xs text-gray-500">
+                      Showing {((programmePage - 1) * programmesPerPage) + 1} to {Math.min(programmePage * programmesPerPage, programmes.length)} of {programmes.length} programmes
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setProgrammePage(p => Math.max(1, p - 1))}
+                        disabled={programmePage === 1}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <div className="flex items-center gap-0.5">
+                        {Array.from({ length: Math.min(5, totalProgrammePages) }, (_, i) => {
+                          let pageNum: number;
+                          if (totalProgrammePages <= 5) {
+                            pageNum = i + 1;
+                          } else if (programmePage <= 3) {
+                            pageNum = i + 1;
+                          } else if (programmePage >= totalProgrammePages - 2) {
+                            pageNum = totalProgrammePages - 4 + i;
+                          } else {
+                            pageNum = programmePage - 2 + i;
+                          }
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => setProgrammePage(pageNum)}
+                              className={`w-7 h-7 text-xs rounded ${
+                                programmePage === pageNum
+                                  ? 'bg-indigo-600 text-white'
+                                  : 'border border-gray-200 bg-white hover:bg-gray-50'
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      <button
+                        onClick={() => setProgrammePage(p => Math.min(totalProgrammePages, p + 1))}
+                        disabled={programmePage === totalProgrammePages}
+                        className="px-2 py-1 text-xs rounded border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
