@@ -783,7 +783,7 @@ export default function Administration() {
                     >
                       <option value="">Select Programme</option>
                       {programmes
-                        .filter(p => p.college_id === (addForm as typeof emptyStudentForm).collegeId || isInstructor)
+                        .filter(p => p.college_id === (addForm as typeof emptyStudentForm).collegeId)
                         .map(p => (
                           <option key={p.id} value={p.id}>{p.name}</option>
                         ))}
