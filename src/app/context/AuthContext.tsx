@@ -41,6 +41,10 @@ interface AuthUser {
   year_of_study?: number;
   education_level?: string;
   nationality?: string;
+  profile_image_url?: string;
+  instructor_profile?: {
+    profile_photo?: string;
+  };
 }
 
 interface AuthData {
@@ -119,6 +123,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } else {
       setIsLoading(false);
     }
+
+    // Listen for storage changes to sync user data (e.g., profile image updates)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'auth_user') {
+        const updatedUser = localStorage.getItem('auth_user');
+        if (updatedUser) {
+          try { setUser(JSON.parse(updatedUser)); } catch { /* ignore */ }
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const login = async (email: string, password: string) => {

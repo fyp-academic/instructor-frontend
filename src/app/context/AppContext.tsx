@@ -8,6 +8,7 @@ interface CurrentUser {
   name: string;
   email?: string;
   role?: string;
+  profile_image_url?: string;
 }
 
 interface AppContextType {
@@ -30,7 +31,7 @@ interface AppContextType {
   addSection: (courseId: string, title: string) => Promise<void>;
   updateSection: (courseId: string, sectionId: string, updates: Partial<Section>) => Promise<void>;
   deleteSection: (courseId: string, sectionId: string) => Promise<void>;
-  addActivity: (courseId: string, sectionId: string, activity: Activity) => Promise<void>;
+  addActivity: (courseId: string, sectionId: string, activity: Activity) => Promise<Activity>;
   updateActivity: (courseId: string, sectionId: string, activityId: string, updates: Partial<Activity>) => Promise<void>;
   deleteActivity: (courseId: string, sectionId: string, activityId: string) => Promise<void>;
 

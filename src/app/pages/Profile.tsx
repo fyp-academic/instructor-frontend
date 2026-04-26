@@ -142,6 +142,19 @@ export default function Profile() {
       
       // Reload profile to get updated image URL
       await loadProfile();
+      
+      // Update localStorage so Header stays in sync
+      const updatedProfile = response.data?.data;
+      if (updatedProfile?.profile_image_url) {
+        const storedUser = localStorage.getItem('auth_user');
+        if (storedUser) {
+          const user = JSON.parse(storedUser);
+          user.profile_image_url = updatedProfile.profile_image_url;
+          localStorage.setItem('auth_user', JSON.stringify(user));
+          // Dispatch storage event to notify Header
+          window.dispatchEvent(new StorageEvent('storage', { key: 'auth_user' }));
+        }
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to upload image');
     } finally {
@@ -156,6 +169,15 @@ export default function Profile() {
     try {
       await profileApi.removeImage();
       await loadProfile();
+      
+      // Update localStorage so Header stays in sync
+      const storedUser = localStorage.getItem('auth_user');
+      if (storedUser) {
+        const user = JSON.parse(storedUser);
+        user.profile_image_url = null;
+        localStorage.setItem('auth_user', JSON.stringify(user));
+        window.dispatchEvent(new StorageEvent('storage', { key: 'auth_user' }));
+      }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to remove image');
     } finally {
@@ -174,82 +196,92 @@ export default function Profile() {
     return profile?.instructor_profile?.full_name || profile?.name || '';
   };
 
-  const SelectField = ({ icon: Icon, label, value, editKey, options }: { 
-    icon: React.ElementType; 
-    label: string; 
-    value: string; 
-    editKey: keyof typeof form;
-    options: { value: string; label: string }[];
-  }) => (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        {editing ? (
-          <select
-            value={form[editKey] as string || ''}
-            onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
-            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-          >
-            <option value="">Select {label}</option>
-            {options.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        ) : (
-          <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
-        )}
-      </div>
-    </div>
-  );
+interface SelectFieldProps {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  editKey: string;
+  options: { value: string; label: string }[];
+  form: Record<string, unknown>;
+  editing: boolean;
+  setForm: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
+}
 
-  const Field = ({ icon: Icon, label, value, editKey, type = 'text' }: { 
-    icon: React.ElementType; 
-    label: string; 
-    value: string; 
-    editKey?: keyof typeof form;
-    type?: string;
-  }) => (
-    <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-      <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-        {editing && editKey ? (
-          editKey === 'bio' ? (
-            <textarea
-              value={String(form[editKey] ?? '')}
-              onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
-              rows={3}
-              className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            />
-          ) : type === 'number' ? (
-            <input
-              type="number"
-              value={String(form[editKey] ?? '')}
-              onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
-              className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          ) : type === 'date' ? (
-            <input
-              type="date"
-              value={String(form[editKey] ?? '')}
-              onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
-              className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          ) : (
-            <input
-              type="text"
-              value={String(form[editKey] ?? '')}
-              onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
-              className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          )
-        ) : (
-          <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
-        )}
-      </div>
+const SelectField = ({ icon: Icon, label, value, editKey, options, form, editing, setForm }: SelectFieldProps) => (
+  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+      {editing ? (
+        <select
+          value={(form[editKey] as string) || ''}
+          onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
+          className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+        >
+          <option value="">Select {label}</option>
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      ) : (
+        <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
+      )}
     </div>
-  );
+  </div>
+);
+
+interface FieldProps {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  editKey?: string;
+  type?: string;
+  form?: Record<string, unknown>;
+  editing?: boolean;
+  setForm?: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
+}
+
+const Field = ({ icon: Icon, label, value, editKey, type = 'text', form, editing, setForm }: FieldProps) => (
+  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+      {editing && editKey ? (
+        editKey === 'bio' ? (
+          <textarea
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            rows={3}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          />
+        ) : type === 'number' ? (
+          <input
+            type="number"
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        ) : type === 'date' ? (
+          <input
+            type="date"
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        ) : (
+          <input
+            type="text"
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        )
+      ) : (
+        <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
+      )}
+    </div>
+  </div>
+);
 
   if (loading) {
     return (
@@ -439,32 +471,35 @@ export default function Profile() {
             <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <User className="w-4 h-4" /> Personal Information
             </h3>
-            <Field icon={User} label="Full Name" value={form.name || ''} editKey="name" />
+            <Field icon={User} label="Full Name" value={form.name || ''} editKey="name" form={form} editing={editing} setForm={setForm} />
             {profile?.role === 'admin' && (
-              <Field icon={Mail} label="Email Address" value={form.email || ''} editKey="email" />
+              <Field icon={Mail} label="Email Address" value={form.email || ''} editKey="email" form={form} editing={editing} setForm={setForm} />
             )}
-            <Field icon={Phone} label="Phone Number" value={form.phone_number || ''} editKey="phone_number" />
-            <SelectField 
-              icon={User} 
-              label="Gender" 
-              value={form.gender || ''} 
-              editKey="gender" 
+            <Field icon={Phone} label="Phone Number" value={form.phone_number || ''} editKey="phone_number" form={form} editing={editing} setForm={setForm} />
+            <SelectField
+              icon={User}
+              label="Gender"
+              value={form.gender || ''}
+              editKey="gender"
               options={[
                 { value: 'male', label: 'Male' },
                 { value: 'female', label: 'Female' },
                 { value: 'other', label: 'Other' }
               ]}
+              form={form}
+              editing={editing}
+              setForm={setForm}
             />
-            <Field icon={Globe} label="Nationality" value={form.nationality || ''} editKey="nationality" />
-            <Field icon={MapPin} label="Country" value={form.country || ''} editKey="country" />
-            <Field icon={Building} label="Timezone" value={form.timezone || ''} editKey="timezone" />
-            <Field icon={Globe} label="Language" value={form.language || ''} editKey="language" />
+            <Field icon={Globe} label="Nationality" value={form.nationality || ''} editKey="nationality" form={form} editing={editing} setForm={setForm} />
+            <Field icon={MapPin} label="Country" value={form.country || ''} editKey="country" form={form} editing={editing} setForm={setForm} />
+            <Field icon={Building} label="Timezone" value={form.timezone || ''} editKey="timezone" form={form} editing={editing} setForm={setForm} />
+            <Field icon={Globe} label="Language" value={form.language || ''} editKey="language" form={form} editing={editing} setForm={setForm} />
           </div>
 
           {/* Bio */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
             <h3 className="font-semibold text-gray-900 mb-3">About Me</h3>
-            <Field icon={User} label="Bio" value={form.bio || ''} editKey="bio" />
+            <Field icon={User} label="Bio" value={form.bio || ''} editKey="bio" form={form} editing={editing} setForm={setForm} />
           </div>
 
           {/* Academic/Professional Info */}
@@ -472,13 +507,13 @@ export default function Profile() {
             <h3 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
               <Briefcase className="w-4 h-4" /> Professional Information
             </h3>
-            <Field icon={Building} label="Department" value={form.department || ''} editKey="department" />
-            <Field icon={Globe} label="Institution" value={form.institution || ''} editKey="institution" />
+            <Field icon={Building} label="Department" value={form.department || ''} editKey="department" form={form} editing={editing} setForm={setForm} />
+            <Field icon={Globe} label="Institution" value={form.institution || ''} editKey="institution" form={form} editing={editing} setForm={setForm} />
             
             {profile?.role === 'student' && (
               <>
-                <Field icon={GraduationCap} label="Year of Study" value={String(form.year_of_study || '')} editKey="year_of_study" type="number" />
-                <Field icon={Award} label="Education Level" value={form.education_level || ''} editKey="education_level" />
+                <Field icon={GraduationCap} label="Year of Study" value={String(form.year_of_study || '')} editKey="year_of_study" type="number" form={form} editing={editing} setForm={setForm} />
+                <Field icon={Award} label="Education Level" value={form.education_level || ''} editKey="education_level" form={form} editing={editing} setForm={setForm} />
               </>
             )}
           </div>

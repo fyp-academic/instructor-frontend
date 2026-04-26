@@ -219,17 +219,40 @@ export function Header() {
               onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); setMsgOpen(false); }}
               className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
             >
-              <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
-                {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
-              </div>
+              {currentUser.profile_image_url ? (
+                <img
+                  src={currentUser.profile_image_url}
+                  alt={currentUser.name}
+                  className="w-7 h-7 rounded-full object-cover border border-indigo-400"
+                />
+              ) : (
+                <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                  {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+              )}
               <ChevronDown className="w-3 h-3 hidden sm:block" />
             </button>
             {profileOpen && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-sm font-semibold text-gray-900">{currentUser.name}</p>
-                  <p className="text-xs text-gray-500">{currentUser.email}</p>
-                  <span className="inline-block mt-1 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full capitalize">{currentUser.role}</span>
+                  <div className="flex items-center gap-3">
+                    {currentUser.profile_image_url ? (
+                      <img
+                        src={currentUser.profile_image_url}
+                        alt={currentUser.name}
+                        className="w-10 h-10 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
+                        {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">{currentUser.name}</p>
+                      <p className="text-xs text-gray-500">{currentUser.email}</p>
+                    </div>
+                  </div>
+                  <span className="inline-block mt-2 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full capitalize">{currentUser.role}</span>
                 </div>
                 <div className="py-1">
                   <button onClick={() => { navigate('/profile'); setProfileOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
