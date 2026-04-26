@@ -1,13 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2, Lock, Briefcase, Award, MapPin, Calendar, Phone, CreditCard, User } from 'lucide-react';
+import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2, Lock, Briefcase, Award, MapPin, Calendar, Phone, CreditCard, User, MessageSquare, AlertTriangle, Unlock, Eye, CheckCircle, XCircle, Flag } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
-import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi } from '../services/api';
+import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi, chatModerationApi } from '../services/api';
 
-type AdminTab = 'users' | 'courses' | 'categories' | 'colleges' | 'degreeProgrammes' | 'system';
+type AdminTab = 'users' | 'courses' | 'categories' | 'colleges' | 'degreeProgrammes' | 'chatModeration' | 'system';
 
 type UserRow = Record<string, unknown>;
+
+interface ChatStats {
+  reports?: {
+    total?: number;
+    pending?: number;
+    resolved?: number;
+  };
+  blocked_users?: number;
+}
 
 // Available roles based on user type
 const getAvailableRoles = (isAdmin: boolean) => isAdmin
@@ -116,6 +125,18 @@ export default function Administration() {
   const [instructorIds, setInstructorIds] = useState<string[]>([]);
   const [assignLoading, setAssignLoading] = useState(false);
 
+  // Chat moderation state
+  const [chatStats, setChatStats] = useState<ChatStats>({});
+  const [reports, setReports] = useState<Array<Record<string, unknown>>>([]);
+  const [conversations, setConversations] = useState<Array<Record<string, unknown>>>([]);
+  const [blockedUsers, setBlockedUsers] = useState<Array<Record<string, unknown>>>([]);
+  const [reportsLoading, setReportsLoading] = useState(false);
+  const [reportFilter, setReportFilter] = useState('pending');
+  const [selectedReport, setSelectedReport] = useState<Record<string, unknown> | null>(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [resolutionNotes, setResolutionNotes] = useState('');
+  const [resolutionAction, setResolutionAction] = useState('none');
+
   // Redirect if not admin or instructor
   useEffect(() => {
     if (!user || (!isAdmin && !isInstructor)) {
@@ -144,6 +165,38 @@ export default function Administration() {
       loadCollegesAndProgrammes();
     }
   }, [permissions, isAdmin]);
+
+  // Load chat moderation data when tab is active
+  useEffect(() => {
+    if (activeTab !== 'chatModeration') return;
+
+    const loadChatModerationData = async () => {
+      setReportsLoading(true);
+      try {
+        // Load statistics
+        const statsRes = await chatModerationApi.statistics();
+        setChatStats((statsRes.data?.statistics ?? {}) as ChatStats);
+
+        // Load reports
+        const reportsRes = await chatModerationApi.reports({ status: reportFilter });
+        setReports(reportsRes.data?.data ?? []);
+
+        // Load conversations
+        const convRes = await chatModerationApi.conversations();
+        setConversations(convRes.data?.data ?? []);
+
+        // Load blocked users
+        const blockedRes = await chatModerationApi.blockedUsers();
+        setBlockedUsers(blockedRes.data?.data ?? []);
+      } catch (err) {
+        console.error('Failed to load chat moderation data:', err);
+      } finally {
+        setReportsLoading(false);
+      }
+    };
+
+    loadChatModerationData();
+  }, [activeTab, reportFilter]);
 
   const loadCollegesAndProgrammes = async () => {
     setLoadingData(true);
@@ -202,6 +255,7 @@ export default function Administration() {
     { id: 'categories', label: 'Categories', icon: FolderOpen, requiredPermission: 'can_manage_categories' },
     { id: 'colleges', label: 'Colleges', icon: Building2, requiredPermission: 'can_manage_colleges' },
     { id: 'degreeProgrammes', label: 'Degree Programmes', icon: GraduationCap, requiredPermission: 'can_manage_degree_programmes' },
+    { id: 'chatModeration', label: 'Chat Moderation', icon: MessageSquare },
     { id: 'system', label: 'System', icon: Settings, requiredPermission: 'can_manage_colleges' },
   ];
 
@@ -792,6 +846,197 @@ export default function Administration() {
                       <span className="text-sm font-medium text-gray-800">{item.value}</span>
                     </div>
                   ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Chat Moderation Tab */}
+          {activeTab === 'chatModeration' && (
+            <div className="space-y-6">
+              {/* Statistics Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                  { label: 'Total Reports', value: (chatStats.reports?.total as number) ?? 0, icon: Flag, color: 'bg-red-50 border-red-200 text-red-600' },
+                  { label: 'Pending', value: (chatStats.reports?.pending as number) ?? 0, icon: AlertTriangle, color: 'bg-yellow-50 border-yellow-200 text-yellow-600' },
+                  { label: 'Resolved', value: (chatStats.reports?.resolved as number) ?? 0, icon: CheckCircle, color: 'bg-green-50 border-green-200 text-green-600' },
+                  { label: 'Blocked Users', value: (chatStats.blocked_users as number) ?? 0, icon: Lock, color: 'bg-gray-50 border-gray-200 text-gray-600' },
+                ].map(stat => (
+                  <div key={stat.label} className={`${stat.color} border rounded-xl p-4`}>
+                    <div className="flex items-center justify-between">
+                      <stat.icon className="w-5 h-5" />
+                      <span className="text-2xl font-bold">{stat.value}</span>
+                    </div>
+                    <p className="text-sm mt-1 opacity-80">{stat.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Reports Section */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <Flag className="w-4 h-4" />
+                    Reports
+                  </h3>
+                  <div className="flex gap-2">
+                    {['pending', 'resolved', 'dismissed', 'all'].map(filter => (
+                      <button
+                        key={filter}
+                        onClick={() => setReportFilter(filter)}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium capitalize transition-colors ${
+                          reportFilter === filter
+                            ? 'bg-indigo-100 text-indigo-700'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        {filter}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="divide-y divide-gray-100">
+                  {reportsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    </div>
+                  ) : reports.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">
+                      <Flag className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">No {reportFilter === 'all' ? '' : reportFilter} reports found</p>
+                    </div>
+                  ) : (
+                    reports.map((report: Record<string, unknown>) => (
+                      <div key={String(report.id)} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                report.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                                report.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                                'bg-gray-100 text-gray-700'
+                              }}`}>
+                                {String(report.status)}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {new Date(report.created_at as string).toLocaleDateString()}
+                              </span>
+                            </div>
+                            <p className="font-medium text-gray-900 truncate">{String(report.reason)}</p>
+                            <p className="text-sm text-gray-500 truncate">
+                              Reporter: {String((report.reporter as Record<string, unknown>)?.name ?? 'Unknown')} ·
+                              Reported: {String((report.reported_user as Record<string, unknown>)?.name ?? 'Unknown')}
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => { setSelectedReport(report); setShowReportModal(true); }}
+                            className="ml-4 p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Blocked Users Section */}
+              {blockedUsers.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="px-5 py-4 border-b border-gray-200">
+                    <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                      <Lock className="w-4 h-4" />
+                      Blocked Users ({blockedUsers.length})
+                    </h3>
+                  </div>
+                  <div className="divide-y divide-gray-100">
+                    {blockedUsers.map((blocked: Record<string, unknown>) => (
+                      <div key={`${blocked.user_id}-${blocked.conversation_id}`} className="p-4 flex items-center justify-between">
+                        <div>
+                          <p className="font-medium text-gray-900">
+                            {String((blocked.user as Record<string, unknown>)?.name ?? 'Unknown')}
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            in {String((blocked.conversation as Record<string, unknown>)?.title ?? 'Unknown chat')}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => chatModerationApi.unblockUser({
+                            user_id: blocked.user_id as string,
+                            conversation_id: blocked.conversation_id as string
+                          }).then(() => {
+                            chatModerationApi.blockedUsers().then(res => setBlockedUsers(res.data?.data ?? []));
+                          })}
+                          className="p-2 rounded-lg hover:bg-gray-100 text-green-600"
+                          title="Unblock user"
+                        >
+                          <Unlock className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Conversations Section */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="px-5 py-4 border-b border-gray-200">
+                  <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                    <MessageSquare className="w-4 h-4" />
+                    All Conversations ({conversations.length})
+                  </h3>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {reportsLoading ? (
+                    <div className="flex items-center justify-center py-12">
+                      <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
+                    </div>
+                  ) : conversations.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">
+                      <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                      <p className="text-sm">No conversations found</p>
+                    </div>
+                  ) : (
+                    conversations.map((conv: Record<string, unknown>) => (
+                      <div key={String(conv.id)} className="p-4 hover:bg-gray-50 transition-colors">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                conv.type === 'course' ? 'bg-blue-100 text-blue-700' :
+                                conv.type === 'group' ? 'bg-green-100 text-green-700' :
+                                'bg-purple-100 text-purple-700'
+                              }`}>
+                                {String(conv.type || 'direct')}
+                              </span>
+                              <span className="text-xs text-gray-400">
+                                {conv.created_at ? new Date(conv.created_at as string).toLocaleDateString() : 'Unknown date'}
+                              </span>
+                            </div>
+                            <p className="font-medium text-gray-900 truncate">{String(conv.title || 'Untitled Conversation')}</p>
+                            <p className="text-sm text-gray-500">
+                              {(conv.participants as Array<Record<string, unknown>>)?.length || 0} participants ·
+                              {(conv.messages_count as number) || 0} messages
+                            </p>
+                            {conv.last_message && (
+                              <p className="text-xs text-gray-400 mt-1 truncate">
+                                Last: {String((conv.last_message as Record<string, unknown>)?.content ?? 'No content')}
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => navigate(`/chat/${conv.id}`)}
+                            className="ml-4 p-2 rounded-lg hover:bg-gray-100 text-gray-500"
+                            title="View conversation"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -1567,6 +1812,154 @@ export default function Administration() {
                 {programmeLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
                 Create Programme
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Report Detail Modal */}
+      {showReportModal && selectedReport && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => setShowReportModal(false)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-y-auto p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-gray-900">Report Details</h2>
+              <button onClick={() => setShowReportModal(false)} className="p-2 rounded-lg hover:bg-gray-100">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  selectedReport.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  selectedReport.status === 'resolved' ? 'bg-green-100 text-green-700' :
+                  'bg-gray-100 text-gray-700'
+                }`}>
+                  {String(selectedReport.status)}
+                </span>
+                <span className="text-sm text-gray-400">
+                  {new Date(selectedReport.created_at as string).toLocaleString()}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="text-gray-500">Reporter</p>
+                  <p className="font-medium">{String((selectedReport.reporter as Record<string, unknown>)?.name ?? 'Unknown')}</p>
+                </div>
+                <div>
+                  <p className="text-gray-500">Reported User</p>
+                  <p className="font-medium">{String((selectedReport.reported_user as Record<string, unknown>)?.name ?? 'Unknown')}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-gray-500 text-sm">Reason</p>
+                <p className="font-medium">{String(selectedReport.reason)}</p>
+              </div>
+
+              {Boolean(selectedReport.description) && (
+                <div>
+                  <p className="text-gray-500 text-sm">Description</p>
+                  <p className="text-sm">{String(selectedReport.description)}</p>
+                </div>
+              )}
+
+                {Boolean((selectedReport.conversation as Record<string, unknown>)?.title) && (
+                <div>
+                  <p className="text-gray-500 text-sm">Conversation</p>
+                  <p className="text-sm">{String((selectedReport.conversation as Record<string, unknown>)?.title)}</p>
+                </div>
+              )}
+
+              {selectedReport.status === 'pending' && (
+                <>
+                  <div className="border-t pt-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Resolution Action
+                    </label>
+                    <select
+                      value={resolutionAction}
+                      onChange={(e) => setResolutionAction(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    >
+                      <option value="none">No action</option>
+                      <option value="warn">Send warning</option>
+                      <option value="block_user">Block user from conversation</option>
+                      <option value="lock_conversation">Lock conversation</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Resolution Notes
+                    </label>
+                    <textarea
+                      value={resolutionNotes}
+                      onChange={(e) => setResolutionNotes(e.target.value)}
+                      placeholder="Add notes about this resolution..."
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm h-20 resize-none"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => {
+                        chatModerationApi.resolveReport(selectedReport.id as string, {
+                          status: 'resolved',
+                          action_taken: resolutionAction,
+                          resolution_notes: resolutionNotes
+                        }).then(() => {
+                          setShowReportModal(false);
+                          setResolutionNotes('');
+                          setResolutionAction('none');
+                          // Reload reports
+                          chatModerationApi.reports({ status: reportFilter }).then(res => {
+                            setReports(res.data?.data ?? []);
+                          });
+                          // Reload stats
+                          chatModerationApi.statistics().then(res => {
+                            setChatStats((res.data?.statistics ?? {}) as ChatStats);
+                          });
+                        });
+                      }}
+                      className="flex-1 py-2 px-4 rounded-lg bg-green-600 text-white text-sm font-medium hover:bg-green-700"
+                    >
+                      <CheckCircle className="w-4 h-4 inline mr-1" />
+                      Resolve
+                    </button>
+                    <button
+                      onClick={() => {
+                        chatModerationApi.resolveReport(selectedReport.id as string, {
+                          status: 'dismissed',
+                          resolution_notes: resolutionNotes
+                        }).then(() => {
+                          setShowReportModal(false);
+                          setResolutionNotes('');
+                          chatModerationApi.reports({ status: reportFilter }).then(res => {
+                            setReports(res.data?.data ?? []);
+                          });
+                        });
+                      }}
+                      className="flex-1 py-2 px-4 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200"
+                    >
+                      <XCircle className="w-4 h-4 inline mr-1" />
+                      Dismiss
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {(selectedReport.status as string) !== 'pending' && (selectedReport.resolution_notes as string) && (
+                <div className="border-t pt-4">
+                  <p className="text-gray-500 text-sm">Resolution Notes</p>
+                  <p className="text-sm">{String(selectedReport.resolution_notes)}</p>
+                  <p className="text-xs text-gray-400 mt-2">
+                    Resolved by {(selectedReport.resolver as {name?: string} | null)?.name ?? 'Unknown'} on {new Date(selectedReport.resolved_at as string).toLocaleString()}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>

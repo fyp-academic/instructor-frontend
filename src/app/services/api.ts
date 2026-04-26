@@ -120,6 +120,55 @@ export const messagingApi = {
   markRead:      (convId: string) => api.patch(`/conversations/${convId}/messages/read`),
   react:         (messageId: string, emoji: string) =>
     api.post(`/messages/${messageId}/react`, { emoji }),
+  // Structured chat features
+  typing:        (convId: string, isTyping: boolean) =>
+    api.post(`/conversations/${convId}/typing`, { is_typing: isTyping }),
+  deleteMessage: (messageId: string, deletionType: 'me' | 'everyone') =>
+    api.delete(`/messages/${messageId}`, { params: { deletion_type: deletionType } }),
+  restoreMessage: (messageId: string) =>
+    api.patch(`/messages/${messageId}/restore`),
+  pinMessage:    (messageId: string, isPinned: boolean) =>
+    api.post(`/messages/${messageId}/pin`, { is_pinned: isPinned }),
+  markDelivered: (messageId: string) =>
+    api.post(`/messages/${messageId}/delivered`),
+  markMessageRead: (messageId: string) =>
+    api.post(`/messages/${messageId}/read`),
+  pinnedMessages: (convId: string) =>
+    api.get(`/conversations/${convId}/pinned-messages`),
+};
+
+// ─── Structured Chat Access ───────────────────────────────────────────────────
+export const chatAccessApi = {
+  eligibleRecipients: (type?: string, courseId?: string, programmeId?: string) =>
+    api.get('/chat/eligible-recipients', { params: { type, course_id: courseId, programme_id: programmeId } }),
+  myChats:       () => api.get('/chat/my-chats'),
+  availableCourses: () => api.get('/chat/available-courses'),
+  availableProgrammes: () => api.get('/chat/available-programmes'),
+};
+
+// ─── Course Chat ───────────────────────────────────────────────────────────────
+export const courseChatApi = {
+  getOrCreate:   (courseId: string) => api.get(`/courses/${courseId}/chat`),
+  participants:  (courseId: string) => api.get(`/courses/${courseId}/chat/participants`),
+  syncParticipants: (courseId: string) => api.post(`/courses/${courseId}/chat/sync-participants`),
+  postAnnouncement: (courseId: string, content: string) =>
+    api.post(`/courses/${courseId}/chat/announcement`, { content }),
+};
+
+// ─── Programme Chat ───────────────────────────────────────────────────────────
+export const programmeChatApi = {
+  getOrCreate:   (programmeId: string) => api.get(`/degree-programmes/${programmeId}/chat`),
+  participants:  (programmeId: string) => api.get(`/degree-programmes/${programmeId}/chat/participants`),
+  syncParticipants: (programmeId: string) => api.post(`/degree-programmes/${programmeId}/chat/sync-participants`),
+  postAnnouncement: (programmeId: string, content: string) =>
+    api.post(`/degree-programmes/${programmeId}/chat/announcement`, { content }),
+};
+
+// ─── Chat Reports (Admin/Instructor Moderation) ──────────────────────────────
+export const chatReportsApi = {
+  list:       () => api.get('/chat/reports'),
+  resolve:    (reportId: string, resolution: Record<string, unknown>) =>
+    api.post(`/chat/reports/${reportId}/resolve`, resolution),
 };
 
 // ─── Users (Admin) ───────────────────────────────────────────────────────────
@@ -234,4 +283,25 @@ export const pipelineApi = {
     api.post(`/pipeline/learners/${learnerId}/courses/${courseId}/interventions`, data),
   driftLogs:    (learnerId: string, courseId: string) =>
     api.get(`/pipeline/learners/${learnerId}/courses/${courseId}/drift`),
+};
+
+// ─── Chat Moderation — Admin/Instructor chat management ───────────────────────
+export const chatModerationApi = {
+  // Reports
+  reports:      (params?: Record<string, unknown>) => api.get('/chat-moderation/reports', { params }),
+  report:       (id: string) => api.get(`/chat-moderation/reports/${id}`),
+  createReport: (data: Record<string, unknown>) => api.post('/chat-moderation/reports', data),
+  resolveReport:(id: string, data: Record<string, unknown>) => api.post(`/chat-moderation/reports/${id}/resolve`, data),
+
+  // Statistics
+  statistics:   () => api.get('/chat-moderation/statistics'),
+
+  // Conversations
+  conversations:(params?: Record<string, unknown>) => api.get('/chat-moderation/conversations', { params }),
+  toggleLock:   (id: string) => api.post(`/chat-moderation/conversations/${id}/toggle-lock`),
+
+  // User blocking
+  blockedUsers: (params?: Record<string, unknown>) => api.get('/chat-moderation/blocked-users', { params }),
+  blockUser:    (data: Record<string, unknown>) => api.post('/chat-moderation/block-user', data),
+  unblockUser:  (data: Record<string, unknown>) => api.post('/chat-moderation/unblock-user', data),
 };
