@@ -131,8 +131,8 @@ export default function Administration() {
       }).catch(() => {});
     }
 
-    // Only load colleges if admin
-    if (isAdmin) {
+    // Load colleges if admin or instructor (needed for Add User)
+    if (isAdmin || isInstructor) {
       loadCollegesAndProgrammes();
     }
   }, [permissions, isAdmin]);
