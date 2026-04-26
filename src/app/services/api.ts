@@ -153,6 +153,21 @@ export const degreeProgrammesApi = {
 export const profileApi = {
   get:               () => api.get('/profile'),
   update:            (data: Record<string, unknown>) => api.put('/profile', data),
+  uploadImage:       (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/profile/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+  removeImage:       () => api.delete('/profile/image'),
+  uploadInstructorImage: (file: File) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    return api.post('/profile/instructor/image', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
   preferences:       () => api.get('/profile/preferences'),
   updatePreferences: (data: Record<string, unknown>) => api.put('/profile/preferences', data),
 };
