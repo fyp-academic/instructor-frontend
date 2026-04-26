@@ -1,17 +1,63 @@
 import React, { useState, useEffect } from 'react';
-import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2, Lock } from 'lucide-react';
+import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, MoreVertical, Edit, Trash2, UserPlus, Plus, X, Loader2, GraduationCap, Building2, Lock, Briefcase, Award, MapPin, Calendar, Phone, CreditCard, User } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
-import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi } from '../services/api';
+import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi } from '../services/api';
 
 type AdminTab = 'users' | 'courses' | 'categories' | 'colleges' | 'degreeProgrammes' | 'system';
 
 type UserRow = Record<string, unknown>;
 
-const ROLES = ['student', 'instructor', 'admin'];
+// Available roles based on user type
+const getAvailableRoles = (isAdmin: boolean) => isAdmin
+  ? ['student', 'instructor', 'admin']
+  : ['student']; // Instructors can only add students
 
-const emptyForm = { name: '', email: '', password: '', role: 'student', registration_number: '', department: '', institution: '', country: '', language: '' };
+// Empty form for student registration
+const emptyStudentForm = {
+  name: '',
+  email: '',
+  password: '',
+  role: 'student',
+  registration_number: '',
+  collegeId: '',
+  degree_programme_id: '',
+  gender: '',
+  phone_number: '',
+};
+
+// Empty form for instructor registration
+const emptyInstructorForm = {
+  name: '',
+  email: '',
+  password: '',
+  role: 'instructor',
+  // Personal Information
+  gender: '',
+  date_of_birth: '',
+  nationality: '',
+  phone_number: '',
+  national_id: '',
+  // Employment Information
+  staff_id: '',
+  employment_type: 'full-time',
+  academic_rank: '',
+  college_id: '',
+  date_of_employment: '',
+  // Academic Assignment
+  assigned_programme_ids: [] as string[],
+  // Qualification Details
+  highest_qualification: '',
+  field_of_specialization: '',
+  awarding_institution: '',
+  year_of_graduation: '',
+  // Additional
+  bio: '',
+  office_location: '',
+  office_hours: '',
+  account_status: 'active',
+};
 
 export default function Administration() {
   const { courses, deleteCourse, categories } = useApp();
@@ -25,9 +71,19 @@ export default function Administration() {
   const [adminStats, setAdminStats] = useState<Record<string, unknown>>({});
 
   const [showAddUser, setShowAddUser]   = useState(false);
-  const [addForm, setAddForm]           = useState(emptyForm);
+  const [addFormRole, setAddFormRole]   = useState<'student' | 'instructor' | 'admin'>('student');
+  const [addForm, setAddForm]           = useState<typeof emptyStudentForm | typeof emptyInstructorForm>(emptyStudentForm);
   const [addLoading, setAddLoading]     = useState(false);
   const [addError, setAddError]         = useState('');
+  const [parsedReg, setParsedReg]       = useState<{
+    nationality?: string;
+    flag?: string;
+    region?: string;
+    registration_year?: number;
+    education_level?: string;
+    year_of_study?: number;
+  } | null>(null);
+  const [parsingReg, setParsingReg]     = useState(false);
 
   // Colleges & degree programmes state
   const [colleges, setColleges] = useState<Array<{id: string; name: string; code: string; description?: string}>>([]);
@@ -211,7 +267,14 @@ export default function Administration() {
                   <Search className="w-4 h-4 text-gray-400" />
                   <input type="text" placeholder="Search users..." value={userSearch} onChange={e => setUserSearch(e.target.value)} className="bg-transparent text-sm outline-none flex-1" />
                 </div>
-                <button onClick={() => { setAddForm(emptyForm); setAddError(''); setShowAddUser(true); }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+                <button onClick={() => {
+                  const defaultRole = isAdmin ? 'instructor' : 'student'; // Admins default to instructor, instructors can only add students
+                  setAddFormRole(defaultRole);
+                  setAddForm(defaultRole === 'instructor' ? emptyInstructorForm : emptyStudentForm);
+                  setAddError('');
+                  setParsedReg(null);
+                  setShowAddUser(true);
+                }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
                   <UserPlus className="w-4 h-4" /> Add User
                 </button>
               </div>
@@ -546,73 +609,557 @@ export default function Administration() {
           )}
         </div>
       </div>
-      {/* Add User Modal */}
+      {/* Add User Modal - Role-Based Forms */}
       {showAddUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
           <div className="absolute inset-0 bg-black/50" onClick={() => !addLoading && setShowAddUser(false)} />
-          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4">
+          <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${addFormRole === 'instructor' ? 'max-w-4xl max-h-[90vh] overflow-y-auto' : 'max-w-md'} p-6 space-y-4`}>
             <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold text-gray-900">Add New User</h2>
+              <h2 className="text-lg font-bold text-gray-900">
+                Add New {addFormRole === 'student' ? 'Student' : addFormRole === 'instructor' ? 'Instructor' : 'Admin'}
+              </h2>
               <button onClick={() => setShowAddUser(false)} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
             </div>
 
             {addError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{addError}</p>}
 
-            <div className="grid grid-cols-2 gap-3">
-              {([
-                { field: 'name',        label: 'Full Name',    type: 'text',     col: 2 },
-                { field: 'email',       label: 'Email',        type: 'email',    col: 2 },
-                { field: 'password',    label: 'Password',     type: 'password', col: 2 },
-                { field: 'department',  label: 'Department',   type: 'text',     col: 1 },
-                { field: 'institution', label: 'Institution',  type: 'text',     col: 1 },
-                { field: 'country',     label: 'Country',      type: 'text',     col: 1 },
-                { field: 'language',    label: 'Language',     type: 'text',     col: 1 },
-              ] as {field: keyof typeof emptyForm; label: string; type: string; col: number}[]).map(({ field, label, type, col }) => (
-                <div key={field} className={col === 2 ? 'col-span-2' : ''}>
-                  <label className="block text-xs font-semibold text-gray-500 mb-1">{label}</label>
-                  <input
-                    type={type}
-                    value={addForm[field]}
-                    onChange={e => setAddForm(prev => ({ ...prev, [field]: e.target.value }))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-                    placeholder={label}
-                    autoComplete="off"
-                  />
+            {/* Role Selection - Only for Admins */}
+            {isAdmin && (
+              <div className="flex items-center gap-2 pb-2 border-b border-gray-100">
+                <span className="text-sm font-medium text-gray-600">Role:</span>
+                <div className="flex gap-2">
+                  {getAvailableRoles(isAdmin).map(role => (
+                    <button
+                      key={role}
+                      onClick={() => {
+                        setAddFormRole(role as typeof addFormRole);
+                        setAddForm(role === 'instructor' ? emptyInstructorForm : emptyStudentForm);
+                        setParsedReg(null);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                        addFormRole === role
+                          ? 'bg-indigo-600 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {role.charAt(0).toUpperCase() + role.slice(1)}
+                    </button>
+                  ))}
                 </div>
-              ))}
-              <div className="col-span-2">
-                <label className="block text-xs font-semibold text-gray-500 mb-1">Role</label>
-                <select
-                  value={addForm.role}
-                  onChange={e => setAddForm(prev => ({ ...prev, role: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
-                >
-                  {ROLES.map(r => <option key={r} value={r} className="capitalize">{r.charAt(0).toUpperCase() + r.slice(1)}</option>)}
-                </select>
               </div>
-            </div>
+            )}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button onClick={() => setShowAddUser(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600">Cancel</button>
+            {/* STUDENT REGISTRATION FORM */}
+            {addFormRole === 'student' && (
+              <div className="space-y-4">
+                {/* Basic Info */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={addForm.name}
+                      onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="Enter full name"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={addForm.email}
+                      onChange={e => setAddForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="student@example.com"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={addForm.password}
+                      onChange={e => setAddForm(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="Min 8 characters"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Gender</label>
+                    <select
+                      value={(addForm as typeof emptyStudentForm).gender}
+                      onChange={e => setAddForm(prev => ({ ...prev, gender: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                    >
+                      <option value="">Select</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Phone Number</label>
+                    <input
+                      type="tel"
+                      value={(addForm as typeof emptyStudentForm).phone_number}
+                      onChange={e => setAddForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="e.g. +255 712 345 678"
+                    />
+                  </div>
+                </div>
+
+                {/* Registration Number with Parsing */}
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Registration Number</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={(addForm as typeof emptyStudentForm).registration_number}
+                      onChange={async e => {
+                        const val = e.target.value.toUpperCase();
+                        setAddForm(prev => ({ ...prev, registration_number: val }));
+                        if (/^[TKBRUZ]\d{2}-\d{2}-\d{5}$/.test(val)) {
+                          setParsingReg(true);
+                          try {
+                            const r = await authApi.parseRegistration(val);
+                            setParsedReg(r.data.data);
+                            // Auto-set college/degree if needed
+                          } catch {
+                            setParsedReg(null);
+                          } finally {
+                            setParsingReg(false);
+                          }
+                        }
+                      }}
+                      className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="T23-03-09759"
+                    />
+                    {parsingReg && <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Format: XYY-LL-NNNNN (e.g., T23-03-09759)</p>
+
+                  {/* Parsed Info Display */}
+                  {parsedReg && (
+                    <div className="mt-2 p-2 bg-indigo-50 border border-indigo-100 rounded-lg text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="text-lg">{parsedReg.flag}</span>
+                        <span className="font-medium">{parsedReg.nationality}</span>
+                        {parsedReg.region && <span className="text-gray-500">({parsedReg.region})</span>}
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 mt-1">
+                        <span>Year: {parsedReg.registration_year}</span>
+                        <span>Level: {parsedReg.education_level}</span>
+                        <span>Study Year: {parsedReg.year_of_study}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* College & Programme Selection */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">College</label>
+                    <select
+                      value={(addForm as typeof emptyStudentForm).collegeId}
+                      onChange={e => {
+                        setAddForm(prev => ({ ...prev, collegeId: e.target.value, degree_programme_id: '' }));
+                      }}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                    >
+                      <option value="">Select College</option>
+                      {colleges.map(c => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Degree Programme</label>
+                    <select
+                      value={(addForm as typeof emptyStudentForm).degree_programme_id}
+                      onChange={e => setAddForm(prev => ({ ...prev, degree_programme_id: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      disabled={!(addForm as typeof emptyStudentForm).collegeId}
+                    >
+                      <option value="">Select Programme</option>
+                      {programmes
+                        .filter(p => p.college_id === (addForm as typeof emptyStudentForm).collegeId || isInstructor)
+                        .map(p => (
+                          <option key={p.id} value={p.id}>{p.name}</option>
+                        ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* INSTRUCTOR REGISTRATION FORM */}
+            {addFormRole === 'instructor' && (
+              <div className="space-y-6">
+                {/* Section: System Access */}
+                <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-indigo-900 flex items-center gap-2">
+                    <Lock className="w-4 h-4" /> System Access
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Email Address *</label>
+                      <input
+                        type="email"
+                        value={addForm.email}
+                        onChange={e => setAddForm(prev => ({ ...prev, email: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                        placeholder="instructor@university.ac.tz"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Password *</label>
+                      <input
+                        type="password"
+                        value={addForm.password}
+                        onChange={e => setAddForm(prev => ({ ...prev, password: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                        placeholder="Min 8 characters"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Personal Information */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <User className="w-4 h-4 text-indigo-600" /> Personal Information
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="col-span-3">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Full Name *</label>
+                      <input
+                        type="text"
+                        value={addForm.name}
+                        onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="Dr. John Smith"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Gender</label>
+                      <select
+                        value={(addForm as typeof emptyInstructorForm).gender}
+                        onChange={e => setAddForm(prev => ({ ...prev, gender: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Date of Birth</label>
+                      <input
+                        type="date"
+                        value={(addForm as typeof emptyInstructorForm).date_of_birth}
+                        onChange={e => setAddForm(prev => ({ ...prev, date_of_birth: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Nationality</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).nationality}
+                        onChange={e => setAddForm(prev => ({ ...prev, nationality: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="Tanzanian"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Phone Number</label>
+                      <input
+                        type="tel"
+                        value={(addForm as typeof emptyInstructorForm).phone_number}
+                        onChange={e => setAddForm(prev => ({ ...prev, phone_number: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="+255 XXX XXX XXX"
+                      />
+                    </div>
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">National ID / Passport</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).national_id}
+                        onChange={e => setAddForm(prev => ({ ...prev, national_id: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="ID Number"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Employment Information */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Briefcase className="w-4 h-4 text-indigo-600" /> Employment Information
+                  </h3>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Staff ID *</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).staff_id}
+                        onChange={e => setAddForm(prev => ({ ...prev, staff_id: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="e.g., STF-001"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Employment Type</label>
+                      <select
+                        value={(addForm as typeof emptyInstructorForm).employment_type}
+                        onChange={e => setAddForm(prev => ({ ...prev, employment_type: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        <option value="full-time">Full-time</option>
+                        <option value="part-time">Part-time</option>
+                        <option value="visiting">Visiting</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Academic Rank</label>
+                      <select
+                        value={(addForm as typeof emptyInstructorForm).academic_rank}
+                        onChange={e => setAddForm(prev => ({ ...prev, academic_rank: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        <option value="">Select Rank</option>
+                        <option value="tutorial_assistant">Tutorial Assistant</option>
+                        <option value="graduate_assistant">Graduate Assistant</option>
+                        <option value="assistant_lecturer">Assistant Lecturer</option>
+                        <option value="lecturer">Lecturer</option>
+                        <option value="senior_lecturer">Senior Lecturer</option>
+                        <option value="associate_professor">Associate Professor</option>
+                        <option value="professor">Professor</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">College *</label>
+                      <select
+                        value={(addForm as typeof emptyInstructorForm).college_id}
+                        onChange={e => setAddForm(prev => ({ ...prev, college_id: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
+                      >
+                        <option value="">Select College</option>
+                        {colleges.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Date of Employment</label>
+                      <input
+                        type="date"
+                        value={(addForm as typeof emptyInstructorForm).date_of_employment}
+                        onChange={e => setAddForm(prev => ({ ...prev, date_of_employment: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Academic Assignment */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <GraduationCap className="w-4 h-4 text-indigo-600" /> Academic Assignment
+                  </h3>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">Assigned Degree Programme(s)</label>
+                    <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
+                      {programmes.map(p => (
+                        <label key={p.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                          <input
+                            type="checkbox"
+                            checked={(addForm as typeof emptyInstructorForm).assigned_programme_ids.includes(p.id)}
+                            onChange={e => {
+                              const current = (addForm as typeof emptyInstructorForm).assigned_programme_ids;
+                              const updated = e.target.checked
+                                ? [...current, p.id]
+                                : current.filter(id => id !== p.id);
+                              setAddForm(prev => ({ ...prev, assigned_programme_ids: updated }));
+                            }}
+                            className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-gray-700">{p.name}</span>
+                          <span className="text-xs text-gray-400">({p.college?.name || 'No College'})</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Qualification Details */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-indigo-600" /> Qualification Details
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Highest Qualification</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).highest_qualification}
+                        onChange={e => setAddForm(prev => ({ ...prev, highest_qualification: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="e.g., PhD, MSc"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Field of Specialization</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).field_of_specialization}
+                        onChange={e => setAddForm(prev => ({ ...prev, field_of_specialization: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="e.g., Computer Science"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Awarding Institution</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).awarding_institution}
+                        onChange={e => setAddForm(prev => ({ ...prev, awarding_institution: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="University Name"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Year of Graduation</label>
+                      <input
+                        type="number"
+                        min="1900"
+                        max={new Date().getFullYear() + 1}
+                        value={(addForm as typeof emptyInstructorForm).year_of_graduation}
+                        onChange={e => setAddForm(prev => ({ ...prev, year_of_graduation: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="2020"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section: Additional Information */}
+                <div className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Database className="w-4 h-4 text-indigo-600" /> Additional Information
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2">
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Bio / Short Description</label>
+                      <textarea
+                        value={(addForm as typeof emptyInstructorForm).bio}
+                        onChange={e => setAddForm(prev => ({ ...prev, bio: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        rows={2}
+                        placeholder="Brief description of expertise and experience"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Office Location</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).office_location}
+                        onChange={e => setAddForm(prev => ({ ...prev, office_location: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="Building, Room Number"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1">Office Hours</label>
+                      <input
+                        type="text"
+                        value={(addForm as typeof emptyInstructorForm).office_hours}
+                        onChange={e => setAddForm(prev => ({ ...prev, office_hours: e.target.value }))}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                        placeholder="Mon-Fri 9:00-17:00"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ADMIN REGISTRATION FORM */}
+            {addFormRole === 'admin' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Full Name</label>
+                    <input
+                      type="text"
+                      value={addForm.name}
+                      onChange={e => setAddForm(prev => ({ ...prev, name: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="Admin Name"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                    <input
+                      type="email"
+                      value={addForm.email}
+                      onChange={e => setAddForm(prev => ({ ...prev, email: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="admin@university.ac.tz"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Password</label>
+                    <input
+                      type="password"
+                      value={addForm.password}
+                      onChange={e => setAddForm(prev => ({ ...prev, password: e.target.value }))}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+                      placeholder="Min 8 characters"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowAddUser(false)}
+                className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
               <button
                 disabled={!addForm.name || !addForm.email || !addForm.password || addLoading}
                 onClick={async () => {
                   setAddLoading(true); setAddError('');
                   try {
-                    const r = await usersApi.create({ ...addForm });
-                    const created = r.data.data ?? r.data;
+                    const payload = addFormRole === 'instructor'
+                      ? { ...addForm, password_confirmation: addForm.password, assigned_programme_ids: (addForm as typeof emptyInstructorForm).assigned_programme_ids }
+                      : { ...addForm, password_confirmation: addForm.password, degree_programme_id: (addForm as typeof emptyStudentForm).degree_programme_id };
+                    const r = await authApi.register(payload);
+                    const created = r.data.user ?? r.data;
                     setUsers(prev => [created as UserRow, ...prev]);
                     setShowAddUser(false);
-                    setAddForm(emptyForm);
+                    setAddForm(addFormRole === 'instructor' ? emptyInstructorForm : emptyStudentForm);
+                    setAddFormRole('student');
+                    setParsedReg(null);
                   } catch (e: unknown) {
-                    const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to create user.';
+                    const msg = (e as {response?: {data?: {errors?: Record<string, string[]>; message?: string}}})?.response?.data?.errors
+                      ? Object.values((e as {response?: {data?: {errors?: Record<string, string[]>}}}).response!.data!.errors!).flat().join(', ')
+                      : (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to create user.';
                     setAddError(msg);
                   } finally { setAddLoading(false); }
                 }}
                 className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
               >
                 {addLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
-                Create User
+                Create {addFormRole.charAt(0).toUpperCase() + addFormRole.slice(1)}
               </button>
             </div>
           </div>
