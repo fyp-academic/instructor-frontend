@@ -357,23 +357,24 @@ export default function Messaging() {
             </button>
           </div>
 
-          {/* Chat Type Tabs */}
+          {/* Chat Type Tabs - Icons inline with text */}
           <div className="flex gap-1 mb-3 p-1 rounded-lg bg-gray-100">
             {(['direct', 'course', 'programme'] as ChatType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => { setActiveTab(tab); setSelectedConvId(null); }}
-                className="flex-1 py-1.5 px-2 rounded-md text-xs font-medium transition-all"
+                className="flex-1 py-1.5 px-1 sm:px-2 rounded-md text-xs font-medium transition-all flex items-center justify-center gap-1"
                 style={{
                   backgroundColor: activeTab === tab ? "white" : "transparent",
                   color: activeTab === tab ? "#4f46e5" : "#6b7280",
                   boxShadow: activeTab === tab ? "0 1px 2px rgba(0,0,0,0.05)" : "none",
                 }}
               >
-                {tab === 'direct' && <Users size={12} className="inline mr-1" />}
-                {tab === 'course' && <BookOpen size={12} className="inline mr-1" />}
-                {tab === 'programme' && <GraduationCap size={12} className="inline mr-1" />}
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                {tab === 'direct' && <Users size={12} />}
+                {tab === 'course' && <BookOpen size={12} />}
+                {tab === 'programme' && <GraduationCap size={12} />}
+                <span className="hidden sm:inline">{tab.charAt(0).toUpperCase() + tab.slice(1)}</span>
+                <span className="sm:hidden">{tab.charAt(0).toUpperCase()}</span>
               </button>
             ))}
           </div>
@@ -435,10 +436,10 @@ export default function Messaging() {
       <div className={`flex-1 flex flex-col ${!showMobileConv && 'hidden md:flex'}`}>
         {selectedConv ? (
           <>
-            {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-white">
-              <div className="flex items-center gap-3">
-                <button onClick={() => setShowMobileConv(false)} className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500">
+            {/* Header - With back button and responsive text */}
+            <div className="flex items-center justify-between px-3 sm:px-5 py-4 border-b border-gray-200 bg-white">
+              <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                <button onClick={() => setShowMobileConv(false)} className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 flex-shrink-0">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <div className="relative flex-shrink-0">
@@ -451,9 +452,9 @@ export default function Messaging() {
                     <span className="absolute bottom-0 right-0 w-2.5 h-2.5 bg-green-400 border-2 border-white rounded-full" />
                   )}
                 </div>
-                <div>
-                  <p className="font-semibold text-gray-900">{getConversationName(selectedConv)}</p>
-                  <p className="text-xs text-gray-400">
+                <div className="min-w-0">
+                  <p className="font-semibold text-gray-900 truncate">{getConversationName(selectedConv)}</p>
+                  <p className="text-xs text-gray-400 truncate">
                     {selectedConv.type === 'course' || selectedConv.type === 'programme'
                       ? (selectedConv.type === 'course' ? 'Course Chat' : 'Programme Chat')
                       : <>
@@ -509,8 +510,8 @@ export default function Messaging() {
               </div>
             )}
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 bg-gray-50">
+            {/* Messages - Responsive padding */}
+            <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 space-y-3 bg-gray-50">
               {messages.map(msg => {
                 const isOwn = msg.sender_id === user?.id;
                 const isDeleted = msg.deleted_at != null;
@@ -524,7 +525,7 @@ export default function Messaging() {
                         {initials(msg.sender_name)}
                       </div>
                     )}
-                    <div className={`max-w-xs lg:max-w-md flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'}`}>
+                    <div className={`max-w-[75%] sm:max-w-xs lg:max-w-md flex flex-col gap-1 ${isOwn ? 'items-end' : 'items-start'}`}>
                       {/* Bubble */}
                       <div
                         onContextMenu={(e) => handleContextMenu(e, msg.id)}
@@ -675,8 +676,8 @@ export default function Messaging() {
               </div>
             )}
 
-            {/* Input */}
-            <div className="px-4 py-4 border-t border-gray-200 bg-white">
+            {/* Input - Responsive padding */}
+            <div className="px-2 sm:px-4 py-3 sm:py-4 border-t border-gray-200 bg-white">
               <div className="flex items-end gap-2">
                 <input ref={fileInputRef} type="file" className="hidden"
                   onChange={e => setFilePreview(e.target.files?.[0] ?? null)} />
@@ -686,12 +687,12 @@ export default function Messaging() {
                 </button>
                 <textarea value={messageText} onChange={e => handleInputChange(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Type a message… (Enter to send)"
+                  placeholder="Type a message…"
                   rows={1}
-                  className="flex-1 border border-gray-300 rounded-xl px-4 py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] max-h-24"
+                  className="flex-1 border border-gray-300 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] max-h-24"
                   style={{ fieldSizing: 'content' } as React.CSSProperties} />
                 <button onClick={handleSend} disabled={(!messageText.trim() && !filePreview) || sending}
-                  className={`p-2.5 rounded-xl transition-colors flex-shrink-0 ${(messageText.trim() || filePreview) && !sending ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
+                  className={`p-2 sm:p-2.5 rounded-xl transition-colors flex-shrink-0 ${(messageText.trim() || filePreview) && !sending ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
                   <Send className="w-5 h-5" />
                 </button>
               </div>
