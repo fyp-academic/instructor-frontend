@@ -113,7 +113,7 @@ export default function Administration() {
   const programmesPerPage = 20;
 
   const [showProgrammeModal, setShowProgrammeModal] = useState(false);
-  const [programmeForm, setProgrammeForm] = useState({ name: '', code: '', college_id: '', description: '' });
+  const [programmeForm, setProgrammeForm] = useState({ name: '', code: '', college_id: '', description: '', duration_years: 4 });
   const [programmeLoading, setProgrammeLoading] = useState(false);
   const [programmeError, setProgrammeError] = useState('');
 
@@ -655,7 +655,7 @@ export default function Administration() {
           {activeTab === 'degreeProgrammes' && (
             <div className="space-y-4">
               <div className="flex justify-end">
-                <button onClick={() => { setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '' }); setProgrammeError(''); setShowProgrammeModal(true); }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
+                <button onClick={() => { setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '', duration_years: 4 }); setProgrammeError(''); setShowProgrammeModal(true); }} className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700">
                   <Plus className="w-4 h-4" /> Add Degree Programme
                 </button>
               </div>
@@ -1789,6 +1789,10 @@ export default function Administration() {
                 <label className="block text-xs font-semibold text-gray-500 mb-1">Description</label>
                 <input type="text" value={programmeForm.description} onChange={e => setProgrammeForm(p => ({ ...p, description: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Optional description" />
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-500 mb-1">Duration (Years)</label>
+                <input type="number" min={1} max={7} value={programmeForm.duration_years} onChange={e => setProgrammeForm(p => ({ ...p, duration_years: parseInt(e.target.value) || 4 }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </div>
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <button onClick={() => setShowProgrammeModal(false)} className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600">Cancel</button>
@@ -1801,7 +1805,7 @@ export default function Administration() {
                     const created = r.data.data ?? r.data;
                     setProgrammes(prev => [created, ...prev]);
                     setShowProgrammeModal(false);
-                    setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '' });
+                    setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '', duration_years: 4 });
                   } catch (e: unknown) {
                     const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to create degree programme.';
                     setProgrammeError(msg);
