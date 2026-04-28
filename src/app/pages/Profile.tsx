@@ -397,7 +397,11 @@ const Field = ({ icon: Icon, label, value, editKey, type = 'text', form, editing
               )}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-gray-500">Member Since</span>
-                <span className="font-semibold text-gray-800">{profile?.registration_number ? '2024' : '—'}</span>
+                <span className="font-semibold text-gray-800">
+                  {profile?.created_at 
+                    ? new Date(profile.created_at as string).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+                    : '—'}
+                </span>
               </div>
             </div>
           </div>
