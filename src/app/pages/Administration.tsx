@@ -1574,8 +1574,8 @@ export default function Administration() {
                   setAddLoading(true); setAddError('');
                   try {
                     const payload = addFormRole === 'instructor'
-                      ? { ...addForm, password_confirmation: addForm.password, assigned_programme_ids: (addForm as typeof emptyInstructorForm).assigned_programme_ids }
-                      : { ...addForm, password_confirmation: addForm.password, degree_programme_id: (addForm as typeof emptyStudentForm).degree_programme_id };
+                      ? { ...addForm, password_confirmation: addForm.password, assigned_programme_ids: (addForm as typeof emptyInstructorForm).assigned_programme_ids, auto_verify: true }
+                      : { ...addForm, password_confirmation: addForm.password, degree_programme_id: (addForm as typeof emptyStudentForm).degree_programme_id, auto_verify: true };
                     const r = await authApi.register(payload);
                     const created = r.data.user ?? r.data;
                     setUsers(prev => [created as UserRow, ...prev]);
