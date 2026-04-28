@@ -279,7 +279,9 @@ export default function Administration() {
           national_id: instructorData.national_id ?? '',
           employment_type: instructorData.employment_type ?? 'full-time',
           academic_rank: instructorData.academic_rank ?? '',
-          date_of_employment: instructorData.date_of_employment ?? '',
+          date_of_employment: instructorData.date_of_employment 
+            ? new Date(instructorData.date_of_employment).toISOString().split('T')[0] 
+            : '',
           highest_qualification: instructorData.highest_qualification ?? '',
           field_of_specialization: instructorData.field_of_specialization ?? '',
           awarding_institution: instructorData.awarding_institution ?? '',
@@ -2138,9 +2140,20 @@ export default function Administration() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs font-semibold text-gray-500 mb-1">Nationality</label>
-                    <input type="text" value={String(editForm.nationality ?? '')} onChange={e => setEditForm(p => ({ ...p, nationality: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g. Tanzania" />
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Education Level</label>
+                    <select value={String(editForm.education_level ?? '')} onChange={e => setEditForm(p => ({ ...p, education_level: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                      <option value="">Select Level</option>
+                      <option value="certificate">Certificate</option>
+                      <option value="diploma">Diploma</option>
+                      <option value="bachelor">Bachelor</option>
+                      <option value="master">Master</option>
+                      <option value="phd">PhD</option>
+                    </select>
                   </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Nationality</label>
+                  <input type="text" value={String(editForm.nationality ?? '')} onChange={e => setEditForm(p => ({ ...p, nationality: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g. Tanzania" />
                 </div>
               </div>
             )}
