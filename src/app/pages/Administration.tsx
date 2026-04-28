@@ -377,7 +377,9 @@ export default function Administration() {
                         const uemail  = String(user.email ?? '');
                         const urole   = String(user.role ?? 'student');
                         const ureg    = String(user.registration_number ?? '');
-                        const uprog   = String((user.degree_programme as {name?: string})?.name ?? user.degree_programme_id ?? '—');
+                        const progId = user.degree_programme_id ?? '';
+                        const progName = Array.isArray(programmes) ? programmes.find(p => p.id === progId)?.name : undefined;
+                        const uprog   = progName ?? (progId ? progId.slice(0, 8) + '...' : '—');
                         const initials = uname.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                         return (
                           <tr key={uid} className="hover:bg-gray-50">
