@@ -1022,7 +1022,7 @@ export default function Administration() {
                             </p>
                             {conv.last_message && (
                               <p className="text-xs text-gray-400 mt-1 truncate">
-                                Last: {String((conv.last_message as Record<string, unknown>)?.content ?? 'No content')}
+                                Last: {(conv.last_message as Record<string, { content?: string }>)?.content ?? 'No content'}
                               </p>
                             )}
                           </div>
