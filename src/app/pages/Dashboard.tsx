@@ -50,7 +50,7 @@ export default function Dashboard() {
   ];
 
   const stats = [
-    { label: 'Total Courses',      value: courses.length,                sub: `${activeCourses} active`,          icon: BookOpen,  color: 'bg-indigo-500' },
+    { label: 'Total Courses',      value: courses?.length ?? 0,            sub: `${activeCourses} active`,          icon: BookOpen,  color: 'bg-indigo-500' },
     { label: 'Enrolled Students',  value: totalStudents,                 sub: 'Across all courses',               icon: Users,     color: 'bg-emerald-500' },
     { label: 'Total Activities',   value: totalActivities,               sub: 'Quizzes, assignments & more',       icon: Activity,  color: 'bg-purple-500' },
     { label: 'Completion Rate',    value: completionRate,                sub: 'Average across all courses',        icon: TrendingUp,color: 'bg-amber-500' },
@@ -74,7 +74,7 @@ export default function Dashboard() {
       {/* Welcome banner */}
       <div className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {String((currentUser as Record<string,unknown>).name ?? 'there').split(' ')[0]}! 👋</h1>
+          <h1 className="text-2xl font-bold">Welcome back, {String(currentUser.name ?? 'there').split(' ')[0]}! 👋</h1>
           <p className="text-indigo-200 mt-1">Here's what's happening with your courses today.</p>
         </div>
         <div className="flex gap-3 flex-wrap">
