@@ -1807,7 +1807,14 @@ export default function Administration() {
                     setShowProgrammeModal(false);
                     setProgrammeForm({ name: '', code: '', college_id: colleges[0]?.id ?? '', description: '', duration_years: 4 });
                   } catch (e: unknown) {
-                    const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to create degree programme.';
+                    const data = (e as {response?: {data?: Record<string, unknown>}})?.response?.data;
+                    let msg = 'Failed to create degree programme.';
+                    if (data?.errors && typeof data.errors === 'object') {
+                      const errors = Object.entries(data.errors as Record<string, string[]>).map(([field, msgs]) => `${field}: ${msgs.join(', ')}`).join('; ');
+                      if (errors) msg = `Validation errors: ${errors}`;
+                    } else if (data?.message) {
+                      msg = String(data.message);
+                    }
                     setProgrammeError(msg);
                   } finally { setProgrammeLoading(false); }
                 }}
