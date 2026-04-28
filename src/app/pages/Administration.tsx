@@ -69,7 +69,8 @@ const emptyInstructorForm = {
 };
 
 export default function Administration() {
-  const { courses, deleteCourse, categories } = useApp();
+  const { courses, deleteCourse, categories: rawCategories } = useApp();
+  const categories = Array.isArray(rawCategories) ? rawCategories : [];
   const { user, permissions, isAdmin, isInstructor, assignedProgrammes } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<AdminTab>('users');
@@ -205,8 +206,10 @@ export default function Administration() {
         collegesApi.list(),
         degreeProgrammesApi.list(),
       ]);
-      setColleges(cRes.data.data ?? []);
-      setProgrammes(pRes.data.data ?? []);
+      const cData = cRes.data.data;
+      const pData = pRes.data.data;
+      setColleges(Array.isArray(cData) ? cData : []);
+      setProgrammes(Array.isArray(pData) ? pData : []);
     } catch {
       // ignore
     } finally {
@@ -225,7 +228,8 @@ export default function Administration() {
   const totalUserPages = Math.ceil(filteredUsers.length / usersPerPage);
   const paginatedUsers = filteredUsers.slice((userPage - 1) * usersPerPage, userPage * usersPerPage);
 
-  const filteredCourses = courses.filter(c => {
+  const courseList = Array.isArray(courses) ? courses : [];
+  const filteredCourses = courseList.filter(c => {
     const c2 = c as unknown as Record<string, unknown>;
     const n  = String(c2.name ?? c2.title ?? '').toLowerCase();
     const sn = String(c2.shortName ?? c2.short_name ?? '').toLowerCase();
@@ -289,7 +293,7 @@ export default function Administration() {
           // Admin sees all stats
           [
             { label: 'Total Users',       value: Number(adminStats.total_users       ?? users.length),                              icon: Users,    color: 'text-indigo-600 bg-indigo-50' },
-            { label: 'Active Courses',    value: Number(adminStats.active_courses    ?? courses.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
+            { label: 'Active Courses',    value: Number(adminStats.active_courses    ?? courseList.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
             { label: 'Colleges',          value: Number(adminStats.total_colleges    ?? colleges.length),                             icon: Building2, color: 'text-amber-600 bg-amber-50'  },
             { label: 'Degree Programmes', value: Number(adminStats.total_degree_programmes ?? programmes.length),                      icon: GraduationCap, color: 'text-purple-600 bg-purple-50' },
           ]
@@ -297,7 +301,7 @@ export default function Administration() {
           // Instructor sees programme-specific stats
           [
             { label: 'My Students',       value: Number(adminStats.total_students ?? users.length),                                 icon: Users,    color: 'text-indigo-600 bg-indigo-50' },
-            { label: 'Active Courses',    value: Number(adminStats.active_courses ?? courses.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
+            { label: 'Active Courses',    value: Number(adminStats.active_courses ?? courseList.filter(c => c.status === 'active').length), icon: BookOpen, color: 'text-green-600 bg-green-50'  },
             { label: 'Assigned Programmes', value: Number(adminStats.assigned_programmes ?? assignedProgrammes.length),               icon: GraduationCap, color: 'text-purple-600 bg-purple-50' },
             { label: 'Total Enrollments', value: Number(adminStats.total_enrollments ?? 0),                                         icon: Users,    color: 'text-blue-600 bg-blue-50' },
           ]
@@ -678,7 +682,7 @@ export default function Administration() {
                         <tr key={p.id} className="hover:bg-gray-50">
                           <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{p.name}</td>
                           <td className="px-4 py-3 text-gray-500 font-mono text-xs whitespace-nowrap">{p.code}</td>
-                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.college?.name ?? colleges.find(c => c.id === p.college_id)?.name ?? '—'}</td>
+                          <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{p.college?.name ?? (Array.isArray(colleges) ? colleges.find(c => c.id === p.college_id)?.name : undefined) ?? '—'}</td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
                               <button
@@ -1662,7 +1666,7 @@ export default function Administration() {
                 {modalType === 'courses' && 'Courses'}
                 {modalType === 'instructors' && 'Assign Instructors'}
                 {' — '}
-                {programmes.find(p => p.id === modalProgId)?.name}
+                {(Array.isArray(programmes) ? programmes.find(p => p.id === modalProgId)?.name : undefined) ?? 'Unknown'}
               </h2>
               <button onClick={() => { setModalType(null); setModalProgId(null); }} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
             </div>
