@@ -175,7 +175,17 @@ export const chatReportsApi = {
 export const usersApi = {
   list:   () => api.get('/users'),
   create: (data: Record<string, unknown>) => api.post('/auth/register', data),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/users/${id}`, data),
+  delete: (id: string) => api.delete(`/users/${id}`),
   adminStats: () => api.get('/dashboard/admin'),
+};
+
+// ─── Instructors (Admin) ───────────────────────────────────────────────────
+export const instructorsApi = {
+  list:   () => api.get('/instructors'),
+  get:    (id: string) => api.get(`/instructors/${id}`),
+  update: (id: string, data: Record<string, unknown>) => api.put(`/instructors/${id}`, data),
+  delete: (id: string) => api.delete(`/instructors/${id}`),
 };
 
 // ─── Colleges & Degree Programmes ─────────────────────────────────────────────

@@ -3,7 +3,7 @@ import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
-import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi, chatModerationApi } from '../services/api';
+import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi, chatModerationApi, instructorsApi } from '../services/api';
 
 type AdminTab = 'users' | 'courses' | 'categories' | 'colleges' | 'degreeProgrammes' | 'chatModeration' | 'system';
 
@@ -94,6 +94,14 @@ export default function Administration() {
     year_of_study?: number;
   } | null>(null);
   const [parsingReg, setParsingReg]     = useState(false);
+
+  // Edit user modal state
+  const [showEditUser, setShowEditUser] = useState(false);
+  const [editUserId, setEditUserId] = useState<string | null>(null);
+  const [editUserRole, setEditUserRole] = useState<'student' | 'instructor' | 'admin'>('student');
+  const [editForm, setEditForm] = useState<Record<string, unknown>>({});
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState('');
 
   // Colleges & degree programmes state
   const [colleges, setColleges] = useState<Array<{id: string; name: string; code: string; description?: string}>>([]);
@@ -214,6 +222,91 @@ export default function Administration() {
       // ignore
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  // Delete user with confirmation
+  const deleteUser = async (user: UserRow) => {
+    const userId = String(user.id ?? '');
+    const userRole = String(user.role ?? '');
+    const userName = String(user.name ?? 'this user');
+
+    if (!confirm(`Are you sure you want to delete "${userName}"?\n\nThis action cannot be undone.`)) {
+      setMenuOpenId(null);
+      return;
+    }
+
+    try {
+      if (userRole === 'instructor') {
+        await instructorsApi.delete(userId);
+      } else {
+        await usersApi.delete(userId);
+      }
+      // Remove from local state
+      setUsers(prev => prev.filter(u => String(u.id ?? '') !== userId));
+      setMenuOpenId(null);
+    } catch (e: unknown) {
+      const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to delete user.';
+      alert(msg);
+    }
+  };
+
+  // Open edit modal with user data
+  const openEditModal = async (user: UserRow) => {
+    const userId = String(user.id ?? '');
+    const userRole = String(user.role ?? 'student') as 'student' | 'instructor' | 'admin';
+
+    setEditUserId(userId);
+    setEditUserRole(userRole);
+    setEditError('');
+    setMenuOpenId(null);
+
+    // Load full user data based on role
+    try {
+      if (userRole === 'instructor') {
+        // For instructors, we need to fetch their instructor profile
+        const res = await instructorsApi.get(userId);
+        const instructorData = res.data.data ?? {};
+        const userData = instructorData.user ?? {};
+
+        setEditForm({
+          name: userData.name ?? '',
+          email: userData.email ?? '',
+          gender: userData.gender ?? '',
+          phone_number: userData.phone_number ?? '',
+          staff_id: instructorData.staff_id ?? '',
+          college_id: instructorData.college_id ?? '',
+          national_id: instructorData.national_id ?? '',
+          employment_type: instructorData.employment_type ?? 'full-time',
+          academic_rank: instructorData.academic_rank ?? '',
+          date_of_employment: instructorData.date_of_employment ?? '',
+          highest_qualification: instructorData.highest_qualification ?? '',
+          field_of_specialization: instructorData.field_of_specialization ?? '',
+          awarding_institution: instructorData.awarding_institution ?? '',
+          year_of_graduation: instructorData.year_of_graduation ?? '',
+          bio: instructorData.bio ?? '',
+          office_location: instructorData.office_location ?? '',
+          office_hours: instructorData.office_hours ?? '',
+          assigned_programme_ids: (instructorData.degree_programmes ?? []).map((p: {id: string}) => p.id),
+        });
+      } else {
+        // For students and admins, use user data directly
+        setEditForm({
+          name: user.name ?? '',
+          email: user.email ?? '',
+          registration_number: user.registration_number ?? '',
+          degree_programme_id: user.degree_programme_id ?? '',
+          gender: user.gender ?? '',
+          phone_number: user.phone_number ?? '',
+          year_of_study: user.year_of_study ?? '',
+          education_level: user.education_level ?? '',
+          nationality: user.nationality ?? '',
+        });
+      }
+      setShowEditUser(true);
+    } catch (err) {
+      console.error('Failed to load user details:', err);
+      setEditError('Failed to load user details for editing.');
     }
   };
 
@@ -402,8 +495,8 @@ export default function Administration() {
                                 </button>
                                 {menuOpenId === uid && (
                                   <div className="absolute right-0 top-8 w-40 bg-white border border-gray-200 rounded-xl shadow-xl z-20 py-1">
-                                    <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Edit className="w-4 h-4 text-gray-400" />Edit</button>
-                                    <button onClick={() => setUsers(prev => prev.filter(u => String(u.id ?? '') !== uid))} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" />Delete</button>
+                                    <button onClick={() => openEditModal(user)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Edit className="w-4 h-4 text-gray-400" />Edit</button>
+                                    <button onClick={() => deleteUser(user)} className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50"><Trash2 className="w-4 h-4" />Delete</button>
                                   </div>
                                 )}
                               </div>
@@ -1977,6 +2070,284 @@ export default function Administration() {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {showEditUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !editLoading && setShowEditUser(false)} />
+          <div className={`relative bg-white rounded-2xl shadow-2xl w-full ${editUserRole === 'instructor' ? 'max-w-4xl max-h-[90vh] overflow-y-auto' : 'max-w-md'} p-6 space-y-4`}>
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">
+                Edit {editUserRole === 'student' ? 'Student' : editUserRole === 'instructor' ? 'Instructor' : 'Admin'}
+              </h2>
+              <button onClick={() => setShowEditUser(false)} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
+            </div>
+
+            {editError && <p className="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2">{editError}</p>}
+
+            {/* STUDENT EDIT FORM */}
+            {editUserRole === 'student' && (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Full Name</label>
+                    <input type="text" value={String(editForm.name ?? '')} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Full name" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                    <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="email@example.com" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Gender</label>
+                    <select value={String(editForm.gender ?? '')} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                      <option value="">Select</option>
+                      <option value="male">Male</option>
+                      <option value="female">Female</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Phone Number</label>
+                    <input type="tel" value={String(editForm.phone_number ?? '')} onChange={e => setEditForm(p => ({ ...p, phone_number: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="+255 712 345 678" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Registration Number</label>
+                    <input type="text" value={String(editForm.registration_number ?? '')} onChange={e => setEditForm(p => ({ ...p, registration_number: e.target.value.toUpperCase() }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 font-mono" placeholder="T25-01-00001" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Year of Study</label>
+                    <input type="number" min={1} max={7} value={Number(editForm.year_of_study ?? 1)} onChange={e => setEditForm(p => ({ ...p, year_of_study: parseInt(e.target.value) || 1 }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Degree Programme</label>
+                    <select value={String(editForm.degree_programme_id ?? '')} onChange={e => setEditForm(p => ({ ...p, degree_programme_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                      <option value="">Select Programme</option>
+                      {Array.isArray(programmes) && programmes.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Nationality</label>
+                    <input type="text" value={String(editForm.nationality ?? '')} onChange={e => setEditForm(p => ({ ...p, nationality: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="e.g. Tanzania" />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* INSTRUCTOR EDIT FORM */}
+            {editUserRole === 'instructor' && (
+              <div className="space-y-6">
+                <div className="bg-indigo-50 rounded-xl p-4 space-y-3">
+                  <h3 className="font-semibold text-indigo-900 text-sm">Basic Information</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Full Name</label>
+                      <input type="text" value={String(editForm.name ?? '')} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Full name" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                      <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="email@udom.com" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Gender</label>
+                      <select value={String(editForm.gender ?? '')} onChange={e => setEditForm(p => ({ ...p, gender: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white">
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Phone Number</label>
+                      <input type="tel" value={String(editForm.phone_number ?? '')} onChange={e => setEditForm(p => ({ ...p, phone_number: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="+255 712 345 678" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-amber-50 rounded-xl p-4 space-y-3">
+                  <h3 className="font-semibold text-amber-900 text-sm">Employment Details</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Staff ID</label>
+                      <input type="text" value={String(editForm.staff_id ?? '')} onChange={e => setEditForm(p => ({ ...p, staff_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 font-mono" placeholder="e.g. INS-001" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">College</label>
+                      <select value={String(editForm.college_id ?? '')} onChange={e => setEditForm(p => ({ ...p, college_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <option value="">Select College</option>
+                        {Array.isArray(colleges) && colleges.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Employment Type</label>
+                      <select value={String(editForm.employment_type ?? 'full-time')} onChange={e => setEditForm(p => ({ ...p, employment_type: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <option value="full-time">Full-time</option>
+                        <option value="part-time">Part-time</option>
+                        <option value="visiting">Visiting</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Academic Rank</label>
+                      <select value={String(editForm.academic_rank ?? '')} onChange={e => setEditForm(p => ({ ...p, academic_rank: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <option value="">Select Rank</option>
+                        <option value="tutorial_assistant">Tutorial Assistant</option>
+                        <option value="graduate_assistant">Graduate Assistant</option>
+                        <option value="assistant_lecturer">Assistant Lecturer</option>
+                        <option value="lecturer">Lecturer</option>
+                        <option value="senior_lecturer">Senior Lecturer</option>
+                        <option value="associate_professor">Associate Professor</option>
+                        <option value="professor">Professor</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Date of Employment</label>
+                      <input type="date" value={String(editForm.date_of_employment ?? '')} onChange={e => setEditForm(p => ({ ...p, date_of_employment: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">National ID</label>
+                      <input type="text" value={String(editForm.national_id ?? '')} onChange={e => setEditForm(p => ({ ...p, national_id: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" placeholder="e.g. 123456789012" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 rounded-xl p-4 space-y-3">
+                  <h3 className="font-semibold text-green-900 text-sm">Qualifications</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Highest Qualification</label>
+                      <input type="text" value={String(editForm.highest_qualification ?? '')} onChange={e => setEditForm(p => ({ ...p, highest_qualification: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="e.g. PhD in Computer Science" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Field of Specialization</label>
+                      <input type="text" value={String(editForm.field_of_specialization ?? '')} onChange={e => setEditForm(p => ({ ...p, field_of_specialization: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="e.g. Artificial Intelligence" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Awarding Institution</label>
+                      <input type="text" value={String(editForm.awarding_institution ?? '')} onChange={e => setEditForm(p => ({ ...p, awarding_institution: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="e.g. University of Dar es Salaam" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Year of Graduation</label>
+                      <input type="number" min={1900} max={2100} value={Number(editForm.year_of_graduation ?? '') || ''} onChange={e => setEditForm(p => ({ ...p, year_of_graduation: parseInt(e.target.value) || '' }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="e.g. 2020" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-purple-50 rounded-xl p-4 space-y-3">
+                  <h3 className="font-semibold text-purple-900 text-sm">Office & Contact</h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Office Location</label>
+                      <input type="text" value={String(editForm.office_location ?? '')} onChange={e => setEditForm(p => ({ ...p, office_location: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="e.g. Block A, Room 101" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-500 mb-1">Office Hours</label>
+                      <input type="text" value={String(editForm.office_hours ?? '')} onChange={e => setEditForm(p => ({ ...p, office_hours: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" placeholder="e.g. Mon-Fri 9:00-12:00" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-xl p-4 space-y-3">
+                  <h3 className="font-semibold text-gray-900 text-sm">Bio & Programmes</h3>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Bio</label>
+                    <textarea value={String(editForm.bio ?? '')} onChange={e => setEditForm(p => ({ ...p, bio: e.target.value }))} rows={3} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400" placeholder="Brief professional biography..." />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-500 mb-1">Assigned Programmes</label>
+                    <div className="border border-gray-200 rounded-lg p-3 bg-white max-h-40 overflow-y-auto">
+                      {Array.isArray(programmes) && programmes.map(p => (
+                        <label key={p.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-gray-50 px-2 rounded">
+                          <input
+                            type="checkbox"
+                            checked={((editForm.assigned_programme_ids as string[]) || []).includes(p.id)}
+                            onChange={e => {
+                              const currentIds = (editForm.assigned_programme_ids as string[]) || [];
+                              if (e.target.checked) {
+                                setEditForm(prev => ({ ...prev, assigned_programme_ids: [...currentIds, p.id] }));
+                              } else {
+                                setEditForm(prev => ({ ...prev, assigned_programme_ids: currentIds.filter(id => id !== p.id) }));
+                              }
+                            }}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          <span className="text-sm text-gray-700">{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ADMIN EDIT FORM */}
+            {editUserRole === 'admin' && (
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Full Name</label>
+                  <input type="text" value={String(editForm.name ?? '')} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="Full name" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                  <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="admin@udom.com" />
+                </div>
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-2 pt-4 border-t border-gray-100">
+              <button
+                onClick={() => setShowEditUser(false)}
+                className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                disabled={editLoading}
+                onClick={async () => {
+                  setEditLoading(true); setEditError('');
+                  try {
+                    if (editUserRole === 'instructor') {
+                      // For instructors, use the instructor update endpoint
+                      await instructorsApi.update(editUserId!, editForm);
+                    } else {
+                      // For students and admins, use the regular user update
+                      await usersApi.update(editUserId!, editForm);
+                    }
+                    // Refresh users list
+                    const res = await usersApi.list();
+                    setUsers(res.data.data ?? []);
+                    setShowEditUser(false);
+                  } catch (e: unknown) {
+                    const msg = (e as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to update user.';
+                    setEditError(msg);
+                  } finally { setEditLoading(false); }
+                }}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {editLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Edit className="w-4 h-4" />}
+                Save Changes
+              </button>
             </div>
           </div>
         </div>
