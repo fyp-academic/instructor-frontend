@@ -143,7 +143,7 @@ export function Header() {
                   {notifications.slice(0, 6).map(n => (
                     <div
                       key={n.id}
-                      onClick={() => { markNotificationRead(n.id); navigate('/notifications'); setNotifOpen(false); }}
+                      onClick={() => { markNotificationRead(n.id); navigate(isAdmin ? '/admin/notifications' : '/notifications'); setNotifOpen(false); }}
                       className={`px-4 py-3 cursor-pointer hover:bg-gray-50 border-b border-gray-50 ${!n.read ? 'bg-indigo-50' : ''}`}
                     >
                       <div className="flex items-start gap-2">
@@ -157,7 +157,7 @@ export function Header() {
                     </div>
                   ))}
                 </div>
-                <button onClick={() => { navigate('/notifications'); setNotifOpen(false); }} className="w-full py-2.5 text-sm text-indigo-600 hover:bg-gray-50 font-medium">
+                <button onClick={() => { navigate(isAdmin ? '/admin/notifications' : '/notifications'); setNotifOpen(false); }} className="w-full py-2.5 text-sm text-indigo-600 hover:bg-gray-50 font-medium">
                   View all notifications
                 </button>
               </div>

@@ -121,6 +121,7 @@ export const router = createBrowserRouter([
       { path: 'ai-insights', element: <Layout><AIInsights /></Layout> },
       { path: 'administration', element: <Layout><Administration /></Layout> },
       { path: 'notifications', element: <Layout><Notifications /></Layout> },
+      { path: 'admin/notifications', element: <Layout><Notifications /></Layout> },
       { path: 'messaging', element: <Layout><Messaging /></Layout> },
       { path: 'profile', element: <Layout><Profile /></Layout> },
       { path: 'notification-preferences', element: <Layout><NotificationPreferences /></Layout> },
