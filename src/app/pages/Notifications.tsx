@@ -30,6 +30,12 @@ export default function Notifications() {
     warning: { icon: AlertTriangle, color: 'text-amber-500', bg: 'bg-amber-50', border: 'border-amber-200' },
     success: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-200' },
     danger: { icon: AlertCircle, color: 'text-red-500', bg: 'bg-red-50', border: 'border-red-200' },
+    course_update: { icon: Bell, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
+    assignment: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
+    grade: { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-50', border: 'border-green-200' },
+    announcement: { icon: Bell, color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200' },
+    message: { icon: Info, color: 'text-blue-500', bg: 'bg-blue-50', border: 'border-blue-200' },
+    default: { icon: Bell, color: 'text-gray-500', bg: 'bg-gray-50', border: 'border-gray-200' },
   };
 
   return (
@@ -79,18 +85,18 @@ export default function Notifications() {
           </div>
         ) : (
           filtered.map(notif => {
-            const config = typeConfig[notif.type];
-            const Icon = config.icon;
+            const config = typeConfig[notif.type] ?? typeConfig.default;
+            const Icon = config?.icon ?? Bell;
             return (
               <div
                 key={notif.id}
                 onClick={() => handleMarkRead(String((notif as unknown as Record<string,unknown>).id ?? ''))}
                 className={`flex items-start gap-4 p-4 rounded-xl border cursor-pointer transition-all hover:shadow-sm ${
-                  !notif.read ? `${config.bg} ${config.border}` : 'bg-white border-gray-200 opacity-70 hover:opacity-100'
+                  !notif.read ? `${config?.bg ?? 'bg-gray-50'} ${config?.border ?? 'border-gray-200'}` : 'bg-white border-gray-200 opacity-70 hover:opacity-100'
                 }`}
               >
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${config.bg}`}>
-                  <Icon className={`w-5 h-5 ${config.color}`} />
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${config?.bg ?? 'bg-gray-50'}`}>
+                  <Icon className={`w-5 h-5 ${config?.color ?? 'text-gray-500'}`} />
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
