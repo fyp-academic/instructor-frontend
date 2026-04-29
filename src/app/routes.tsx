@@ -13,6 +13,8 @@ import CategoryManagement from './pages/CategoryManagement';
 import AIInsights from './pages/AIInsights';
 import Administration from './pages/Administration';
 import Notifications from './pages/Notifications';
+import NotificationPreferences from './pages/NotificationPreferences';
+import AdminNotificationPreferences from './pages/AdminNotificationPreferences';
 import Messaging from './pages/Messaging';
 import Profile from './pages/Profile';
 import Login from './pages/auth/Login';
@@ -121,6 +123,8 @@ export const router = createBrowserRouter([
       { path: 'notifications', element: <Layout><Notifications /></Layout> },
       { path: 'messaging', element: <Layout><Messaging /></Layout> },
       { path: 'profile', element: <Layout><Profile /></Layout> },
+      { path: 'notification-preferences', element: <Layout><NotificationPreferences /></Layout> },
+      { path: 'admin/notification-preferences', element: <Layout><AdminNotificationPreferences /></Layout> },
     ],
   },
 

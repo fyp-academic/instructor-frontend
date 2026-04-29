@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import {
   Bell, MessageSquare, User, ChevronDown, Search, BookOpen,
   LayoutDashboard, Brain, Settings, LogOut, Edit3, X,
-  CheckCheck, Menu, Puzzle
+  CheckCheck, Menu, Puzzle, BellRing
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -11,7 +11,7 @@ import { useAuth } from '../context/AuthContext';
 export function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { logout } = useAuth();
+  const { logout, isAdmin } = useAuth();
   const { editMode, toggleEditMode, unreadCount, totalUnreadMessages, notifications, markNotificationRead, markAllRead, setGlobalSearch, globalSearch, currentUser, conversations } = useApp();
 
   const handleLogout = async () => {
@@ -257,6 +257,9 @@ export function Header() {
                 <div className="py-1">
                   <button onClick={() => { navigate('/profile'); setProfileOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     <User className="w-4 h-4 text-gray-400" /> My Profile
+                  </button>
+                  <button onClick={() => { navigate(isAdmin ? '/admin/notification-preferences' : '/notification-preferences'); setProfileOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                    <BellRing className="w-4 h-4 text-gray-400" /> {isAdmin ? 'Admin Preferences' : 'Preferences'}
                   </button>
                   <button onClick={() => { navigate('/administration'); setProfileOpen(false); }} className="w-full flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
                     <Settings className="w-4 h-4 text-gray-400" /> Administration

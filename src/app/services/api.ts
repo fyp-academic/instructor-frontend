@@ -102,10 +102,17 @@ export const categoriesApi = {
 
 // ─── Notifications ────────────────────────────────────────────────────────────
 export const notificationsApi = {
-  list:        () => api.get('/notifications'),
-  markRead:    (id: string) => api.patch(`/notifications/${id}/read`),
-  markAllRead: () => api.post('/notifications/mark-all-read'),
-  remove:      (id: string) => api.delete(`/notifications/${id}`),
+  list:        () => api.get('/notifications', { params: { channel: 'in_app' } }),
+  markRead:    (id: string) => api.patch(`/notifications/${id}/read`, { channel: 'in_app' }),
+  markAllRead: () => api.post('/notifications/mark-all-read', { channel: 'in_app' }),
+  remove:      (id: string) => api.delete(`/notifications/${id}`, { params: { channel: 'in_app' } }),
+};
+
+export const notificationPreferencesApi = {
+  getPreferences:  () => api.get('/notifications/preferences'),
+  updatePreferences: (data: Record<string, unknown>) => api.post('/notifications/preferences', data),
+  resetPreferences:  () => api.post('/notifications/preferences/reset'),
+  setGlobalMute:     (muted: boolean) => api.post('/notifications/mute', { muted }),
 };
 
 // ─── Messaging ────────────────────────────────────────────────────────────────
