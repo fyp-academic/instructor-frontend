@@ -322,3 +322,60 @@ export const chatModerationApi = {
   blockUser:    (data: Record<string, unknown>) => api.post('/chat-moderation/block-user', data),
   unblockUser:  (data: Record<string, unknown>) => api.post('/chat-moderation/unblock-user', data),
 };
+
+// ─── Video Sessions (Jitsi) ───────────────────────────────────────────────────
+export const sessionsApi = {
+  // Session CRUD
+  list:       (params?: Record<string, unknown>) => api.get('/sessions', { params }),
+  create:     (data: Record<string, unknown>) => api.post('/sessions', data),
+  get:        (id: string) => api.get(`/sessions/${id}`),
+
+  // Session lifecycle
+  start:      (id: string) => api.patch(`/sessions/${id}/start`),
+  end:        (id: string) => api.patch(`/sessions/${id}/end`),
+
+  // Token generation
+  getToken:   (id: string) => api.post(`/sessions/${id}/token`),
+
+  // Recording
+  startRecording: (id: string) => api.post(`/sessions/${id}/recording/start`),
+  stopRecording:  (id: string) => api.post(`/sessions/${id}/recording/stop`),
+
+  // Participants
+  getParticipants: (id: string) => api.get(`/sessions/${id}/participants`),
+  kickParticipant:   (id: string, userId: string) => api.post(`/sessions/${id}/kick/${userId}`),
+  muteAll:           (id: string) => api.post(`/sessions/${id}/mute-all`),
+
+  // AI features
+  getTranscript: (id: string) => api.get(`/sessions/${id}/transcript`),
+  getSummary:    (id: string) => api.get(`/sessions/${id}/summary`),
+  askAI:         (id: string, question: string) => api.post(`/sessions/${id}/ask-ai`, { question }),
+
+  // Recording download
+  getRecordingUrl: (id: string) => api.get(`/recordings/${id}/url`),
+
+  // Transcription upload
+  transcribe:    (formData: FormData) => api.post('/transcribe', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }),
+
+  // Transcription consent
+  grantTranscriptionConsent: (id: string) => api.post(`/sessions/${id}/transcription-consent`),
+
+  // Polls
+  getPolls:      (id: string) => api.get(`/sessions/${id}/polls`),
+  createPoll:    (id: string, data: Record<string, unknown>) => api.post(`/sessions/${id}/polls`, data),
+
+  // Certificate
+  checkCertificateEligibility: (id: string) => api.get(`/sessions/${id}/certificate/eligibility`),
+  generateCertificate: (id: string) => api.post(`/sessions/${id}/certificate`),
+
+  // Quiz
+  generateQuiz:  (id: string) => api.post(`/sessions/${id}/generate-quiz`),
+};
+
+export const pollsApi = {
+  vote:       (pollId: string, optionIndex: number) => api.post(`/polls/${pollId}/vote`, { option_index: optionIndex }),
+  getResults: (pollId: string) => api.get(`/polls/${pollId}/results`),
+  endPoll:    (pollId: string) => api.post(`/polls/${pollId}/end`),
+};
