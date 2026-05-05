@@ -36,8 +36,8 @@ export default function Conference() {
         setSession({
           id: s.id,
           title: s.title,
-          room_name: s.room_name || s.roomName,
-          course_name: s.course_name || s.courseName,
+          room_name: s.room_id || s.room_name || s.roomName,
+          course_name: s.course?.title || s.course?.name || s.course_name || s.courseName,
           jwt: tokenRes.data.token,
         });
       } catch (err) {

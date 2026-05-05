@@ -120,20 +120,33 @@ function ToggleItem({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex items-start justify-between p-3 rounded-lg border hover:border-primary/50 transition-colors">
+    <div className={cn(
+      'flex items-start justify-between p-3 rounded-lg border transition-colors',
+      checked ? 'border-blue-400 bg-blue-50/50' : 'hover:border-blue-200'
+    )}>
       <div className="flex items-start gap-3">
         <div className={cn(
-          'p-2 rounded-md',
-          checked ? 'bg-primary/10 text-primary' : 'bg-accent text-muted-foreground'
+          'p-2 rounded-md transition-colors',
+          checked ? 'bg-blue-500 text-white' : 'bg-slate-100 text-slate-400'
         )}>
           <Icon className="h-4 w-4" />
         </div>
         <div>
-          <p className="text-sm font-medium">{label}</p>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+          <p className={cn('text-sm font-medium', checked ? 'text-blue-700' : 'text-slate-700')}>
+            {label}
+          </p>
+          {description && (
+            <p className={cn('text-xs', checked ? 'text-blue-500' : 'text-slate-400')}>
+              {description}
+            </p>
+          )}
         </div>
       </div>
-      <Switch checked={checked} onCheckedChange={onChange} />
+      <Switch
+        checked={checked}
+        onCheckedChange={onChange}
+        className="data-[state=checked]:bg-blue-500 data-[state=unchecked]:bg-slate-200"
+      />
     </div>
   );
 }
@@ -512,7 +525,11 @@ export function CreateSessionModal({
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={isSubmitting} className="gap-2">
+          <Button
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+            className="gap-2 bg-blue-600 hover:bg-blue-700 text-white"
+          >
             {isSubmitting ? (
               <>
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />

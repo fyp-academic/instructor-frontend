@@ -177,7 +177,7 @@ export function SessionCard({
   const actionButton = useMemo(() => {
     if (canJoin) {
       return (
-        <Button onClick={handleAction} className="bg-green-600 hover:bg-green-700 animate-pulse">
+        <Button onClick={handleAction} className="bg-blue-600 hover:bg-blue-700 text-white animate-pulse">
           <Video className="h-4 w-4 mr-2" />
           Join Now
         </Button>
@@ -185,7 +185,7 @@ export function SessionCard({
     }
     if (canStart) {
       return (
-        <Button onClick={handleAction} className="bg-primary hover:bg-primary/90">
+        <Button onClick={handleAction} className="bg-blue-600 hover:bg-blue-700 text-white">
           <Play className="h-4 w-4 mr-2" />
           Start Session
         </Button>
@@ -193,7 +193,7 @@ export function SessionCard({
     }
     if (canWatchRecording) {
       return (
-        <Button onClick={handleAction} variant="outline">
+        <Button onClick={handleAction} variant="outline" className="border-blue-300 text-blue-600 hover:bg-blue-50 hover:text-blue-700">
           <Eye className="h-4 w-4 mr-2" />
           Watch Recording
         </Button>
@@ -201,7 +201,7 @@ export function SessionCard({
     }
     if (canSetReminder) {
       return (
-        <Button onClick={handleAction} variant="ghost" size="sm">
+        <Button onClick={handleAction} variant="ghost" size="sm" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
           <Bell className="h-4 w-4 mr-2" />
           Remind Me
         </Button>
@@ -363,7 +363,12 @@ export function SessionCard({
             )}
             
             {session.status === 'ended' && session.hasRecording && (
-              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => onWatchRecording(session.id)}>
+              <Button
+                variant="link"
+                size="sm"
+                className="h-auto p-0 text-blue-600 hover:text-blue-700"
+                onClick={() => onWatchRecording(session.id)}
+              >
                 View Recording
                 <ChevronRight className="h-4 w-4 ml-1" />
               </Button>

@@ -42,6 +42,36 @@ interface PastSession extends Session {
 }
 
 /**
+ * Transform backend snake_case session to frontend camelCase Session
+ */
+function transformSession(raw: Record<string, unknown>): Session {
+  const course = (raw.course as Record<string, unknown> | undefined);
+  const instructor = (raw.instructor as Record<string, unknown> | undefined);
+  return {
+    id: String(raw.id),
+    title: String(raw.title || ''),
+    courseId: String(raw.course_id || course?.id || ''),
+    courseName: String(course?.title || course?.name || raw.course_name || ''),
+    courseColor: raw.course_color as string | undefined,
+    instructorId: String(raw.instructor_id || instructor?.id || ''),
+    instructorName: String(instructor?.name || raw.instructor_name || ''),
+    instructorAvatar: (instructor?.profile_image || raw.instructor_avatar) as string | undefined,
+    scheduledAt: String(raw.scheduled_at || ''),
+    duration: Number(raw.duration || 60),
+    startedAt: raw.started_at ? String(raw.started_at) : undefined,
+    endedAt: raw.ended_at ? String(raw.ended_at) : undefined,
+    status: String(raw.status || 'scheduled') as Session['status'],
+    participantCount: Number(raw.participant_count || 0),
+    maxParticipants: raw.max_participants ? Number(raw.max_participants) : undefined,
+    recordingEnabled: Boolean(raw.recording_enabled),
+    hasRecording: Boolean(raw.has_recording),
+    recordingUrl: raw.recording_url as string | undefined,
+    isPasswordProtected: Boolean(raw.password),
+    aiTranscription: Boolean(raw.ai_transcription),
+  };
+}
+
+/**
  * Stat Card Component
  */
 function StatCard({
@@ -172,6 +202,7 @@ function PastSessionsTable({
                       variant="ghost"
                       size="sm"
                       onClick={() => onViewRecording(session.id)}
+                      className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                     >
                       <Download className="h-4 w-4 mr-1" />
                       Recording
@@ -181,6 +212,7 @@ function PastSessionsTable({
                     variant="ghost"
                     size="sm"
                     onClick={() => onViewAnalytics(session.id)}
+                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
                   >
                     <BarChart3 className="h-4 w-4 mr-1" />
                     Analytics
@@ -226,7 +258,7 @@ export default function InstructorSessions() {
           coursesApi.list(),
         ]);
         
-        setSessions(sessionsRes.data.data || []);
+        setSessions((sessionsRes.data.data || []).map(transformSession));
         setCourses(coursesRes.data.data?.map((c: { id: string; name: string; color?: string }) => ({
           id: c.id,
           name: c.name,
@@ -243,6 +275,7 @@ export default function InstructorSessions() {
 
         // Mock past sessions with analytics
         const mockPast = (sessionsRes.data.data || [])
+          .map(transformSession)
           .filter((s: Session) => s.status === 'ended')
           .map((s: Session) => ({
             ...s,
@@ -289,14 +322,26 @@ export default function InstructorSessions() {
   // Actions
   const handleCreateSession = useCallback(async (formData: SessionFormData) => {
     const data = {
-      ...formData,
+      title: formData.title,
+      course_id: formData.courseId,
       scheduled_at: `${formData.scheduledDate}T${formData.scheduledTime}:00`,
+      duration: formData.duration,
+      max_participants: formData.maxParticipants,
+      password: formData.password || undefined,
+      recording_enabled: formData.recordingEnabled,
+      chat_enabled: formData.chatEnabled,
+      raise_hand_enabled: formData.raiseHandEnabled,
+      waiting_room: formData.waitingRoom,
+      screen_share_allowed: formData.screenShareAllowed,
+      start_muted: formData.startMuted,
+      start_video_off: formData.startVideoOff,
+      ai_transcription: formData.aiTranscription,
     };
     await sessionsApi.create(data);
-    
+
     // Refresh list
     const res = await sessionsApi.list();
-    setSessions(res.data.data || []);
+    setSessions((res.data.data || []).map(transformSession));
   }, []);
 
   const handleJoin = useCallback((sessionId: string) => {
@@ -310,7 +355,7 @@ export default function InstructorSessions() {
       toast({ title: 'Session started!' });
       // Refresh
       const res = await sessionsApi.list();
-      setSessions(res.data.data || []);
+      setSessions((res.data.data || []).map(transformSession));
     } catch (error) {
       toast({ title: 'Failed to start session', variant: 'destructive' });
     }
@@ -341,7 +386,10 @@ export default function InstructorSessions() {
           <h1 className="text-2xl font-bold">My Sessions</h1>
           <p className="text-muted-foreground">Manage your video sessions and recordings</p>
         </div>
-        <Button onClick={() => setIsCreateModalOpen(true)}>
+        <Button
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white"
+        >
           <Plus className="h-4 w-4 mr-2" />
           New Session
         </Button>
@@ -411,7 +459,7 @@ export default function InstructorSessions() {
               <Button
                 variant="link"
                 onClick={() => setIsCreateModalOpen(true)}
-                className="mt-2"
+                className="mt-2 text-blue-600 hover:text-blue-700"
               >
                 Create your first session
               </Button>
