@@ -4,6 +4,7 @@ import { ArrowLeft, Save, BookOpen, AlertCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Course } from '../data/mockData';
 import { RichTextEditor } from '../components/RichTextEditor';
+import { degreeProgrammesApi } from '../services/api';
 
 const inputClass = (hasError?: string) =>
   `w-full border ${hasError ? 'border-red-400' : 'border-gray-300'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white`;
@@ -47,8 +48,10 @@ export default function CreateCourse() {
     gradePassingGrade: '50',
     completionTracking: true,
     image: '',
+    degreeProgrammeIds: [] as string[],
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [availableProgrammes, setAvailableProgrammes] = useState<Array<{id: string; name: string}>>([]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -58,6 +61,19 @@ export default function CreateCourse() {
       setForm(f => ({ ...f, categoryId: categories[0].id }));
     }
   }, [categories]);
+
+  // Load available degree programmes for instructors/admins
+  useEffect(() => {
+    const loadProgrammes = async () => {
+      try {
+        const res = await degreeProgrammesApi.list();
+        setAvailableProgrammes(res.data.data ?? []);
+      } catch {
+        // Silently fail - programmes are optional
+      }
+    };
+    loadProgrammes();
+  }, []);
 
   const set = (key: string, value: unknown) => setForm(f => ({ ...f, [key]: value }));
 
@@ -95,6 +111,7 @@ export default function CreateCourse() {
         maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
         tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
         image: form.image,
+        degreeProgrammeIds: form.degreeProgrammeIds,
         sections: [
           { id: 'sec0', title: 'General', visible: true, activities: [] },
           { id: 'sec1', title: 'Topic 1', visible: true, activities: [] },
@@ -205,6 +222,29 @@ export default function CreateCourse() {
                   ))}
                 </select>
               </FormField>
+              {availableProgrammes.length > 0 && (
+                <FormField label="Degree Programmes">
+                  <div className="border border-gray-200 rounded-lg p-3 max-h-40 overflow-y-auto">
+                    {availableProgrammes.map(prog => (
+                      <label key={prog.id} className="flex items-center gap-2 py-1.5 cursor-pointer hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          checked={form.degreeProgrammeIds.includes(prog.id)}
+                          onChange={e => {
+                            const ids = e.target.checked
+                              ? [...form.degreeProgrammeIds, prog.id]
+                              : form.degreeProgrammeIds.filter(id => id !== prog.id);
+                            set('degreeProgrammeIds', ids);
+                          }}
+                          className="w-4 h-4 text-indigo-600 rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">{prog.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">Select the degree programmes this course belongs to</p>
+                </FormField>
+              )}
               <FormField label="Tags (comma separated)">
                 <input type="text" value={form.tags} onChange={e => set('tags', e.target.value)} placeholder="e.g. python, programming, beginner" className={inputClass()} />
               </FormField>

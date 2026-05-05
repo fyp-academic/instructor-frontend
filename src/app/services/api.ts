@@ -218,6 +218,8 @@ export const degreeProgrammesApi = {
     api.post(`/degree-programmes/${id}/instructors`, { instructor_ids: instructorIds }),
   students: (id: string) => api.get(`/degree-programmes/${id}/students`),
   courses:  (id: string) => api.get(`/degree-programmes/${id}/courses`),
+  assignCourses: (id: string, courseIds: string[]) =>
+    api.post(`/degree-programmes/${id}/courses`, { course_ids: courseIds }),
 };
 
 // ─── Profile ──────────────────────────────────────────────────────────────────

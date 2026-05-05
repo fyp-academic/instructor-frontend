@@ -18,6 +18,7 @@ export interface Course {
   maxStudents?: number;
   language: string;
   tags: string[];
+  degreeProgrammeIds?: string[];
 }
 
 export interface Section {

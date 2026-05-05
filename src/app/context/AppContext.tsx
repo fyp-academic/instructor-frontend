@@ -142,6 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       max_students: course.maxStudents,
       tags: course.tags,
       image: course.image,
+      degree_programme_ids: course.degreeProgrammeIds,
     });
     const created = res.data.data ?? res.data;
     const newCourse: Course = {

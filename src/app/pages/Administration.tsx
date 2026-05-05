@@ -132,6 +132,8 @@ export default function Administration() {
   const [modalData, setModalData] = useState<Array<Record<string, unknown>>>([]);
   const [modalLoading, setModalLoading] = useState(false);
   const [instructorIds, setInstructorIds] = useState<string[]>([]);
+  const [courseIds, setCourseIds] = useState<string[]>([]);
+  const [availableCourses, setAvailableCourses] = useState<Array<{id: string; name: string; instructor_name?: string}>>([]);
   const [assignLoading, setAssignLoading] = useState(false);
 
   // Course instructor assignment modal state
@@ -881,13 +883,22 @@ export default function Administration() {
                                   setModalProgId(p.id);
                                   setModalType('courses');
                                   setModalLoading(true);
+                                  setCourseIds([]);
                                   try {
-                                    const r = await degreeProgrammesApi.courses(p.id);
-                                    console.log('Courses API response:', r.data);
-                                    setModalData(r.data.data ?? []);
+                                    const [progCoursesRes, allCoursesRes] = await Promise.all([
+                                      degreeProgrammesApi.courses(p.id),
+                                      coursesApi.list({ status: 'active' })
+                                    ]);
+                                    setModalData(progCoursesRes.data.data ?? []);
+                                    // Get course IDs already in this programme
+                                    const assignedIds = (progCoursesRes.data.data ?? []).map((c: {id: string}) => c.id);
+                                    setCourseIds(assignedIds);
+                                    // All available courses for selection
+                                    setAvailableCourses(allCoursesRes.data.data ?? []);
                                   } catch (e) {
                                     console.error('Courses API error:', e);
                                     setModalData([]);
+                                    setAvailableCourses([]);
                                   }
                                   finally { setModalLoading(false); }
                                 }}
@@ -1886,6 +1897,56 @@ export default function Administration() {
                             setModalType(null); setModalProgId(null);
                           } catch {
                             alert('Failed to assign instructors.');
+                          } finally { setAssignLoading(false); }
+                        }}
+                        className="px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2"
+                      >
+                        {assignLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                        Assign Selected
+                      </button>
+                    </div>
+                  </div>
+                ) : modalType === 'courses' ? (
+                  <div className="space-y-4">
+                    <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-xl">
+                      {availableCourses.length === 0 ? (
+                        <p className="p-4 text-sm text-gray-500">No available courses found.</p>
+                      ) : (
+                        availableCourses.map(course => (
+                          <label key={String(course.id)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0">
+                            <input
+                              type="checkbox"
+                              checked={courseIds.includes(String(course.id))}
+                              onChange={e => {
+                                const id = String(course.id);
+                                setCourseIds(prev => e.target.checked ? [...prev, id] : prev.filter(x => x !== id));
+                              }}
+                              className="w-4 h-4 text-indigo-600 rounded border-gray-300"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <span className="text-sm text-gray-700 block truncate">{String(course.name ?? course.title ?? 'Untitled')}</span>
+                              <span className="text-xs text-gray-400">{String(course.instructor_name ?? course.instructor ?? 'No instructor')}</span>
+                            </div>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => { setModalType(null); setModalProgId(null); }}
+                        className="px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        disabled={assignLoading}
+                        onClick={async () => {
+                          setAssignLoading(true);
+                          try {
+                            await degreeProgrammesApi.assignCourses(modalProgId, courseIds);
+                            setModalType(null); setModalProgId(null);
+                          } catch {
+                            alert('Failed to assign courses.');
                           } finally { setAssignLoading(false); }
                         }}
                         className="px-4 py-2 rounded-xl text-white text-sm font-semibold bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 flex items-center gap-2"
