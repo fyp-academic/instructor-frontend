@@ -134,7 +134,7 @@ export function useJitsiRoom({
   const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
   const apiRef = useRef<JitsiMeetExternalAPI | null>(null);
 
-  const jitsiDomain = import.meta.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
+  const jitsiDomain = import.meta.env.VITE_JITSI_DOMAIN || 'meet.codagenz.com';
 
   // Initialize Jitsi API
   useEffect(() => {

@@ -14,7 +14,7 @@ export function useJitsiScript(domain?: string): UseJitsiScriptResult {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const jitsiDomain = domain || import.meta.env.VITE_JITSI_DOMAIN || 'meet.jit.si';
+  const jitsiDomain = domain || import.meta.env.VITE_JITSI_DOMAIN || 'meet.codagenz.com';
 
   useEffect(() => {
     // Guard: Check if API already loaded
