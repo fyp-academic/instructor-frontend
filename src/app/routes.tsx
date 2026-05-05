@@ -17,6 +17,8 @@ import NotificationPreferences from './pages/NotificationPreferences';
 import AdminNotificationPreferences from './pages/AdminNotificationPreferences';
 import Messaging from './pages/Messaging';
 import Profile from './pages/Profile';
+import InstructorSessions from './pages/InstructorSessions';
+import Conference from './pages/Conference';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -123,6 +125,8 @@ export const router = createBrowserRouter([
       { path: 'notifications', element: <Layout><Notifications /></Layout> },
       { path: 'admin/notifications', element: <Layout><Notifications /></Layout> },
       { path: 'messaging', element: <Layout><Messaging /></Layout> },
+      { path: 'sessions', element: <Layout><InstructorSessions /></Layout> },
+      { path: 'conference/:id', element: <Conference /> },
       { path: 'profile', element: <Layout><Profile /></Layout> },
       { path: 'notification-preferences', element: <Layout><NotificationPreferences /></Layout> },
       { path: 'admin/notification-preferences', element: <Layout><AdminNotificationPreferences /></Layout> },

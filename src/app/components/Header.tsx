@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import {
   Bell, MessageSquare, User, ChevronDown, Search, BookOpen,
   LayoutDashboard, Brain, Settings, LogOut, Edit3, X,
-  CheckCheck, Menu, Puzzle, BellRing
+  CheckCheck, Menu, Puzzle, BellRing, Video
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -42,6 +42,7 @@ export function Header() {
   const navLinks = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/courses', label: 'My Courses', icon: BookOpen },
+    { to: '/sessions', label: 'Live Sessions', icon: Video },
     { to: '/ai-insights', label: 'AI Insights', icon: Brain },
     { to: '/administration', label: 'Administration', icon: Settings },
   ];
