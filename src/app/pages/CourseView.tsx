@@ -188,18 +188,33 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
   // Sync form with course data when it loads/changes
   useEffect(() => {
     if (!course) return;
+    
+    // Handle both camelCase (frontend) and snake_case (API) property names
+    const getValue = (camelKey: string, snakeKey: string) => {
+      return (course as Record<string, unknown>)[camelKey] ?? (course as Record<string, unknown>)[snakeKey] ?? '';
+    };
+    
+    // Parse tags from various formats
+    let tagsValue = '';
+    const tagsData = getValue('tags', 'tags');
+    if (Array.isArray(tagsData)) {
+      tagsValue = tagsData.join(', ');
+    } else if (typeof tagsData === 'string') {
+      tagsValue = tagsData;
+    }
+    
     setForm({
-      name: course.name || '',
-      shortName: course.shortName || '',
-      description: course.description || '',
-      startDate: course.startDate || '',
-      endDate: course.endDate || '',
-      maxStudents: course.maxStudents?.toString() || '',
-      visibility: (course.visibility as 'shown' | 'hidden') || 'shown',
-      format: (course.format as 'topics' | 'weekly' | 'social') || 'topics',
-      language: course.language || 'English',
-      tags: Array.isArray(course.tags) ? course.tags.join(', ') : (course.tags || ''),
-      categoryId: course.categoryId || '',
+      name: String(getValue('name', 'name')),
+      shortName: String(getValue('shortName', 'short_name')),
+      description: String(getValue('description', 'description')),
+      startDate: String(getValue('startDate', 'start_date')),
+      endDate: String(getValue('endDate', 'end_date')),
+      maxStudents: String(getValue('maxStudents', 'max_students')),
+      visibility: (getValue('visibility', 'visibility') as 'shown' | 'hidden') || 'shown',
+      format: (getValue('format', 'format') as 'topics' | 'weekly' | 'social') || 'topics',
+      language: String(getValue('language', 'language') || 'English'),
+      tags: tagsValue,
+      categoryId: String(getValue('categoryId', 'category_id')),
     });
   }, [course]);
 
