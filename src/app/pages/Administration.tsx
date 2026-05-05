@@ -3,7 +3,7 @@ import { Users, BookOpen, FolderOpen, Settings, Shield, Database, Bell, Search, 
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router';
-import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi, chatModerationApi, instructorsApi } from '../services/api';
+import { usersApi, dashboardApi, collegesApi, degreeProgrammesApi, authApi, chatModerationApi, instructorsApi, coursesApi } from '../services/api';
 
 type AdminTab = 'users' | 'courses' | 'categories' | 'colleges' | 'degreeProgrammes' | 'chatModeration' | 'system';
 
@@ -134,6 +134,14 @@ export default function Administration() {
   const [instructorIds, setInstructorIds] = useState<string[]>([]);
   const [assignLoading, setAssignLoading] = useState(false);
 
+  // Course instructor assignment modal state
+  const [courseInstructorModal, setCourseInstructorModal] = useState<{ courseId: string; courseName: string } | null>(null);
+  const [eligibleInstructors, setEligibleInstructors] = useState<Array<{id: string; name: string; email: string; academic_rank?: string}>>([]);
+  const [currentInstructorId, setCurrentInstructorId] = useState<string | null>(null);
+  const [selectedInstructorId, setSelectedInstructorId] = useState<string>('');
+  const [loadingEligible, setLoadingEligible] = useState(false);
+  const [assignInstructorError, setAssignInstructorError] = useState('');
+
   // Chat moderation state
   const [chatStats, setChatStats] = useState<ChatStats>({});
   const [reports, setReports] = useState<Array<Record<string, unknown>>>([]);
@@ -222,6 +230,68 @@ export default function Administration() {
       // ignore
     } finally {
       setLoadingData(false);
+    }
+  };
+
+  // Course instructor management functions
+  const openCourseInstructorModal = async (courseId: string, courseName: string) => {
+    setCourseInstructorModal({ courseId, courseName });
+    setSelectedInstructorId('');
+    setAssignInstructorError('');
+    setLoadingEligible(true);
+
+    try {
+      const res = await coursesApi.eligibleInstructors(courseId);
+      setEligibleInstructors(res.data?.data ?? []);
+      setCurrentInstructorId(res.data?.current_instructor_id ?? null);
+    } catch (err: unknown) {
+      const msg = (err as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to load eligible instructors.';
+      setAssignInstructorError(msg);
+      setEligibleInstructors([]);
+    } finally {
+      setLoadingEligible(false);
+    }
+  };
+
+  const assignInstructorToCourse = async () => {
+    if (!courseInstructorModal || !selectedInstructorId) return;
+
+    setAssignLoading(true);
+    setAssignInstructorError('');
+
+    try {
+      await coursesApi.assignInstructor(courseInstructorModal.courseId, selectedInstructorId);
+      setCourseInstructorModal(null);
+      // Refresh courses data
+      window.location.reload();
+    } catch (err: unknown) {
+      const msg = (err as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to assign instructor.';
+      setAssignInstructorError(msg);
+    } finally {
+      setAssignLoading(false);
+    }
+  };
+
+  const removeInstructorFromCourse = async () => {
+    if (!courseInstructorModal) return;
+
+    if (!confirm('Are you sure you want to remove the instructor from this course?')) {
+      return;
+    }
+
+    setAssignLoading(true);
+    setAssignInstructorError('');
+
+    try {
+      await coursesApi.removeInstructor(courseInstructorModal.courseId);
+      setCourseInstructorModal(null);
+      // Refresh courses data
+      window.location.reload();
+    } catch (err: unknown) {
+      const msg = (err as {response?: {data?: {message?: string}}})?.response?.data?.message ?? 'Failed to remove instructor.';
+      setAssignInstructorError(msg);
+    } finally {
+      setAssignLoading(false);
     }
   };
 
@@ -603,6 +673,11 @@ export default function Administration() {
                         <td className="px-4 py-3">
                           <div className="flex gap-1 justify-end">
                             <button onClick={() => navigate(`/courses/${course.id}`)} className="text-xs text-indigo-600 hover:text-indigo-800 px-2 py-1 rounded hover:bg-indigo-50">View</button>
+                            {isAdmin && (
+                              <button onClick={() => openCourseInstructorModal(course.id, course.name)} className="text-xs text-green-600 hover:text-green-800 px-2 py-1 rounded hover:bg-green-50 flex items-center gap-1">
+                                <UserPlus className="w-3 h-3" /> Instructor
+                              </button>
+                            )}
                             <button onClick={() => { if (confirm('Delete?')) deleteCourse(course.id); }} className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -2362,6 +2437,103 @@ export default function Administration() {
                 Save Changes
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Course Instructor Assignment Modal */}
+      {courseInstructorModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-black/50" onClick={() => !assignLoading && setCourseInstructorModal(null)} />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold text-gray-900">Assign Instructor</h2>
+              <button onClick={() => setCourseInstructorModal(null)} className="p-2 rounded-full hover:bg-gray-100"><X className="w-4 h-4" /></button>
+            </div>
+
+            <div>
+              <p className="text-sm text-gray-500 mb-1">Course</p>
+              <p className="font-medium text-gray-900">{courseInstructorModal.courseName}</p>
+            </div>
+
+            {loadingEligible ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-indigo-600" />
+                <span className="ml-2 text-sm text-gray-500">Loading eligible instructors...</span>
+              </div>
+            ) : (
+              <>
+                {assignInstructorError && (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-600">
+                    {assignInstructorError}
+                  </div>
+                )}
+
+                {eligibleInstructors.length === 0 ? (
+                  <div className="text-center py-6">
+                    <p className="text-gray-500 text-sm">No eligible instructors found.</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      Instructors must be assigned to this course's degree programme first.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Select Instructor
+                    </label>
+                    <select
+                      value={selectedInstructorId}
+                      onChange={(e) => setSelectedInstructorId(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">-- Select an instructor --</option>
+                      {eligibleInstructors.map((instructor) => (
+                        <option key={instructor.id} value={instructor.id}>
+                          {instructor.name}
+                          {instructor.academic_rank ? ` (${instructor.academic_rank})` : ''}
+                          {instructor.id === currentInstructorId ? ' - Current' : ''}
+                        </option>
+                      ))}
+                    </select>
+
+                    {currentInstructorId && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <p className="text-sm text-blue-700">
+                          Currently assigned: {eligibleInstructors.find(i => i.id === currentInstructorId)?.name ?? 'Unknown'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div className="flex gap-2 pt-4">
+                  <button
+                    onClick={() => setCourseInstructorModal(null)}
+                    disabled={assignLoading}
+                    className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-60"
+                  >
+                    Cancel
+                  </button>
+                  {currentInstructorId && (
+                    <button
+                      onClick={removeInstructorFromCourse}
+                      disabled={assignLoading}
+                      className="flex-1 px-4 py-2 border border-red-200 text-red-600 rounded-xl text-sm hover:bg-red-50 disabled:opacity-60"
+                    >
+                      {assignLoading ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : 'Remove'}
+                    </button>
+                  )}
+                  <button
+                    onClick={assignInstructorToCourse}
+                    disabled={!selectedInstructorId || assignLoading || selectedInstructorId === currentInstructorId}
+                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-semibold hover:bg-indigo-700 disabled:opacity-60 flex items-center justify-center gap-2"
+                  >
+                    {assignLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                    {assignLoading ? 'Assigning...' : 'Assign'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}

@@ -66,6 +66,11 @@ export const coursesApi = {
   unenroll:   (id: string, userId: string)        => api.delete(`/courses/${id}/enroll/${userId}`),
   selfEnroll: (id: string)                        => api.post(`/courses/${id}/self-enroll`),
   leave:      (id: string)                        => api.delete(`/courses/${id}/self-enroll`),
+
+  // Admin: Instructor Management
+  eligibleInstructors: (id: string)              => api.get(`/courses/${id}/eligible-instructors`),
+  assignInstructor:   (id: string, instructorId: string) => api.put(`/courses/${id}/instructor`, { instructor_id: instructorId }),
+  removeInstructor:    (id: string)               => api.delete(`/courses/${id}/instructor`),
 };
 
 // ─── Sections & Activities ───────────────────────────────────────────────────
