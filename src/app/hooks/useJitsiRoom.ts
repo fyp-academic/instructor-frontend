@@ -81,6 +81,7 @@ interface UseJitsiRoomProps {
     displayName: string;
     email?: string;
   };
+  scriptLoaded?: boolean;
 }
 
 interface UseJitsiRoomResult {
@@ -116,6 +117,7 @@ export function useJitsiRoom({
   config = {},
   role,
   userInfo,
+  scriptLoaded = false,
 }: UseJitsiRoomProps): UseJitsiRoomResult {
   const [api, setApi] = useState<JitsiMeetExternalAPI | null>(null);
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -152,6 +154,7 @@ export function useJitsiRoom({
     // Guard against double init
     if (initializedRef.current) return;
     if (!containerRef.current) return;
+    if (!scriptLoaded) return;
     if (typeof window === 'undefined' || !window.JitsiMeetExternalAPI) return;
 
     initializedRef.current = true;
@@ -376,9 +379,9 @@ export function useJitsiRoom({
         apiRef.current = null;
       }
     };
-    // Only re-initialize when roomName or jwt changes
+    // Re-initialize when roomName, jwt, or scriptLoaded changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roomName, jwt]);
+  }, [roomName, jwt, scriptLoaded]);
 
   // Actions
   const toggleMute = useCallback(() => {

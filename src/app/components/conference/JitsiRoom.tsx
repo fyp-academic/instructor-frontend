@@ -121,6 +121,7 @@ export function JitsiRoom({
     containerRef: jitsiContainerRef,
     role,
     userInfo,
+    scriptLoaded,
   });
 
   // Handle errors
