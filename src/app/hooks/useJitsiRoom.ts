@@ -90,6 +90,7 @@ interface UseJitsiRoomResult {
   isMuted: boolean;
   isCamOn: boolean;
   isRecording: boolean;
+  isScreenSharing: boolean;
   isHandRaised: boolean;
   chatMessages: ChatMessage[];
   transcriptLines: TranscriptLine[];
@@ -100,6 +101,7 @@ interface UseJitsiRoomResult {
   toggleMute: () => void;
   toggleCamera: () => void;
   toggleHand: () => void;
+  toggleShareScreen: () => void;
   startRecording: () => void;
   stopRecording: () => void;
   sendMessage: (text: string) => void;
@@ -124,6 +126,7 @@ export function useJitsiRoom({
   const [isMuted, setIsMuted] = useState(true);
   const [isCamOn, setIsCamOn] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [isHandRaised, setIsHandRaised] = useState(false);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [transcriptLines, setTranscriptLines] = useState<TranscriptLine[]>([]);
@@ -185,6 +188,7 @@ export function useJitsiRoom({
         enableLayerSuspension: true,
         enableNoisyMicDetection: false,
         startBitrate: 800,
+        desktopSharingFrameRate: { min: 5, max: 15 },
         ...currentConfig,
       };
 
@@ -268,6 +272,11 @@ export function useJitsiRoom({
       // 6. Recording status changed
       jitsiApi.addListener('recordingStatusChanged', (event: { isRecording: boolean; mode?: string }) => {
         setIsRecording(event.isRecording);
+      });
+
+      // 6a. Screen sharing status changed
+      jitsiApi.addListener('screenSharingStatusChanged', (event: { on: boolean }) => {
+        setIsScreenSharing(event.on);
       });
 
       // 7. Raise hand updated
@@ -416,6 +425,12 @@ export function useJitsiRoom({
     }
   }, [api]);
 
+  const toggleShareScreen = useCallback(() => {
+    if (api) {
+      api.executeCommand('toggleShareScreen');
+    }
+  }, [api]);
+
   const startRecording = useCallback(() => {
     if (api && role === 'instructor') {
       api.executeCommand('startRecording', {
@@ -461,6 +476,7 @@ export function useJitsiRoom({
     isMuted,
     isCamOn,
     isRecording,
+    isScreenSharing,
     isHandRaised,
     chatMessages,
     transcriptLines,
@@ -470,6 +486,7 @@ export function useJitsiRoom({
     toggleMute,
     toggleCamera,
     toggleHand,
+    toggleShareScreen,
     startRecording,
     stopRecording,
     sendMessage,

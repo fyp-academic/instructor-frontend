@@ -13,6 +13,7 @@ import {
   MoreVertical,
   ScreenShare,
   StopCircle,
+  Circle,
   Hand,
   ChevronRight,
   ChevronLeft,
@@ -102,6 +103,7 @@ export function JitsiRoom({
     isMuted,
     isCamOn,
     isRecording,
+    isScreenSharing,
     isHandRaised,
     chatMessages,
     transcriptLines,
@@ -111,6 +113,7 @@ export function JitsiRoom({
     toggleMute,
     toggleCamera,
     toggleHand,
+    toggleShareScreen,
     startRecording,
     stopRecording,
     sendMessage,
@@ -417,7 +420,7 @@ export function JitsiRoom({
               </>
             ) : (
               <>
-                <ScreenShare className="h-4 w-4 mr-2" />
+                <Circle className="h-4 w-4 mr-2 fill-red-500 text-red-500" />
                 Start Recording
               </>
             )}
@@ -554,6 +557,16 @@ export function JitsiRoom({
             <Hand className={cn('h-4 w-4', isHandRaised && 'animate-bounce')} />
           </Button>
 
+          {/* Screen Share */}
+          <Button
+            variant={isScreenSharing ? 'default' : 'secondary'}
+            size="icon"
+            onClick={toggleShareScreen}
+            className="h-10 w-10 hidden sm:flex"
+          >
+            <ScreenShare className="h-4 w-4" />
+          </Button>
+
           {role === 'instructor' && (
             <Button
               variant={isRecording ? 'destructive' : 'secondary'}
@@ -561,7 +574,7 @@ export function JitsiRoom({
               onClick={handleToggleRecording}
               className="h-10 w-10 hidden sm:flex"
             >
-              {isRecording ? <StopCircle className="h-4 w-4" /> : <ScreenShare className="h-4 w-4" />}
+              {isRecording ? <StopCircle className="h-4 w-4" /> : <Circle className="h-4 w-4 fill-red-500 text-red-500" />}
             </Button>
           )}
 
