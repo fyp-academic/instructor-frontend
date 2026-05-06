@@ -172,6 +172,19 @@ export function useJitsiRoom({
         prejoinPageEnabled: false,
         prejoinConfig: { enabled: false },
         disableDeepLinking: true,
+        p2p: { enabled: false },
+        channelLastN: 10,
+        resolution: 360,
+        constraints: {
+          video: {
+            height: { ideal: 360, max: 480 },
+            frameRate: { max: 20 },
+          },
+        },
+        disableSimulcast: false,
+        enableLayerSuspension: true,
+        enableNoisyMicDetection: false,
+        startBitrate: 800,
         ...currentConfig,
       };
 
