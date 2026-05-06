@@ -3,8 +3,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 // Jitsi Meet External API types (minimal for TypeScript)
 interface JitsiMeetExternalAPI {
   dispose: () => void;
-  addListener: (event: string, callback: (...args: unknown[]) => void) => void;
-  removeListener: (event: string, callback: (...args: unknown[]) => void) => void;
+  addListener: <E = unknown>(event: string, callback: (event: E) => void) => void;
+  removeListener: <E = unknown>(event: string, callback: (event: E) => void) => void;
   removeAllListeners: () => void;
   executeCommand: (command: string, ...args: unknown[]) => void;
   executeCommands: (commands: Record<string, unknown[]>) => void;
@@ -131,8 +131,19 @@ export function useJitsiRoom({
 
   // Guard against double initialization
   const initializedRef = useRef(false);
-  const sessionTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const sessionTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const apiRef = useRef<JitsiMeetExternalAPI | null>(null);
+
+  // Use refs for values that should NOT trigger re-initialization
+  // config={} default creates new object on every render causing infinite loop
+  const configRef = useRef(config);
+  const roleRef = useRef(role);
+  const userInfoRef = useRef(userInfo);
+  useEffect(() => {
+    configRef.current = config;
+    roleRef.current = role;
+    userInfoRef.current = userInfo;
+  }, [config, role, userInfo]);
 
   const jitsiDomain = import.meta.env.VITE_JITSI_DOMAIN || 'meet.codagenz.com';
 
@@ -146,14 +157,18 @@ export function useJitsiRoom({
     initializedRef.current = true;
     setIsLoading(true);
 
+    const currentConfig = configRef.current;
+    const currentRole = roleRef.current;
+    const currentUserInfo = userInfoRef.current;
+
     try {
       // Default config based on role
       const defaultConfig: Record<string, unknown> = {
-        startWithAudioMuted: role !== 'instructor',
-        startWithVideoMuted: role !== 'instructor',
+        startWithAudioMuted: currentRole !== 'instructor',
+        startWithVideoMuted: currentRole !== 'instructor',
         prejoinPageEnabled: false,
         disableDeepLinking: true,
-        ...config,
+        ...currentConfig,
       };
 
       // Interface config - hide default toolbar, we'll use custom
@@ -177,7 +192,7 @@ export function useJitsiRoom({
         parentNode: containerRef.current,
         configOverwrite: defaultConfig,
         interfaceConfigOverwrite: interfaceConfig,
-        userInfo: userInfo || { displayName: 'Guest' },
+        userInfo: currentUserInfo || { displayName: 'Guest' },
       });
 
       apiRef.current = jitsiApi;
@@ -195,7 +210,7 @@ export function useJitsiRoom({
             id: event.id,
             displayName: event.displayName,
             avatarUrl: event.avatarURL,
-            isModerator: role === 'instructor',
+            isModerator: currentRole === 'instructor',
           }];
         });
         
@@ -361,7 +376,9 @@ export function useJitsiRoom({
         apiRef.current = null;
       }
     };
-  }, [roomName, jwt, containerRef, config, role, userInfo, jitsiDomain]);
+    // Only re-initialize when roomName or jwt changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomName, jwt]);
 
   // Actions
   const toggleMute = useCallback(() => {
