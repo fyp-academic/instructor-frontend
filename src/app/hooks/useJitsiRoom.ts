@@ -170,6 +170,7 @@ export function useJitsiRoom({
         startWithAudioMuted: currentRole !== 'instructor',
         startWithVideoMuted: currentRole !== 'instructor',
         prejoinPageEnabled: false,
+        prejoinConfig: { enabled: false },
         disableDeepLinking: true,
         ...currentConfig,
       };
