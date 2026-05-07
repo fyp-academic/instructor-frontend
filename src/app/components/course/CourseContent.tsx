@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Activity, ActivityType, activityTypeInfo } from '../../data/mockData';
-import { quizApi, lessonApi } from '../../services/api';
+import { quizApi, lessonApi, videoApi } from '../../services/api';
 import { AddActivityModal } from '../modals/AddActivityModal';
 import { QuizCreator } from '../modals/QuizCreator';
 import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator, LabelCreator } from '../modals/ActivityCreators';
@@ -85,7 +85,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
     setActivityCreator({ type, sectionId });
   };
 
-  const handleSaveActivity = async (sectionId: string, type: ActivityType, data: { name: string; description: string; settings: Record<string, unknown>; questions?: any[] }) => {
+  const handleSaveActivity = async (sectionId: string, type: ActivityType, data: { name: string; description: string; settings: Record<string, unknown>; questions?: any[]; file?: File | null }) => {
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     const dueDate = dueDateRaw ? String(dueDateRaw) : undefined;
     const newActivity: Activity = {
@@ -101,6 +101,24 @@ export function CourseContent({ courseId }: CourseContentProps) {
     };
     const savedActivity = await addActivity(courseId, sectionId, newActivity);
     const actId = savedActivity?.id ?? newActivity.id;
+
+    // If video with file, upload after creation
+    if (type === 'video' && data.file && actId) {
+      try {
+        const uploadRes = await videoApi.upload(actId, data.file);
+        const uploadData = uploadRes.data?.data ?? {};
+        await updateActivity(courseId, sectionId, actId, {
+          settings: {
+            ...data.settings,
+            fileName: uploadData.file_name ?? data.file.name,
+            videoUrl: uploadData.url ?? '',
+            videoPath: uploadData.path ?? '',
+            mimeType: uploadData.mime_type ?? data.file.type,
+            fileSize: uploadData.size ?? data.file.size,
+          },
+        });
+      } catch (e) { console.error('Video upload failed:', e); }
+    }
 
     // If quiz with questions, save them to backend
     if (type === 'quiz' && data.questions && data.questions.length > 0 && actId) {
@@ -156,7 +174,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
     setActivityCreator(null);
   };
 
-  const handleEditActivitySave = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown> }) => {
+  const handleEditActivitySave = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }) => {
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     await updateActivity(courseId, sectionId, activityId, {
       name: data.name,

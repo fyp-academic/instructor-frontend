@@ -9,7 +9,7 @@ import { videoApi } from '../../services/api';
 
 interface BaseCreatorProps {
   onClose: () => void;
-  onSave: (data: { name: string; description: string; settings: Record<string, unknown> }) => void;
+  onSave: (data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }) => void;
   initialData?: { name: string; description?: string; settings?: Record<string, unknown> };
 }
 
@@ -500,7 +500,7 @@ export function VideoCreator({ onClose, onSave, initialData, activityId }: Video
 
     const settings: Record<string, unknown> = { ...form };
 
-    // If editing and a new file is selected, upload it
+    // If editing and a new file is selected, upload it immediately
     if (activityId && file && form.sourceType === 'upload') {
       setUploading(true);
       try {
@@ -518,7 +518,7 @@ export function VideoCreator({ onClose, onSave, initialData, activityId }: Video
       }
     }
 
-    onSave({ name: form.name, description: form.description, settings });
+    onSave({ name: form.name, description: form.description, settings, file });
   };
 
   return (
@@ -528,7 +528,7 @@ export function VideoCreator({ onClose, onSave, initialData, activityId }: Video
       <FormField label="Source"><select className={selectCls} value={form.sourceType} onChange={e => setF('sourceType', e.target.value)}><option value="upload">Uploaded File</option><option value="url">External URL (YouTube, Vimeo, etc.)</option></select></FormField>
       {form.sourceType === 'url' && <FormField label="Video URL" required><input className={inputCls} value={form.url} onChange={e => setF('url', e.target.value)} placeholder="https://..." /></FormField>}
       {form.sourceType === 'upload' && (
-        <FormField label="Video File" hint={activityId ? 'Select a file to upload (edit mode only)' : 'File upload available after saving — enter file name for now'}>
+        <FormField label="Video File" hint={activityId ? 'Select a new file to replace the current one' : 'Select a video file from your device'}>
           <input
             type="file"
             accept="video/*"
@@ -538,7 +538,6 @@ export function VideoCreator({ onClose, onSave, initialData, activityId }: Video
               setFile(f);
               if (f) setF('fileName', f.name);
             }}
-            disabled={!activityId}
           />
           {form.fileName && <p className="text-xs text-gray-500 mt-1">Current: {form.fileName}</p>}
         </FormField>
