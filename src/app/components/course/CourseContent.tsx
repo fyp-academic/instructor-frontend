@@ -99,7 +99,13 @@ export function CourseContent({ courseId }: CourseContentProps) {
       gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
       dueDate,
     };
-    const savedActivity = await addActivity(courseId, sectionId, newActivity);
+    let savedActivity: Activity;
+    try {
+      savedActivity = await addActivity(courseId, sectionId, newActivity);
+    } catch (err: any) {
+      alert('Failed to save activity: ' + (err?.response?.data?.message || err?.message || 'Unknown error'));
+      return;
+    }
     const actId = savedActivity?.id ?? newActivity.id;
 
     // If video with file, upload after creation
@@ -188,13 +194,18 @@ export function CourseContent({ courseId }: CourseContentProps) {
 
   const handleEditQuizSave = async (sectionId: string, activityId: string, data: { name: string; description: string; questions: any[]; settings: Record<string, unknown> }) => {
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
-    await updateActivity(courseId, sectionId, activityId, {
-      name: data.name,
-      description: data.description,
-      settings: data.settings,
-      gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
-      dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
-    });
+    try {
+      await updateActivity(courseId, sectionId, activityId, {
+        name: data.name,
+        description: data.description,
+        settings: data.settings,
+        gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
+        dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
+      });
+    } catch (err: any) {
+      alert('Failed to update activity: ' + (err?.response?.data?.message || err?.message || 'Unknown error'));
+      return;
+    }
 
     // Replace all questions when editing a quiz
     try {

@@ -266,17 +266,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return act;
     } catch (err) {
       console.error('Failed to add activity:', err);
-      // Fallback: add locally
-      setCourses(prev => prev.map(c => {
-        if (c.id !== courseId) return c;
-        return {
-          ...c, sections: c.sections.map(s => {
-            if (s.id !== sectionId) return s;
-            return { ...s, activities: [...s.activities, activity] };
-          })
-        };
-      }));
-      return activity;
+      throw err;
     }
   }, []);
 
@@ -292,6 +282,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       });
     } catch (err) {
       console.error('Failed to update activity:', err);
+      throw err;
     }
     setCourses(prev => prev.map(c => {
       if (c.id !== courseId) return c;
