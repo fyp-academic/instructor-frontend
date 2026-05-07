@@ -148,10 +148,10 @@ export function CourseContent({ courseId }: CourseContentProps) {
                   grade_fraction: (a.grade ?? 0) / 100,
                   feedback: a.feedback ?? '',
                 });
-              } catch (e) { /* ignore single answer failure */ }
+              } catch (e: any) { console.error('Failed to create answer:', e); }
             }
           }
-        } catch (e) { /* ignore single question failure */ }
+        } catch (e: any) { console.error('Failed to create question:', e); }
       }
     }
 
@@ -212,9 +212,9 @@ export function CourseContent({ courseId }: CourseContentProps) {
       const existing = await quizApi.listQuestions(activityId);
       const existingQs = existing.data.data ?? existing.data ?? [];
       for (const q of existingQs) {
-        try { await quizApi.deleteQuestion(q.id); } catch (e) { /* ignore */ }
+        try { await quizApi.deleteQuestion(q.id); } catch (e: any) { console.error('Failed to delete question:', e); }
       }
-    } catch (e) { /* ignore */ }
+    } catch (e: any) { console.error('Failed to list existing questions:', e); }
 
     if (data.questions && data.questions.length > 0) {
       for (const q of data.questions) {
@@ -237,10 +237,10 @@ export function CourseContent({ courseId }: CourseContentProps) {
                   grade_fraction: (a.grade ?? 0) / 100,
                   feedback: a.feedback ?? '',
                 });
-              } catch (e) { /* ignore */ }
+              } catch (e: any) { console.error('Failed to create answer:', e); }
             }
           }
-        } catch (e) { /* ignore */ }
+        } catch (e: any) { console.error('Failed to create question:', e); }
       }
     }
 
