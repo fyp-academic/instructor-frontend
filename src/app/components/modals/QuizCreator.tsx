@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle, HelpCircle } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { QuizQuestion, QuizAnswer } from '../../data/mockData';
+import { quizApi } from '../../services/api';
 
 interface QuizCreatorProps {
   onClose: () => void;
   onSave: (quizData: { name: string; description: string; questions: QuizQuestion[]; settings: Record<string, unknown> }) => void;
+  initialData?: { name: string; description?: string; settings?: Record<string, unknown> };
+  activityId?: string;
 }
 
 const questionTypeLabels: Record<string, string> = {
@@ -19,7 +22,7 @@ const questionTypeLabels: Record<string, string> = {
   drag_drop: 'Drag & Drop',
 };
 
-export function QuizCreator({ onClose, onSave }: QuizCreatorProps) {
+export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCreatorProps) {
   const [step, setStep] = useState<'settings' | 'questions'>('settings');
   const [activeTab, setActiveTab] = useState('general');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -27,27 +30,57 @@ export function QuizCreator({ onClose, onSave }: QuizCreatorProps) {
   const [newQType, setNewQType] = useState<QuizQuestion['type']>('multiple_choice');
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
 
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
   const [settings, setSettings] = useState({
-    name: '',
-    description: '',
-    openDate: '',
-    closeDate: '',
-    timeLimit: '',
-    gradeMax: '100',
-    gradePass: '50',
-    attemptsAllowed: '1',
-    gradeMethod: 'highest',
-    questionsPerPage: '1',
-    shuffleQuestions: false,
-    shuffleAnswers: true,
-    questionBehaviour: 'deferredfeedback',
-    showFeedback: 'after_attempt',
-    showCorrectAnswer: 'after_attempt',
-    requirePassword: false,
-    password: '',
-    requireSafeBrowser: false,
-    completionGrade: '',
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    openDate: s.openDate ?? '',
+    closeDate: s.closeDate ?? '',
+    timeLimit: s.timeLimit ?? '',
+    gradeMax: s.gradeMax ?? '100',
+    gradePass: s.gradePass ?? '50',
+    attemptsAllowed: s.attemptsAllowed ?? '1',
+    gradeMethod: s.gradeMethod ?? 'highest',
+    questionsPerPage: s.questionsPerPage ?? '1',
+    shuffleQuestions: s.shuffleQuestions ?? false,
+    shuffleAnswers: s.shuffleAnswers ?? true,
+    questionBehaviour: s.questionBehaviour ?? 'deferredfeedback',
+    showFeedback: s.showFeedback ?? 'after_attempt',
+    showCorrectAnswer: s.showCorrectAnswer ?? 'after_attempt',
+    requirePassword: s.requirePassword ?? false,
+    password: s.password ?? '',
+    requireSafeBrowser: s.requireSafeBrowser ?? false,
+    completionGrade: s.completionGrade ?? '',
   });
+
+  useEffect(() => {
+    if (!activityId) return;
+    quizApi.listQuestions(activityId)
+      .then(r => {
+        const raw = r.data.data ?? r.data ?? [];
+        const mapped: QuizQuestion[] = raw.map((q: any) => ({
+          id: String(q.id),
+          type: q.type ?? 'multiple_choice',
+          questionText: q.question_text ?? '',
+          category: q.category ?? 'Default',
+          defaultMark: Number(q.default_mark ?? 1),
+          answers: (q.answers ?? []).map((a: any) => ({
+            id: String(a.id),
+            text: a.text ?? '',
+            grade: Number(a.grade ?? 0),
+            feedback: a.feedback ?? '',
+          })),
+          matchingPairs: q.matching_pairs ?? q.matchingPairs ?? [],
+          shuffleAnswers: q.shuffle_answers ?? q.shuffleAnswers ?? true,
+          multipleAnswers: q.multiple_answers ?? q.multipleAnswers ?? false,
+          hints: q.hints ?? [],
+          penalty: Number(q.penalty ?? 0),
+          correctAnswer: q.correct_answer ?? q.correctAnswer,
+        }));
+        setQuestions(mapped);
+      })
+      .catch(() => { /* ignore fetch errors */ });
+  }, [activityId]);
 
   const setS = (k: string, v: unknown) => setSettings(p => ({ ...p, [k]: v }));
 
@@ -126,8 +159,8 @@ export function QuizCreator({ onClose, onSave }: QuizCreatorProps) {
               <HelpCircle className="w-5 h-5 text-purple-600" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-gray-900">Create Quiz</h2>
-              <p className="text-xs text-gray-500">{step === 'settings' ? 'Configure quiz settings' : `${questions.length} question(s) added`}</p>
+              <h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Quiz</h2>
+              <p className="text-xs text-gray-500">{step === 'settings' ? 'Configure quiz settings' : `${questions.length} question(s)`}</p>
             </div>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>

@@ -2,14 +2,21 @@ import React, { useState } from 'react';
 import {
   Plus, Pencil, Trash2, Eye, EyeOff, ChevronDown, ChevronUp,
   HelpCircle, FileText, MessageSquare, Link, File, Package,
-  Layers, Users, Hash, Layout, GripVertical, Check, X, BookOpen
+  Layers, Users, Hash, Layout, GripVertical, Check, X, BookOpen,
+  ClipboardList, Monitor, ListChecks, BarChart3, Award, Database,
+  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Activity, ActivityType, activityTypeInfo } from '../../data/mockData';
 import { quizApi, lessonApi } from '../../services/api';
 import { AddActivityModal } from '../modals/AddActivityModal';
 import { QuizCreator } from '../modals/QuizCreator';
-import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator } from '../modals/ActivityCreators';
+import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator, LabelCreator } from '../modals/ActivityCreators';
+import {
+  AttendanceCreator, BigBlueButtonCreator, BookCreator, ChecklistCreator,
+  ChoiceCreator, CertificateCreator, DatabaseCreator, FeedbackCreator,
+  FolderCreator, GlossaryCreator, IMSContentPackageCreator, LessonCreator, VideoCreator
+} from '../modals/ActivityCreatorsExtra';
 
 const activityIcons: Record<ActivityType, React.ElementType> = {
   quiz: HelpCircle,
@@ -22,6 +29,19 @@ const activityIcons: Record<ActivityType, React.ElementType> = {
   workshop: Users,
   label: Hash,
   page: Layout,
+  attendance: ClipboardList,
+  bigbluebutton: Monitor,
+  book: BookOpen,
+  checklist: ListChecks,
+  choice: BarChart3,
+  certificate: Award,
+  database: Database,
+  feedback: MessageCircle,
+  folder: Folder,
+  glossary: BookMarked,
+  ims_content_package: Box,
+  lesson: GraduationCap,
+  video: Play,
 };
 
 interface CourseContentProps {
@@ -33,8 +53,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
   const course = getCourse(courseId);
 
   const [addActivityTarget, setAddActivityTarget] = useState<string | null>(null); // sectionId
-  const [activityCreator, setActivityCreator] = useState<{ type: ActivityType; sectionId: string } | null>(null);
-  const [editingActivity, setEditingActivity] = useState<{ activity: Activity; sectionId: string } | null>(null);
+  const [activityCreator, setActivityCreator] = useState<{ type: ActivityType; sectionId: string; activity?: Activity } | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editSectionTitle, setEditSectionTitle] = useState('');
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -58,16 +77,9 @@ export function CourseContent({ courseId }: CourseContentProps) {
       await addSection(courseId, 'New Subsection');
       return;
     }
-    // Label doesn't need a form - create directly
+    // Label opens a simple modal
     if (type === 'label') {
-      const newActivity: Activity = {
-        id: `act_${Date.now()}`,
-        type: 'label',
-        name: 'New Label / Text Block',
-        visible: true,
-        completionStatus: 'none',
-      };
-      await addActivity(courseId, sectionId, newActivity);
+      setActivityCreator({ type: 'label', sectionId });
       return;
     }
     setActivityCreator({ type, sectionId });
@@ -120,7 +132,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
     }
 
     // If page/lesson with content, save as lesson page
-    if ((type === 'page' || type === 'lesson') && actId) {
+    if (type === 'page' && actId) {
       const content = String(data.settings?.content || data.description || '');
       if (content) {
         try {
@@ -144,7 +156,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
     setActivityCreator(null);
   };
 
-  const handleSaveEditedActivity = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown> }) => {
+  const handleEditActivitySave = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown> }) => {
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     await updateActivity(courseId, sectionId, activityId, {
       name: data.name,
@@ -153,7 +165,57 @@ export function CourseContent({ courseId }: CourseContentProps) {
       gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
       dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
     });
-    setEditingActivity(null);
+    setActivityCreator(null);
+  };
+
+  const handleEditQuizSave = async (sectionId: string, activityId: string, data: { name: string; description: string; questions: any[]; settings: Record<string, unknown> }) => {
+    const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
+    await updateActivity(courseId, sectionId, activityId, {
+      name: data.name,
+      description: data.description,
+      settings: data.settings,
+      gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
+      dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
+    });
+
+    // Replace all questions when editing a quiz
+    try {
+      const existing = await quizApi.listQuestions(activityId);
+      const existingQs = existing.data.data ?? existing.data ?? [];
+      for (const q of existingQs) {
+        try { await quizApi.deleteQuestion(q.id); } catch (e) { /* ignore */ }
+      }
+    } catch (e) { /* ignore */ }
+
+    if (data.questions && data.questions.length > 0) {
+      for (const q of data.questions) {
+        try {
+          const qRes = await quizApi.createQuestion(activityId, {
+            type: q.type ?? 'multiple_choice',
+            question_text: q.questionText ?? '',
+            category: q.category ?? 'Default',
+            default_mark: q.defaultMark ?? 1,
+            shuffle_answers: q.shuffleAnswers ?? true,
+            penalty: q.penalty ?? 0,
+          });
+          const savedQ = qRes.data.data ?? qRes.data;
+          const qid = savedQ?.id;
+          if (qid && q.answers && q.answers.length > 0) {
+            for (const a of q.answers) {
+              try {
+                await quizApi.createAnswer(qid, {
+                  answer_text: a.text ?? '',
+                  grade_fraction: (a.grade ?? 0) / 100,
+                  feedback: a.feedback ?? '',
+                });
+              } catch (e) { /* ignore */ }
+            }
+          }
+        } catch (e) { /* ignore */ }
+      }
+    }
+
+    setActivityCreator(null);
   };
 
   const completionColors: Record<string, string> = {
@@ -244,8 +306,6 @@ export function CourseContent({ courseId }: CourseContentProps) {
                   const Icon = activityIcons[activity.type];
                   const info = activityTypeInfo[activity.type];
                   const compStatus = activity.completionStatus || 'none';
-                  const isEditingActivity = editingActivity?.activity.id === activity.id && editingActivity?.sectionId === section.id;
-
                   return (
                     <div
                       key={activity.id}
@@ -253,46 +313,24 @@ export function CourseContent({ courseId }: CourseContentProps) {
                         !activity.visible && editMode ? 'opacity-60 border-dashed' : completionColors[compStatus]
                       } hover:shadow-sm`}
                     >
-                      {editMode && !isEditingActivity && <GripVertical className="w-4 h-4 text-gray-300 cursor-grab flex-shrink-0" />}
+                      {editMode && <GripVertical className="w-4 h-4 text-gray-300 cursor-grab flex-shrink-0" />}
 
                       <div className={`w-7 h-7 ${info.color} rounded-md flex items-center justify-center flex-shrink-0`}>
                         <Icon className={`w-4 h-4 ${info.iconColor}`} />
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        {isEditingActivity ? (
-                          <div className="flex items-center gap-2">
-                            <input
-                              type="text"
-                              defaultValue={activity.name}
-                              onBlur={async (e) => await handleSaveEditedActivity(section.id, activity.id, { name: e.target.value, description: activity.description || '', settings: activity.settings || {} })}
-                              onKeyDown={async (e) => {
-                                if (e.key === 'Enter') {
-                                  await handleSaveEditedActivity(section.id, activity.id, { name: (e.target as HTMLInputElement).value, description: activity.description || '', settings: activity.settings || {} });
-                                }
-                              }}
-                              autoFocus
-                              className="flex-1 text-sm border border-indigo-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                            />
-                            <button onClick={() => setEditingActivity(null)} className="p-1 rounded hover:bg-gray-200 text-gray-500">
-                              <X className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ) : (
-                          <>
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-medium text-gray-800 hover:text-indigo-700 cursor-pointer truncate">
-                                {activity.name}
-                              </span>
-                              {!activity.visible && <EyeOff className="w-3 h-3 text-gray-400 flex-shrink-0" />}
-                            </div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className={`text-[10px] font-medium ${info.iconColor}`}>{info.label}</span>
-                              {activity.dueDate && <span className="text-[10px] text-gray-400">Due: {activity.dueDate}</span>}
-                              {activity.gradeMax && <span className="text-[10px] text-gray-400">{activity.gradeMax} pts</span>}
-                            </div>
-                          </>
-                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-gray-800 hover:text-indigo-700 cursor-pointer truncate">
+                            {activity.name}
+                          </span>
+                          {!activity.visible && <EyeOff className="w-3 h-3 text-gray-400 flex-shrink-0" />}
+                        </div>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className={`text-[10px] font-medium ${info.iconColor}`}>{info.label}</span>
+                          {activity.dueDate && <span className="text-[10px] text-gray-400">Due: {activity.dueDate}</span>}
+                          {activity.gradeMax && <span className="text-[10px] text-gray-400">{activity.gradeMax} pts</span>}
+                        </div>
                       </div>
 
                       {/* Completion indicator */}
@@ -303,9 +341,9 @@ export function CourseContent({ courseId }: CourseContentProps) {
                         {compStatus === 'completed' && <Check className="w-2.5 h-2.5 text-white" />}
                       </div>
 
-                      {editMode && !isEditingActivity && (
+                      {editMode && (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => { setEditingActivity({ activity, sectionId: section.id }); }} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700">
+                          <button onClick={() => { setActivityCreator({ type: activity.type, sectionId: section.id, activity }); }} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700">
                             <Pencil className="w-3.5 h-3.5" />
                           </button>
                           <button onClick={async () => await updateActivity(courseId, section.id, activity.id, { visible: !activity.visible })} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700">
@@ -381,55 +419,302 @@ export function CourseContent({ courseId }: CourseContentProps) {
       {activityCreator?.type === 'quiz' && (
         <QuizCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'quiz', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditQuizSave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'quiz', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+          activityId={activityCreator.activity?.id}
         />
       )}
       {activityCreator?.type === 'assignment' && (
         <AssignmentCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'assignment', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'assignment', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'forum' && (
         <ForumCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'forum', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'forum', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'url' && (
         <UrlCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'url', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'url', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'file' && (
         <FileCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'file', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'file', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'scorm' && (
         <ScormCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'scorm', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'scorm', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'workshop' && (
         <WorkshopCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'workshop', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'workshop', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'h5p' && (
         <H5PCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'h5p', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'h5p', data);
+            }
+          }}
+          initialData={activityCreator.activity}
         />
       )}
       {activityCreator?.type === 'page' && (
         <PageCreator
           onClose={() => setActivityCreator(null)}
-          onSave={(data) => handleSaveActivity(activityCreator.sectionId, 'page', data)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'page', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'label' && (
+        <LabelCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'label', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'attendance' && (
+        <AttendanceCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'attendance', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'bigbluebutton' && (
+        <BigBlueButtonCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'bigbluebutton', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'book' && (
+        <BookCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'book', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'checklist' && (
+        <ChecklistCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'checklist', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'choice' && (
+        <ChoiceCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'choice', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'certificate' && (
+        <CertificateCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'certificate', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'database' && (
+        <DatabaseCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'database', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'feedback' && (
+        <FeedbackCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'feedback', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'folder' && (
+        <FolderCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'folder', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'glossary' && (
+        <GlossaryCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'glossary', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'ims_content_package' && (
+        <IMSContentPackageCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'ims_content_package', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'lesson' && (
+        <LessonCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'lesson', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'video' && (
+        <VideoCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'video', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+          activityId={activityCreator.activity?.id}
         />
       )}
     </div>

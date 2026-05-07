@@ -7,6 +7,7 @@ interface BaseCreatorProps {
   type: ActivityType;
   onClose: () => void;
   onSave: (data: { name: string; description: string; settings: Record<string, unknown> }) => void;
+  initialData?: { name: string; description?: string; settings?: Record<string, unknown> };
 }
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
@@ -21,17 +22,31 @@ function FormField({ label, required, children, hint }: { label: string; require
   );
 }
 
-export function AssignmentCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
+export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
   const [tab, setTab] = useState('general');
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
   const [form, setForm] = useState({
-    name: '', description: '', instructions: '',
-    dueDate: '', cutoffDate: '', allowFromDate: '',
-    submissionTypes: ['file'], textOnlineEnabled: false, fileSubmissionEnabled: true,
-    maxFiles: '1', maxFileSize: '10',
-    feedbackTypes: ['comments'], feedbackCommentsEnabled: true,
-    gradeMax: '100', gradePass: '50', gradeMethod: 'simple', blindMarking: false,
-    attemptsReopened: 'never', maxAttempts: '1',
-    notifyGraders: true, notifyStudents: true,
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    instructions: s.instructions ?? '',
+    dueDate: s.dueDate ?? '',
+    cutoffDate: s.cutoffDate ?? '',
+    allowFromDate: s.allowFromDate ?? '',
+    submissionTypes: s.submissionTypes ?? ['file'],
+    textOnlineEnabled: s.textOnlineEnabled ?? false,
+    fileSubmissionEnabled: s.fileSubmissionEnabled ?? true,
+    maxFiles: s.maxFiles ?? '1',
+    maxFileSize: s.maxFileSize ?? '10',
+    feedbackTypes: s.feedbackTypes ?? ['comments'],
+    feedbackCommentsEnabled: s.feedbackCommentsEnabled ?? true,
+    gradeMax: s.gradeMax ?? '100',
+    gradePass: s.gradePass ?? '50',
+    gradeMethod: s.gradeMethod ?? 'simple',
+    blindMarking: s.blindMarking ?? false,
+    attemptsReopened: s.attemptsReopened ?? 'never',
+    maxAttempts: s.maxAttempts ?? '1',
+    notifyGraders: s.notifyGraders ?? true,
+    notifyStudents: s.notifyStudents ?? true,
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
 
@@ -43,7 +58,7 @@ export function AssignmentCreator({ onClose, onSave }: Omit<BaseCreatorProps, 't
         <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center"><FileText className="w-5 h-5 text-blue-600" /></div>
-            <h2 className="text-lg font-bold text-gray-900">Create Assignment</h2>
+            <h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Assignment</h2>
           </div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
@@ -139,14 +154,25 @@ export function AssignmentCreator({ onClose, onSave }: Omit<BaseCreatorProps, 't
   );
 }
 
-export function ForumCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', description: '', type: 'general', maxAttachments: '0', ratingScale: 'none', subscriptionMode: 'auto', trackingMode: 'optional', allowPostRatings: false, blockAfterPeriod: false });
+export function ForumCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    type: s.type ?? 'general',
+    maxAttachments: s.maxAttachments ?? '0',
+    ratingScale: s.ratingScale ?? 'none',
+    subscriptionMode: s.subscriptionMode ?? 'auto',
+    trackingMode: s.trackingMode ?? 'optional',
+    allowPostRatings: s.allowPostRatings ?? false,
+    blockAfterPeriod: s.blockAfterPeriod ?? false,
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center"><MessageSquare className="w-5 h-5 text-green-600" /></div><h2 className="text-lg font-bold text-gray-900">Create Forum</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center"><MessageSquare className="w-5 h-5 text-green-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Forum</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -190,14 +216,22 @@ export function ForumCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>
   );
 }
 
-export function UrlCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', url: '', description: '', displayType: 'auto', popupWidth: '620', popupHeight: '450' });
+export function UrlCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    url: s.url ?? '',
+    description: initialData?.description ?? '',
+    displayType: s.displayType ?? 'auto',
+    popupWidth: s.popupWidth ?? '620',
+    popupHeight: s.popupHeight ?? '450',
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center"><Link className="w-5 h-5 text-cyan-600" /></div><h2 className="text-lg font-bold text-gray-900">Add URL</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center"><Link className="w-5 h-5 text-cyan-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Add'} URL</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -223,14 +257,22 @@ export function UrlCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) 
   );
 }
 
-export function FileCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', description: '', displayType: 'auto', showSize: true, showDate: true, showType: false });
+export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    displayType: s.displayType ?? 'auto',
+    showSize: s.showSize ?? true,
+    showDate: s.showDate ?? true,
+    showType: s.showType ?? false,
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center"><File className="w-5 h-5 text-gray-600" /></div><h2 className="text-lg font-bold text-gray-900">Upload File</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center"><File className="w-5 h-5 text-gray-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Upload'} File</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -272,14 +314,23 @@ export function FileCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>)
   );
 }
 
-export function ScormCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', description: '', gradeMethod: 'highest', maxGrade: '100', attempts: '1', displayType: 'new', displayWidth: '100' });
+export function ScormCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    gradeMethod: s.gradeMethod ?? 'highest',
+    maxGrade: s.maxGrade ?? '100',
+    attempts: s.attempts ?? '1',
+    displayType: s.displayType ?? 'new',
+    displayWidth: s.displayWidth ?? '100',
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-yellow-100 rounded-lg flex items-center justify-center"><Package className="w-5 h-5 text-yellow-600" /></div><h2 className="text-lg font-bold text-gray-900">SCORM Package</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-yellow-100 rounded-lg flex items-center justify-center"><Package className="w-5 h-5 text-yellow-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} SCORM Package</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -316,14 +367,27 @@ export function ScormCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>
   );
 }
 
-export function WorkshopCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', description: '', gradingStrategy: 'accumulative', maxGrade: '80', maxGradeForAssessment: '20', submissionStart: '', submissionEnd: '', assessmentStart: '', assessmentEnd: '', allowSelfAssessment: false, requireExamples: false });
+export function WorkshopCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    gradingStrategy: s.gradingStrategy ?? 'accumulative',
+    maxGrade: s.maxGrade ?? '80',
+    maxGradeForAssessment: s.maxGradeForAssessment ?? '20',
+    submissionStart: s.submissionStart ?? '',
+    submissionEnd: s.submissionEnd ?? '',
+    assessmentStart: s.assessmentStart ?? '',
+    assessmentEnd: s.assessmentEnd ?? '',
+    allowSelfAssessment: s.allowSelfAssessment ?? false,
+    requireExamples: s.requireExamples ?? false,
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center"><Users className="w-5 h-5 text-orange-600" /></div><h2 className="text-lg font-bold text-gray-900">Create Workshop</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center"><Users className="w-5 h-5 text-orange-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Workshop</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -373,14 +437,21 @@ export function WorkshopCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'typ
   );
 }
 
-export function H5PCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', description: '', displayType: 'iframe', gradeMethod: 'highest', maxGrade: '100' });
+export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    description: initialData?.description ?? '',
+    displayType: s.displayType ?? 'iframe',
+    gradeMethod: s.gradeMethod ?? 'highest',
+    maxGrade: s.maxGrade ?? '100',
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-pink-100 rounded-lg flex items-center justify-center"><Layers className="w-5 h-5 text-pink-600" /></div><h2 className="text-lg font-bold text-gray-900">H5P Interactive Content</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-pink-100 rounded-lg flex items-center justify-center"><Layers className="w-5 h-5 text-pink-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} H5P Interactive Content</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -413,14 +484,20 @@ export function H5PCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) 
   );
 }
 
-export function PageCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>) {
-  const [form, setForm] = useState({ name: '', content: '', displayInline: false, showDate: true });
+export function PageCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    content: s.content ?? initialData?.description ?? '',
+    displayInline: s.displayInline ?? false,
+    showDate: s.showDate ?? true,
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
-          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center"><Layout className="w-5 h-5 text-indigo-600" /></div><h2 className="text-lg font-bold text-gray-900">Create Page</h2></div>
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center"><Layout className="w-5 h-5 text-indigo-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Page</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
@@ -436,6 +513,29 @@ export function PageCreator({ onClose, onSave }: Omit<BaseCreatorProps, 'type'>)
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
           <button onClick={() => { if (!form.name) { alert('Please enter page name'); return; } onSave({ name: form.name, description: form.content, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Page</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function LabelCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const [content, setContent] = useState(initialData?.name ?? '');
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200">
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center"><Hash className="w-5 h-5 text-red-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Label</h2></div>
+          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+        </div>
+        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          <FormField label="Label Content" required>
+            <RichTextEditor value={content} onChange={v => setContent(v)} placeholder="Enter text or media content to display between activities..." minHeight={150} />
+          </FormField>
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+          <button onClick={() => { if (!content) { alert('Please enter label content'); return; } onSave({ name: content, description: content, settings: { content } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Label</button>
         </div>
       </div>
     </div>

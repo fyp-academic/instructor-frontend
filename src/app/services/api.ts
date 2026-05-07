@@ -268,6 +268,18 @@ export const lessonApi = {
   deletePage:  (id: string) => api.delete(`/lesson-pages/${id}`),
 };
 
+// ─── Video Uploads ───────────────────────────────────────────────────────────
+export const videoApi = {
+  upload: (activityId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('video', file);
+    return api.post(`/activities/${activityId}/video-upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  remove: (activityId: string) => api.delete(`/activities/${activityId}/video`),
+};
+
 // ─── AI Insights ─────────────────────────────────────────────────────────────
 export const aiApi = {
   snapshots:          (courseId: string) => api.get(`/ai/courses/${courseId}/performance-snapshots`),

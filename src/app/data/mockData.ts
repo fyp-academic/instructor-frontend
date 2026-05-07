@@ -30,7 +30,10 @@ export interface Section {
   collapsed?: boolean;
 }
 
-export type ActivityType = 'quiz' | 'assignment' | 'forum' | 'url' | 'file' | 'h5p' | 'scorm' | 'workshop' | 'label' | 'page';
+export type ActivityType =
+  | 'quiz' | 'assignment' | 'forum' | 'url' | 'file' | 'h5p' | 'scorm' | 'workshop' | 'label' | 'page'
+  | 'attendance' | 'bigbluebutton' | 'book' | 'checklist' | 'choice' | 'certificate'
+  | 'database' | 'feedback' | 'folder' | 'glossary' | 'ims_content_package' | 'lesson' | 'video';
 
 export interface Activity {
   id: string;
@@ -434,4 +437,17 @@ export const activityTypeInfo: Record<ActivityType, { label: string; description
   file: { label: 'File', description: 'Upload and display a file', color: 'bg-gray-100', iconColor: 'text-gray-600' },
   page: { label: 'Page', description: 'Create a page using the text editor', color: 'bg-indigo-100', iconColor: 'text-indigo-600' },
   label: { label: 'Label', description: 'Insert text or media between activities', color: 'bg-red-100', iconColor: 'text-red-600' },
+  attendance: { label: 'Attendance', description: 'Track student attendance with sessions', color: 'bg-teal-100', iconColor: 'text-teal-600' },
+  bigbluebutton: { label: 'BigBlueButton', description: 'Create virtual classroom sessions', color: 'bg-slate-100', iconColor: 'text-slate-600' },
+  book: { label: 'Book', description: 'Create a multi-chapter book resource', color: 'bg-amber-100', iconColor: 'text-amber-600' },
+  checklist: { label: 'Checklist', description: 'Students check off required items', color: 'bg-lime-100', iconColor: 'text-lime-600' },
+  choice: { label: 'Choice', description: 'Create a poll or survey for students', color: 'bg-violet-100', iconColor: 'text-violet-600' },
+  certificate: { label: 'Certificate', description: 'Issue certificates upon completion', color: 'bg-rose-100', iconColor: 'text-rose-600' },
+  database: { label: 'Database', description: 'Build a collaborative data collection', color: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+  feedback: { label: 'Feedback', description: 'Create anonymous feedback surveys', color: 'bg-sky-100', iconColor: 'text-sky-600' },
+  folder: { label: 'Folder', description: 'Upload and organize multiple files', color: 'bg-stone-100', iconColor: 'text-stone-600' },
+  glossary: { label: 'Glossary', description: 'Create a collaborative glossary', color: 'bg-fuchsia-100', iconColor: 'text-fuchsia-600' },
+  ims_content_package: { label: 'IMS CP', description: 'Upload IMS content packages', color: 'bg-neutral-100', iconColor: 'text-neutral-600' },
+  lesson: { label: 'Lesson', description: 'Create branching lessons with pages', color: 'bg-cyan-100', iconColor: 'text-cyan-700' },
+  video: { label: 'Video', description: 'Upload or link a video resource', color: 'bg-red-50', iconColor: 'text-red-700' },
 };

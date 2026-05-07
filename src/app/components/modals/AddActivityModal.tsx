@@ -1,5 +1,9 @@
 import React, { useState } from 'react';
-import { X, Search, FileText, HelpCircle, MessageSquare, Link, File, Package, Users, Hash, Layout, Layers } from 'lucide-react';
+import {
+  X, Search, FileText, HelpCircle, MessageSquare, Link, File, Package, Users, Hash, Layout, Layers,
+  ClipboardList, Monitor, BookOpen, ListChecks, BarChart3, Award, Database as DatabaseIcon,
+  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play
+} from 'lucide-react';
 import { ActivityType, activityTypeInfo } from '../../data/mockData';
 
 interface AddActivityModalProps {
@@ -18,13 +22,26 @@ const activityIcons: Record<string, React.ElementType> = {
   file: File,
   page: Layout,
   label: Hash,
+  attendance: ClipboardList,
+  bigbluebutton: Monitor,
+  book: BookOpen,
+  checklist: ListChecks,
+  choice: BarChart3,
+  certificate: Award,
+  database: DatabaseIcon,
+  feedback: MessageCircle,
+  folder: Folder,
+  glossary: BookMarked,
+  ims_content_package: Box,
+  lesson: GraduationCap,
+  video: Play,
 };
 
 export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState<'activity' | 'subsection'>('activity');
 
-  const activities: ActivityType[] = ['quiz', 'assignment', 'forum', 'workshop', 'h5p', 'scorm', 'url', 'file', 'page', 'label'];
+  const activities: ActivityType[] = Object.keys(activityTypeInfo) as ActivityType[];
 
   const filtered = activities.filter(a =>
     activityTypeInfo[a].label.toLowerCase().includes(search.toLowerCase()) ||

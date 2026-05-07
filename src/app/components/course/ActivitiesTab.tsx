@@ -1,5 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { HelpCircle, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout, CheckCircle, Clock, XCircle, Loader2 } from 'lucide-react';
+import {
+  HelpCircle, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout,
+  CheckCircle, Clock, XCircle, Loader2,
+  ClipboardList, Monitor, BookOpen, ListChecks, BarChart3, Award, Database as DatabaseIcon,
+  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play
+} from 'lucide-react';
 import { ActivityType, activityTypeInfo } from '../../data/mockData';
 import { sectionsApi, activitiesApi } from '../../services/api';
 
@@ -7,7 +12,11 @@ const activityIcons: Record<string, React.ElementType> = {
   quiz: HelpCircle, assignment: FileText, forum: MessageSquare,
   url: Link, file: File, scorm: Package, h5p: Layers,
   workshop: Users, label: Hash, page: Layout,
-  video: File, resource: File, interactive: Layers, lab: Package,
+  attendance: ClipboardList, bigbluebutton: Monitor, book: BookOpen,
+  checklist: ListChecks, choice: BarChart3, certificate: Award,
+  database: DatabaseIcon, feedback: MessageCircle, folder: Folder,
+  glossary: BookMarked, ims_content_package: Box, lesson: GraduationCap,
+  video: Play,
 };
 
 const defaultTypeInfo = { label: 'Activity', color: 'bg-gray-100', iconColor: 'text-gray-600' };
@@ -66,7 +75,7 @@ export function ActivitiesTab({ courseId }: ActivitiesTabProps) {
 
   const filtered = filter === 'all' ? allActivities : allActivities.filter(a => a.type === filter);
 
-  const activityTypes: Array<'all' | ActivityType> = ['all', 'quiz', 'assignment', 'forum', 'url', 'file', 'h5p', 'scorm', 'workshop', 'page'];
+  const activityTypes: Array<'all' | ActivityType> = ['all', ...(Object.keys(activityTypeInfo) as ActivityType[])];
 
   const completionStats = {
     completed: allActivities.filter(a => a.completionStatus === 'completed').length,

@@ -95,7 +95,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             ...s,
             activities: (s.activities ?? []).map((a: any) => ({
               id: a.id,
-              type: a.type,
+              type: a.type === 'text_and_media_area' ? 'label' : a.type,
               name: a.name,
               description: a.description || '',
               visible: a.visible ?? true,
