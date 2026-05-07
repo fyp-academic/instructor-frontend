@@ -4,7 +4,7 @@ import {
   HelpCircle, FileText, MessageSquare, Link, File, Package,
   Layers, Users, Hash, Layout, GripVertical, Check, X, BookOpen,
   ClipboardList, Monitor, ListChecks, BarChart3, Award, Database,
-  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play
+  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play, Loader2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Activity, ActivityType, activityTypeInfo } from '../../data/mockData';
@@ -59,6 +59,13 @@ export function CourseContent({ courseId }: CourseContentProps) {
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
   const [addingSection, setAddingSection] = useState(false);
   const [newSectionTitle, setNewSectionTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const showToast = (msg: string, delay = 3000) => {
+    setToastMessage(msg);
+    setTimeout(() => setToastMessage(null), delay);
+  };
 
   if (!course) return <div className="text-gray-400 text-center py-12">Course not found</div>;
 
@@ -86,6 +93,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
   };
 
   const handleSaveActivity = async (sectionId: string, type: ActivityType, data: { name: string; description: string; settings: Record<string, unknown>; questions?: any[]; file?: File | null }) => {
+    setIsSaving(true);
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     const dueDate = dueDateRaw ? String(dueDateRaw) : undefined;
     const newActivity: Activity = {
@@ -103,6 +111,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
     try {
       savedActivity = await addActivity(courseId, sectionId, newActivity);
     } catch (err: any) {
+      setIsSaving(false);
       alert('Failed to save activity: ' + (err?.response?.data?.message || err?.message || 'Unknown error'));
       return;
     }
@@ -177,22 +186,14 @@ export function CourseContent({ courseId }: CourseContentProps) {
       }
     }
 
+    setIsSaving(false);
+    const label = activityTypeInfo[type]?.label || type;
+    showToast(`${label} created successfully`);
     setActivityCreator(null);
   };
 
-  const handleEditActivitySave = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }) => {
-    const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
-    await updateActivity(courseId, sectionId, activityId, {
-      name: data.name,
-      description: data.description,
-      settings: data.settings,
-      gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
-      dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
-    });
-    setActivityCreator(null);
-  };
-
-  const handleEditQuizSave = async (sectionId: string, activityId: string, data: { name: string; description: string; questions: any[]; settings: Record<string, unknown> }) => {
+  const handleEditActivitySave = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }, type: ActivityType) => {
+    setIsSaving(true);
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     try {
       await updateActivity(courseId, sectionId, activityId, {
@@ -203,6 +204,29 @@ export function CourseContent({ courseId }: CourseContentProps) {
         dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
       });
     } catch (err: any) {
+      setIsSaving(false);
+      alert('Failed to update activity: ' + (err?.response?.data?.message || err?.message || 'Unknown error'));
+      return;
+    }
+    setIsSaving(false);
+    const label = activityTypeInfo[type]?.label || type;
+    showToast(`${label} updated successfully`);
+    setActivityCreator(null);
+  };
+
+  const handleEditQuizSave = async (sectionId: string, activityId: string, data: { name: string; description: string; questions: any[]; settings: Record<string, unknown> }) => {
+    setIsSaving(true);
+    const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
+    try {
+      await updateActivity(courseId, sectionId, activityId, {
+        name: data.name,
+        description: data.description,
+        settings: data.settings,
+        gradeMax: (data.settings?.gradeMax as number) || (data.settings?.maxGrade as number) || undefined,
+        dueDate: dueDateRaw ? String(dueDateRaw) : undefined,
+      });
+    } catch (err: any) {
+      setIsSaving(false);
       alert('Failed to update activity: ' + (err?.response?.data?.message || err?.message || 'Unknown error'));
       return;
     }
@@ -244,6 +268,8 @@ export function CourseContent({ courseId }: CourseContentProps) {
       }
     }
 
+    setIsSaving(false);
+    showToast('Quiz updated successfully');
     setActivityCreator(null);
   };
 
@@ -263,6 +289,23 @@ export function CourseContent({ courseId }: CourseContentProps) {
 
   return (
     <div className="space-y-4">
+      {/* Toast */}
+      {toastMessage && (
+        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium transition-all">
+          <Check className="w-4 h-4" />
+          {toastMessage}
+        </div>
+      )}
+      {/* Saving overlay */}
+      {isSaving && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+          <div className="bg-white rounded-2xl px-6 py-4 flex items-center gap-3 shadow-xl">
+            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
+            <span className="text-sm font-medium text-gray-700">Saving...</span>
+          </div>
+        </div>
+      )}
+
       {sections.length === 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-500">
           <BookOpen className="w-12 h-12 mx-auto mb-3 text-gray-300" />
@@ -464,7 +507,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'assignment', data);
             }
@@ -477,7 +520,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'forum', data);
             }
@@ -490,7 +533,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'url', data);
             }
@@ -503,7 +546,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'file', data);
             }
@@ -516,7 +559,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'scorm', data);
             }
@@ -529,7 +572,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'workshop', data);
             }
@@ -542,7 +585,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'h5p', data);
             }
@@ -555,7 +598,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'page', data);
             }
@@ -568,7 +611,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'label', data);
             }
@@ -581,7 +624,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'attendance', data);
             }
@@ -594,7 +637,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'bigbluebutton', data);
             }
@@ -607,7 +650,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'book', data);
             }
@@ -620,7 +663,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'checklist', data);
             }
@@ -633,7 +676,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'choice', data);
             }
@@ -646,7 +689,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'certificate', data);
             }
@@ -659,7 +702,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'database', data);
             }
@@ -672,7 +715,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'feedback', data);
             }
@@ -685,7 +728,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'folder', data);
             }
@@ -698,7 +741,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'glossary', data);
             }
@@ -711,7 +754,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'ims_content_package', data);
             }
@@ -724,7 +767,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'lesson', data);
             }
@@ -737,7 +780,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
             if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data);
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
             } else {
               handleSaveActivity(activityCreator.sectionId, 'video', data);
             }
