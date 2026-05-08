@@ -10,8 +10,9 @@ import { CourseContent } from '../components/course/CourseContent';
 import { ParticipantsTab } from '../components/course/ParticipantsTab';
 import { GradesTab } from '../components/course/GradesTab';
 import { ActivitiesTab } from '../components/course/ActivitiesTab';
+import { AssignmentsTab } from '../components/course/AssignmentsTab';
 
-type Tab = 'course' | 'settings' | 'participants' | 'grades' | 'activities' | 'more';
+type Tab = 'course' | 'settings' | 'participants' | 'grades' | 'assignments' | 'activities' | 'more';
 
 export default function CourseView() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +20,7 @@ export default function CourseView() {
   const [searchParams] = useSearchParams();
   const { getCourse, updateCourse, editMode, toggleEditMode } = useApp();
   const [activeTab, setActiveTab] = useState<Tab>('course');
+  const [activeSection, setActiveSection] = useState<string>('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSubTab, setMoreSubTab] = useState<string>('reports');
 
@@ -26,7 +28,7 @@ export default function CourseView() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['course', 'settings', 'participants', 'grades', 'activities'].includes(tab)) {
+    if (tab && ['course', 'settings', 'participants', 'grades', 'assignments', 'activities'].includes(tab)) {
       setActiveTab(tab as Tab);
     }
   }, [searchParams]);
@@ -45,6 +47,7 @@ export default function CourseView() {
     { id: 'settings', label: 'Course Settings', icon: Settings },
     { id: 'participants', label: 'Participants', icon: Users },
     { id: 'grades', label: 'Grades', icon: BarChart2 },
+    { id: 'assignments', label: 'Assignments', icon: FileText },
     { id: 'activities', label: 'Activities', icon: Activity },
   ];
 
@@ -159,6 +162,9 @@ export default function CourseView() {
           {activeTab === 'course' && <CourseContent courseId={course.id} />}
           {activeTab === 'participants' && <ParticipantsTab courseId={course.id} />}
           {activeTab === 'grades' && <GradesTab courseId={course.id} />}
+          {activeTab === 'assignments' && (
+            <AssignmentsTab courseId={course.id} sectionId={activeSection || (course.sections?.[0]?.id as string) || ''} />
+          )}
           {activeTab === 'activities' && <ActivitiesTab courseId={course.id} />}
           {activeTab === 'settings' && <CourseSettingsInline course={course} updateCourse={updateCourse} />}
           {activeTab === 'more' && <MoreTabContent subTab={moreSubTab} course={course} />}

@@ -96,7 +96,13 @@ export const gradesApi = {
     api.post(`/grade-items/${gradeItemId}/grades`, data),
   studentGrades: (courseId: string) => api.get(`/courses/${courseId}/my-grades`),
 };
-
+// ─── Assignments (Submissions & Grading) ──────────────────────────────────────
+export const assignmentsApi = {
+  getSubmissions: (activityId: string) => api.get(`/activities/${activityId}/submissions`),
+  getSubmission:  (submissionId: string) => api.get(`/submissions/${submissionId}`),
+  gradeSubmission: (submissionId: string, data: Record<string, unknown>) =>
+    api.put(`/submissions/${submissionId}/grade`, data),
+};
 // ─── Categories ──────────────────────────────────────────────────────────────
 export const categoriesApi = {
   list:   ()                                     => api.get('/categories'),
