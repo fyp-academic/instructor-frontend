@@ -1,7 +1,29 @@
-import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode, useRef } from 'react';
 import { Course, Category, Notification, Conversation, Section, Activity } from '../data/mockData';
 import { coursesApi, categoriesApi, notificationsApi, messagingApi, activitiesApi, sectionsApi } from '../services/api';
 import { useAuth } from './AuthContext';
+import Echo from 'laravel-echo';
+import Pusher from 'pusher-js';
+
+// Initialize Echo for real-time updates
+let echoInstance: Echo<'reverb'> | null = null;
+function getEchoInstance(): Echo<'reverb'> {
+  if (!echoInstance) {
+    (window as unknown as Record<string, unknown>).Pusher = Pusher;
+    echoInstance = new Echo({
+      broadcaster:  'reverb',
+      key:          import.meta.env.VITE_REVERB_APP_KEY,
+      wsHost:       import.meta.env.VITE_REVERB_HOST,
+      wsPort:       Number(import.meta.env.VITE_REVERB_PORT),
+      wssPort:      Number(import.meta.env.VITE_REVERB_PORT),
+      forceTLS:     true,
+      enabledTransports: ['ws', 'wss'],
+      authEndpoint: 'https://api.codagenz.com/broadcasting/auth',
+      auth: { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` } },
+    } as ConstructorParameters<typeof Echo>[0]);
+  }
+  return echoInstance;
+}
 
 interface CurrentUser {
   id: string;
@@ -78,6 +100,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     () => localStorage.getItem('onboarding_done') === '1'
   );
   const [globalSearch, setGlobalSearch] = useState('');
+  const echoChannelRef = useRef<any>(null);
 
   // Fetch all base data on mount when authenticated
   useEffect(() => {
@@ -124,6 +147,50 @@ export function AppProvider({ children }: { children: ReactNode }) {
       )),
     ]).finally(() => setIsLoading(false));
   }, [user]);
+
+  // Set up real-time listeners for notifications and messages
+  useEffect(() => {
+    if (!user?.id) return;
+
+    try {
+      const echo = getEchoInstance();
+      
+      // Subscribe to user's notification channel
+      const notifChannel = echo.private(`user.${user.id}`);
+      echoChannelRef.current = notifChannel;
+
+      // Listen for new notifications
+      notifChannel.listen('.notification.new', (data: Record<string, unknown>) => {
+        const newNotif: Notification = {
+          id:        String(data.id ?? ''),
+          title:     String(data.title ?? ''),
+          message:   String(data.body ?? data.message ?? ''),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          read:      false,
+          type:      (data.type as 'info' | 'warning' | 'success' | 'danger') ?? 'info',
+        };
+        setNotifications(prev => [newNotif, ...prev]);
+      });
+
+      // Listen for conversation updates (new messages)
+      const convChannel = echo.channel('online-users');
+      
+      // Optionally listen for user status updates
+      convChannel.listen('.user.status', (data: { user_id: string; status: string }) => {
+        // Could be used to update user presence in conversations
+      });
+
+    } catch (err) {
+      console.error('Failed to set up real-time listeners:', err);
+    }
+
+    return () => {
+      // Cleanup: unsubscribe from channels
+      if (echoChannelRef.current) {
+        getEchoInstance().leave(`user.${user.id}`);
+      }
+    };
+  }, [user?.id]);
 
   const toggleEditMode = useCallback(() => setEditMode(prev => !prev), []);
 
