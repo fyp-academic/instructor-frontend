@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import {
   Bell, MessageSquare, User, ChevronDown, Search, BookOpen,
   LayoutDashboard, Brain, Settings, LogOut, Edit3, X,
-  CheckCheck, Menu, Puzzle, BellRing, Video
+  CheckCheck, Menu, Puzzle, BellRing, Video, BarChart2, ShieldAlert
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -44,6 +44,8 @@ export function Header() {
     { to: '/courses', label: 'My Courses', icon: BookOpen },
     { to: '/sessions', label: 'Live Sessions', icon: Video },
     { to: '/ai-insights', label: 'AI Insights', icon: Brain },
+    { to: '/engagement', label: 'Engagement', icon: BarChart2 },
+    { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert },
     { to: '/administration', label: 'Administration', icon: Settings },
   ];
 

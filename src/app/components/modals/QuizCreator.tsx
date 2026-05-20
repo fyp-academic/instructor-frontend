@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle, HelpCircle } from 'lucide-react';
+import { X, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle, HelpCircle, ListChecks, ToggleLeft, Link2, Type, Hash, FileText, Calculator, Move, MapPin, List } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { QuizQuestion, QuizAnswer } from '../../data/mockData';
 import { quizApi } from '../../services/api';
@@ -12,14 +12,52 @@ interface QuizCreatorProps {
 }
 
 const questionTypeLabels: Record<string, string> = {
-  multiple_choice: 'Multiple Choice',
+  multiple_choice: 'Multiple choice',
   true_false: 'True/False',
   matching: 'Matching',
-  short_answer: 'Short Answer',
+  short_answer: 'Short answer',
   numerical: 'Numerical',
   essay: 'Essay',
   calculated: 'Calculated',
-  drag_drop: 'Drag & Drop',
+  calculated_multichoice: 'Calculated multichoice',
+  calculated_simple: 'Calculated simple',
+  drag_drop: 'Drag and drop',
+  drag_drop_text: 'Drag and drop into text',
+  drag_drop_markers: 'Drag and drop markers',
+};
+
+const questionTypeDescriptions: Record<string, string> = {
+  multiple_choice: 'Allows the selection of a single or multiple responses from a pre-defined list.',
+  true_false: 'A simple form of multiple choice question with just the two choices True and False.',
+  matching: 'Provides sub-questions along with a selection of possible answer options.',
+  short_answer: 'Allows a response of one or a few words that is graded by comparing against various model answers.',
+  numerical: 'A question type that allows a numerical response, optionally with units.',
+  essay: 'Allows a response of essay format which must be manually graded.',
+  calculated: 'Numerical questions like calculated simple but with wildcards that are substituted with random values when the quiz is taken.',
+  calculated_multichoice: 'A multiple choice question with elements like calculated questions.',
+  calculated_simple: 'A simpler version of calculated question without wildcards.',
+  drag_drop: 'General drag and drop questions where images or text are dragged into defined zones.',
+  drag_drop_text: 'Missing words in some text are filled in using drag and drop.',
+  drag_drop_markers: 'A background image is displayed with predefined areas (markers) where students drag items to.',
+};
+
+const questionTypeIcon = (type: string) => {
+  const props = { size: 18, className: 'text-gray-500 flex-shrink-0' };
+  switch (type) {
+    case 'multiple_choice': return <ListChecks {...props} />;
+    case 'true_false': return <ToggleLeft {...props} />;
+    case 'matching': return <Link2 {...props} />;
+    case 'short_answer': return <Type {...props} />;
+    case 'numerical': return <Hash {...props} />;
+    case 'essay': return <FileText {...props} />;
+    case 'calculated': return <Calculator {...props} />;
+    case 'calculated_multichoice': return <List {...props} />;
+    case 'calculated_simple': return <Calculator {...props} />;
+    case 'drag_drop': return <Move {...props} />;
+    case 'drag_drop_text': return <Move {...props} />;
+    case 'drag_drop_markers': return <MapPin {...props} />;
+    default: return <HelpCircle {...props} />;
+  }
 };
 
 export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCreatorProps) {
@@ -73,6 +111,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
           matchingPairs: q.matching_pairs ?? q.matchingPairs ?? [],
           shuffleAnswers: q.shuffle_answers ?? q.shuffleAnswers ?? true,
           multipleAnswers: q.multiple_answers ?? q.multipleAnswers ?? false,
+          choiceNumbering: (q.choice_numbering ?? q.choiceNumbering ?? 'none') as QuizQuestion['choiceNumbering'],
           hints: q.hints ?? [],
           penalty: Number(q.penalty ?? 0),
           correctAnswer: q.correct_answer ?? q.correctAnswer,
@@ -102,6 +141,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
       matchingPairs: newQType === 'matching' ? [{ question: '', answer: '' }, { question: '', answer: '' }] : [],
       shuffleAnswers: true,
       multipleAnswers: false,
+      choiceNumbering: 'none',
       hints: [],
       penalty: 0,
       correctAnswer: newQType === 'true_false' ? 'True' : undefined,
@@ -401,10 +441,27 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
                               <label className="text-xs font-medium text-gray-600">Answers</label>
-                              <label className="flex items-center gap-1.5 cursor-pointer">
-                                <input type="checkbox" checked={q.multipleAnswers} onChange={e => updateQ(q.id, { multipleAnswers: e.target.checked })} />
-                                <span className="text-xs text-gray-600">Multiple correct answers</span>
-                              </label>
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-1.5 text-xs text-gray-600">
+                                  Number the choices
+                                  <select
+                                    value={q.choiceNumbering ?? 'none'}
+                                    onChange={e => updateQ(q.id, { choiceNumbering: e.target.value as QuizQuestion['choiceNumbering'] })}
+                                    className="text-xs border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                  >
+                                    <option value="none">No numbering</option>
+                                    <option value="a,b,c...">a, b, c...</option>
+                                    <option value="A,B,C...">A, B, C...</option>
+                                    <option value="i,ii,iii...">i, ii, iii...</option>
+                                    <option value="I,II,III...">I, II, III...</option>
+                                    <option value="1,2,3...">1, 2, 3...</option>
+                                  </select>
+                                </label>
+                                <label className="flex items-center gap-1.5 cursor-pointer">
+                                  <input type="checkbox" checked={q.multipleAnswers} onChange={e => updateQ(q.id, { multipleAnswers: e.target.checked })} />
+                                  <span className="text-xs text-gray-600">Multiple correct answers</span>
+                                </label>
+                              </div>
                             </div>
                             {q.answers?.map((a, ai) => (
                               <div key={a.id} className="flex items-start gap-2">
@@ -486,24 +543,78 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
 
               {/* Add question form */}
               {addingQuestion ? (
-                <div className="border-2 border-indigo-200 rounded-xl p-4 bg-indigo-50">
-                  <p className="text-sm font-semibold text-indigo-900 mb-3">Select Question Type</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-                    {Object.entries(questionTypeLabels).map(([type, label]) => (
-                      <button
-                        key={type}
-                        onClick={() => setNewQType(type as QuizQuestion['type'])}
-                        className={`px-3 py-2 text-xs font-medium rounded-lg border-2 transition-all ${newQType === type ? 'border-indigo-500 bg-indigo-600 text-white' : 'border-gray-200 bg-white text-gray-700 hover:border-indigo-300'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex gap-2">
-                    <button onClick={addQuestion} className="flex items-center gap-1.5 px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700">
-                      <Plus className="w-4 h-4" /> Add {questionTypeLabels[newQType]}
+                <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
+                    <p className="text-sm font-semibold text-gray-900">Choose a question type to add</p>
+                    <button
+                      onClick={() => setAddingQuestion(false)}
+                      className="p-1 rounded hover:bg-gray-200 text-gray-400"
+                      type="button"
+                    >
+                      <X className="w-4 h-4" />
                     </button>
-                    <button onClick={() => setAddingQuestion(false)} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                  </div>
+
+                  {/* Two-panel body */}
+                  <div className="flex flex-col md:flex-row" style={{ minHeight: 280 }}>
+                    {/* Left panel — question type list */}
+                    <div className="md:w-72 border-r border-gray-200 overflow-y-auto max-h-80 md:max-h-96">
+                      <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Questions</p>
+                      <div className="divide-y divide-gray-100">
+                        {Object.entries(questionTypeLabels).map(([type, label]) => {
+                          const selected = newQType === type;
+                          return (
+                            <label
+                              key={type}
+                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                              onClick={() => setNewQType(type as QuizQuestion['type'])}
+                            >
+                              <input
+                                type="radio"
+                                name="questionType"
+                                checked={selected}
+                                onChange={() => setNewQType(type as QuizQuestion['type'])}
+                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
+                              />
+                              <span className="flex items-center justify-center w-7 h-7 flex-shrink-0">
+                                {questionTypeIcon(type)}
+                              </span>
+                              <span className={`text-sm ${selected ? 'font-medium text-blue-900' : 'text-gray-700'}`}>
+                                {label}
+                              </span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Right panel — description */}
+                    <div className="flex-1 p-5 flex flex-col justify-between">
+                      <div>
+                        <p className="text-sm text-gray-700 leading-relaxed">
+                          {questionTypeDescriptions[newQType]}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer buttons */}
+                  <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50">
+                    <button
+                      onClick={() => setAddingQuestion(false)}
+                      className="px-5 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={addQuestion}
+                      className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      type="button"
+                    >
+                      Add
+                    </button>
                   </div>
                 </div>
               ) : (

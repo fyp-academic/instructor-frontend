@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Activity, ActivityType, activityTypeInfo } from '../../data/mockData';
-import { quizApi, lessonApi, videoApi } from '../../services/api';
+import { quizApi, lessonApi, videoApi, fileApi } from '../../services/api';
 import { AddActivityModal } from '../modals/AddActivityModal';
 import { QuizCreator } from '../modals/QuizCreator';
 import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator, LabelCreator } from '../modals/ActivityCreators';
@@ -135,6 +135,24 @@ export function CourseContent({ courseId }: CourseContentProps) {
       } catch (e) { console.error('Video upload failed:', e); }
     }
 
+    // If file with file, upload after creation
+    if (type === 'file' && data.file && actId) {
+      try {
+        const uploadRes = await fileApi.upload(actId, data.file);
+        const uploadData = uploadRes.data?.data ?? {};
+        await updateActivity(courseId, sectionId, actId, {
+          settings: {
+            ...data.settings,
+            fileName: uploadData.file_name ?? data.file.name,
+            fileUrl: uploadData.url ?? '',
+            filePath: uploadData.path ?? '',
+            mimeType: uploadData.mime_type ?? data.file.type,
+            fileSize: uploadData.size ?? data.file.size,
+          },
+        });
+      } catch (e) { console.error('File upload failed:', e); }
+    }
+
     // If quiz with questions, save them to backend
     if (type === 'quiz' && data.questions && data.questions.length > 0 && actId) {
       for (const q of data.questions) {
@@ -145,6 +163,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
             category: q.category ?? 'Default',
             default_mark: q.defaultMark ?? 1,
             shuffle_answers: q.shuffleAnswers ?? true,
+            choice_numbering: q.choiceNumbering ?? 'none',
             penalty: q.penalty ?? 0,
           });
           const savedQ = qRes.data.data ?? qRes.data;
@@ -208,6 +227,23 @@ export function CourseContent({ courseId }: CourseContentProps) {
       alert('Failed to update activity: ' + (err?.response?.data?.message || err?.message || 'Unknown error'));
       return;
     }
+    // If file with new file, upload after update
+    if (type === 'file' && data.file && activityId) {
+      try {
+        const uploadRes = await fileApi.upload(activityId, data.file);
+        const uploadData = uploadRes.data?.data ?? {};
+        await updateActivity(courseId, sectionId, activityId, {
+          settings: {
+            ...data.settings,
+            fileName: uploadData.file_name ?? data.file.name,
+            fileUrl: uploadData.url ?? '',
+            filePath: uploadData.path ?? '',
+            mimeType: uploadData.mime_type ?? data.file.type,
+            fileSize: uploadData.size ?? data.file.size,
+          },
+        });
+      } catch (e) { console.error('File upload failed:', e); }
+    }
     setIsSaving(false);
     const label = activityTypeInfo[type]?.label || type;
     showToast(`${label} updated successfully`);
@@ -249,6 +285,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
             category: q.category ?? 'Default',
             default_mark: q.defaultMark ?? 1,
             shuffle_answers: q.shuffleAnswers ?? true,
+            choice_numbering: q.choiceNumbering ?? 'none',
             penalty: q.penalty ?? 0,
           });
           const savedQ = qRes.data.data ?? qRes.data;
@@ -273,17 +310,6 @@ export function CourseContent({ courseId }: CourseContentProps) {
     setActivityCreator(null);
   };
 
-  const completionColors: Record<string, string> = {
-    completed: 'border-green-400 bg-green-50',
-    incomplete: 'border-amber-400 bg-amber-50',
-    none: 'border-gray-200 bg-white',
-  };
-
-  const completionDotColors: Record<string, string> = {
-    completed: 'bg-green-500',
-    incomplete: 'bg-amber-500',
-    none: 'bg-gray-200',
-  };
 
   const sections = course.sections ?? [];
 
@@ -375,19 +401,18 @@ export function CourseContent({ courseId }: CourseContentProps) {
                 )}
 
                 {section.activities.map(activity => {
-                  const Icon = activityIcons[activity.type];
-                  const info = activityTypeInfo[activity.type];
-                  const compStatus = activity.completionStatus || 'none';
+                  const Icon = activityIcons[activity.type] || FileText;
+                  const info = activityTypeInfo[activity.type] || { color: 'bg-gray-100', iconColor: 'text-gray-500', label: activity.type || 'Activity' };
                   return (
                     <div
                       key={activity.id}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border transition-all group ${
-                        !activity.visible && editMode ? 'opacity-60 border-dashed' : completionColors[compStatus]
-                      } hover:shadow-sm`}
+                      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all group ${
+                        !activity.visible && editMode ? 'opacity-60' : ''
+                      } hover:bg-gray-50`}
                     >
                       {editMode && <GripVertical className="w-4 h-4 text-gray-300 cursor-grab flex-shrink-0" />}
 
-                      <div className={`w-7 h-7 ${info.color} rounded-md flex items-center justify-center flex-shrink-0`}>
+                      <div className={`w-8 h-8 ${info.color} rounded-lg flex items-center justify-center flex-shrink-0`}>
                         <Icon className={`w-4 h-4 ${info.iconColor}`} />
                       </div>
 
@@ -399,18 +424,10 @@ export function CourseContent({ courseId }: CourseContentProps) {
                           {!activity.visible && <EyeOff className="w-3 h-3 text-gray-400 flex-shrink-0" />}
                         </div>
                         <div className="flex items-center gap-2 mt-0.5">
-                          <span className={`text-[10px] font-medium ${info.iconColor}`}>{info.label}</span>
-                          {activity.dueDate && <span className="text-[10px] text-gray-400">Due: {activity.dueDate}</span>}
-                          {activity.gradeMax && <span className="text-[10px] text-gray-400">{activity.gradeMax} pts</span>}
+                          <span className={`text-[11px] font-medium ${info.iconColor}`}>{info.label}</span>
+                          {activity.dueDate && <span className="text-[11px] text-gray-400">Due: {activity.dueDate}</span>}
+                          {activity.gradeMax && <span className="text-[11px] text-gray-400">{activity.gradeMax} pts</span>}
                         </div>
-                      </div>
-
-                      {/* Completion indicator */}
-                      <div className={`w-4 h-4 rounded-full border-2 flex-shrink-0 flex items-center justify-center ${
-                        compStatus === 'completed' ? 'border-green-500 bg-green-500' :
-                        compStatus === 'incomplete' ? 'border-amber-400' : 'border-gray-300'
-                      }`}>
-                        {compStatus === 'completed' && <Check className="w-2.5 h-2.5 text-white" />}
                       </div>
 
                       {editMode && (

@@ -7,12 +7,14 @@ import Pusher from 'pusher-js';
 
 // Initialize Echo for real-time updates
 let echoInstance: Echo<'reverb'> | null = null;
-function getEchoInstance(): Echo<'reverb'> {
+function getEchoInstance(): Echo<'reverb'> | null {
+  const appKey = import.meta.env.VITE_REVERB_APP_KEY;
+  if (!appKey) return null;
   if (!echoInstance) {
     (window as unknown as Record<string, unknown>).Pusher = Pusher;
     echoInstance = new Echo({
       broadcaster:  'reverb',
-      key:          import.meta.env.VITE_REVERB_APP_KEY,
+      key:          appKey,
       wsHost:       import.meta.env.VITE_REVERB_HOST,
       wsPort:       Number(import.meta.env.VITE_REVERB_PORT),
       wssPort:      Number(import.meta.env.VITE_REVERB_PORT),
@@ -154,7 +156,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
     try {
       const echo = getEchoInstance();
-      
+      if (!echo) return;
+
       // Subscribe to user's notification channel
       const notifChannel = echo.private(`user.${user.id}`);
       echoChannelRef.current = notifChannel;
@@ -187,7 +190,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     return () => {
       // Cleanup: unsubscribe from channels
       if (echoChannelRef.current) {
-        getEchoInstance().leave(`user.${user.id}`);
+        getEchoInstance()?.leave(`user.${user.id}`);
       }
     };
   }, [user?.id]);

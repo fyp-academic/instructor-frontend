@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { X, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { ActivityType } from '../../data/mockData';
@@ -6,7 +6,7 @@ import { ActivityType } from '../../data/mockData';
 interface BaseCreatorProps {
   type: ActivityType;
   onClose: () => void;
-  onSave: (data: { name: string; description: string; settings: Record<string, unknown> }) => void;
+  onSave: (data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }) => void;
   initialData?: { name: string; description?: string; settings?: Record<string, unknown> };
 }
 
@@ -268,6 +268,21 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
     showType: s.showType ?? false,
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = (files: FileList | null) => {
+    if (files && files.length > 0) {
+      setSelectedFile(files[0]);
+      if (!form.name) setF('name', files[0].name);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -278,11 +293,25 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="Display name for this file" className={inputCls} /></FormField>
           <FormField label="File Upload">
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors cursor-pointer">
+            <div
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={onDrop}
+              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors cursor-pointer"
+            >
               <File className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Drag & drop or click to upload</p>
-              <p className="text-xs text-gray-400 mt-1">Any file type supported</p>
-              <input type="file" className="hidden" />
+              {selectedFile ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
+                  <p className="text-xs text-gray-400 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500">Drag & drop or click to upload</p>
+                  <p className="text-xs text-gray-400 mt-1">Any file type supported</p>
+                </>
+              )}
+              <input ref={fileRef} type="file" className="hidden" onChange={e => handleFiles(e.target.files)} />
             </div>
           </FormField>
           <FormField label="Description"><RichTextEditor value={form.description} onChange={v => setF('description', v)} placeholder="Describe this file..." minHeight={80} /></FormField>
@@ -307,7 +336,7 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save File</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save File</button>
         </div>
       </div>
     </div>
@@ -326,6 +355,21 @@ export function ScormCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
     displayWidth: s.displayWidth ?? '100',
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = (files: FileList | null) => {
+    if (files && files.length > 0) {
+      setSelectedFile(files[0]);
+      if (!form.name) setF('name', files[0].name.replace(/\.zip$/i, ''));
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -336,10 +380,24 @@ export function ScormCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="SCORM activity name" className={inputCls} /></FormField>
           <FormField label="SCORM Package Upload">
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-400 cursor-pointer">
+            <div
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={onDrop}
+              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-indigo-400 transition-colors cursor-pointer"
+            >
               <Package className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Upload SCORM 1.2 or SCORM 2004 package (.zip)</p>
-              <input type="file" accept=".zip" className="hidden" />
+              {selectedFile ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
+                  <p className="text-xs text-gray-400 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500">Upload SCORM 1.2 or SCORM 2004 package (.zip)</p>
+                </>
+              )}
+              <input ref={fileRef} type="file" accept=".zip" className="hidden" onChange={e => handleFiles(e.target.files)} />
             </div>
           </FormField>
           <FormField label="Description"><RichTextEditor value={form.description} onChange={v => setF('description', v)} minHeight={80} /></FormField>
@@ -360,7 +418,7 @@ export function ScormCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save SCORM</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save SCORM</button>
         </div>
       </div>
     </div>
@@ -447,6 +505,21 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
     maxGrade: s.maxGrade ?? '100',
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+
+  const handleFiles = (files: FileList | null) => {
+    if (files && files.length > 0) {
+      setSelectedFile(files[0]);
+      if (!form.name) setF('name', files[0].name.replace(/\.h5p$/i, ''));
+    }
+  };
+
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  };
+
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -457,11 +530,25 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Interactive Video: Python Loops" className={inputCls} /></FormField>
           <FormField label="H5P File Upload">
-            <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 cursor-pointer">
+            <div
+              onClick={() => fileRef.current?.click()}
+              onDragOver={e => e.preventDefault()}
+              onDrop={onDrop}
+              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors cursor-pointer"
+            >
               <Layers className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500">Upload .h5p file</p>
-              <p className="text-xs text-gray-400 mt-1">Supported content types: Interactive Video, Quiz, Drag & Drop, and more</p>
-              <input type="file" accept=".h5p" className="hidden" />
+              {selectedFile ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
+                  <p className="text-xs text-gray-400 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-gray-500">Upload .h5p file</p>
+                  <p className="text-xs text-gray-400 mt-1">Supported content types: Interactive Video, Quiz, Drag & Drop, and more</p>
+                </>
+              )}
+              <input ref={fileRef} type="file" accept=".h5p" className="hidden" onChange={e => handleFiles(e.target.files)} />
             </div>
           </FormField>
           <FormField label="Description"><RichTextEditor value={form.description} onChange={v => setF('description', v)} minHeight={80} /></FormField>
@@ -477,7 +564,7 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save H5P</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save H5P</button>
         </div>
       </div>
     </div>

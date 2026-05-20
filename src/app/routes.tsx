@@ -19,6 +19,8 @@ import Messaging from './pages/Messaging';
 import Profile from './pages/Profile';
 import InstructorSessions from './pages/InstructorSessions';
 import Conference from './pages/Conference';
+import InstructorEngagement from './pages/InstructorEngagement';
+import InstructorProctoring from './pages/InstructorProctoring';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -130,6 +132,8 @@ export const router = createBrowserRouter([
       { path: 'profile', element: <Layout><Profile /></Layout> },
       { path: 'notification-preferences', element: <Layout><NotificationPreferences /></Layout> },
       { path: 'admin/notification-preferences', element: <Layout><AdminNotificationPreferences /></Layout> },
+      { path: 'engagement', element: <Layout><InstructorEngagement /></Layout> },
+      { path: 'proctoring', element: <Layout><InstructorProctoring /></Layout> },
     ],
   },
 

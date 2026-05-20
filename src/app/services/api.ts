@@ -286,6 +286,18 @@ export const videoApi = {
   remove: (activityId: string) => api.delete(`/activities/${activityId}/video`),
 };
 
+// ─── File Uploads ────────────────────────────────────────────────────────────
+export const fileApi = {
+  upload: (activityId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/activities/${activityId}/file-upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  remove: (activityId: string) => api.delete(`/activities/${activityId}/file`),
+};
+
 // ─── AI Insights ─────────────────────────────────────────────────────────────
 export const aiApi = {
   snapshots:          (courseId: string) => api.get(`/ai/courses/${courseId}/performance-snapshots`),
@@ -397,6 +409,23 @@ export const sessionsApi = {
 
   // Quiz
   generateQuiz:  (id: string) => api.post(`/sessions/${id}/generate-quiz`),
+};
+
+// ─── Instructor Engagement ────────────────────────────────────────────────────
+export const instructorEngagementApi = {
+  courseOverview:  (courseId: string)                          => api.get(`/instructor/courses/${courseId}/engagement`),
+  atRisk:          (courseId: string)                          => api.get(`/instructor/courses/${courseId}/engagement/at-risk`),
+  learnerDetail:   (courseId: string, userId: string)          => api.get(`/instructor/courses/${courseId}/learners/${userId}/engagement`),
+  nudge:           (courseId: string, userId: string, message?: string) =>
+    api.post(`/instructor/courses/${courseId}/learners/${userId}/nudge`, message ? { message } : {}),
+};
+
+// ─── Instructor Proctoring ────────────────────────────────────────────────────
+export const instructorProctoringApi = {
+  sessions: (courseId: string, params?: { status?: string; flagged_only?: boolean }) =>
+    api.get(`/proctoring/instructor/courses/${courseId}/sessions`, { params }),
+  sessionDetail: (sessionId: string) =>
+    api.get(`/proctoring/instructor/sessions/${sessionId}`),
 };
 
 export const pollsApi = {
