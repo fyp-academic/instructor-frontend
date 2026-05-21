@@ -49,6 +49,11 @@ export default function CreateCourse() {
     completionTracking: true,
     image: '',
     degreeProgrammeIds: [] as string[],
+    maxUploadSize: '128',
+    allowedFileTypes: 'jpg,png,pdf,docx,ppt',
+    showGradebook: true,
+    showActivityReports: false,
+    forceDownload: false,
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [availableProgrammes, setAvailableProgrammes] = useState<Array<{id: string; name: string}>>([]);
@@ -116,6 +121,21 @@ export default function CreateCourse() {
           { id: 'sec0', title: 'General', visible: true, activities: [] },
           { id: 'sec1', title: 'Topic 1', visible: true, activities: [] },
         ],
+        summary: form.summary,
+        idNumber: form.idNumber,
+        groupMode: form.groupMode as 'none' | 'separate' | 'visible',
+        selfEnrollment: form.selfEnrollment,
+        enrollmentKey: form.enrollmentKey,
+        enrollmentStartDate: form.enrollmentStartDate,
+        enrollmentEndDate: form.enrollmentEndDate,
+        gradeDisplayType: form.gradeDisplayType as 'percentage' | 'letter' | 'points' | 'real',
+        gradePassingGrade: form.gradePassingGrade,
+        completionTracking: form.completionTracking,
+        maxUploadSize: form.maxUploadSize,
+        allowedFileTypes: form.allowedFileTypes,
+        showGradebook: form.showGradebook,
+        showActivityReports: form.showActivityReports,
+        forceDownload: form.forceDownload,
       };
 
       // If image file selected, upload separately or include as base64
@@ -126,13 +146,13 @@ export default function CreateCourse() {
           const courseWithImage = { ...courseData, image: base64Image };
           const created = await addCourse(courseWithImage);
           setSaved(true);
-          setTimeout(() => navigate(`/courses/${created.id}`), 600);
+          navigate(`/courses/${created.id}`);
         };
         reader.readAsDataURL(imageFile);
       } else {
         const created = await addCourse(courseData);
         setSaved(true);
-        setTimeout(() => navigate(`/courses/${created.id}`), 600);
+        navigate(`/courses/${created.id}`);
       }
     } catch (err) {
       alert('Failed to create course. Please try again.');
@@ -402,13 +422,44 @@ export default function CreateCourse() {
             </div>
           )}
 
-          {['appearance', 'files'].includes(activeSection) && (
-            <div className="bg-white border border-gray-200 rounded-xl p-6">
-              <h2 className="font-semibold text-gray-900 border-b border-gray-100 pb-3 mb-4">{sections.find(s => s.id === activeSection)?.label}</h2>
-              <div className="bg-gray-50 border border-dashed border-gray-300 rounded-xl p-8 text-center text-sm text-gray-400">
-                <BookOpen className="w-8 h-8 mx-auto mb-2 text-gray-300" />
-                Settings for this section will be available after course creation.
-              </div>
+          {activeSection === 'appearance' && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
+              <h2 className="font-semibold text-gray-900 border-b border-gray-100 pb-3">Appearance</h2>
+              <FormField label="Show Gradebook to Students">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.showGradebook} onChange={e => set('showGradebook', e.target.checked)} className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-700">Display the gradebook to enrolled students</span>
+                </label>
+              </FormField>
+              <FormField label="Show Activity Reports">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.showActivityReports} onChange={e => set('showActivityReports', e.target.checked)} className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-700">Allow students to view their own activity reports</span>
+                </label>
+              </FormField>
+              <FormField label="Force Download">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={form.forceDownload} onChange={e => set('forceDownload', e.target.checked)} className="rounded border-gray-300" />
+                  <span className="text-sm text-gray-700">Force file downloads instead of inline display</span>
+                </label>
+              </FormField>
+            </div>
+          )}
+
+          {activeSection === 'files' && (
+            <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-5">
+              <h2 className="font-semibold text-gray-900 border-b border-gray-100 pb-3">Files & Uploads</h2>
+              <FormField label="Maximum Upload Size (MB)">
+                <select value={form.maxUploadSize} onChange={e => set('maxUploadSize', e.target.value)} className={inputClass()}>
+                  {['16', '32', '64', '128', '256', '512', '1024'].map(s => (
+                    <option key={s} value={s}>{s} MB</option>
+                  ))}
+                </select>
+              </FormField>
+              <FormField label="Allowed File Types">
+                <input type="text" value={form.allowedFileTypes} onChange={e => set('allowedFileTypes', e.target.value)} placeholder="e.g. jpg,png,pdf,docx" className={inputClass()} />
+                <p className="text-xs text-gray-400">Comma-separated list of allowed file extensions</p>
+              </FormField>
             </div>
           )}
 

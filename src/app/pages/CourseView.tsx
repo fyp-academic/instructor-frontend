@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft, Users, Settings, BookOpen, BarChart2, Activity,
   ChevronDown, Edit3, Eye, EyeOff, Star, MoreHorizontal,
-  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid
+  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CourseContent } from '../components/course/CourseContent';
@@ -176,10 +176,13 @@ export default function CourseView() {
 
 function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<ReturnType<typeof useApp>['getCourse']> & object; updateCourse: (id: string, u: any) => void }) {
   if (!course) return null;
+  const { categories } = useApp();
   const [form, setForm] = useState({
     name: '',
     shortName: '',
     description: '',
+    summary: '',
+    idNumber: '',
     startDate: '',
     endDate: '',
     maxStudents: '',
@@ -188,19 +191,35 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
     language: 'English',
     tags: '',
     categoryId: '',
+    groupMode: 'none' as 'none' | 'separate' | 'visible',
+    selfEnrollment: false,
+    enrollmentKey: '',
+    enrollmentStartDate: '',
+    enrollmentEndDate: '',
+    gradeDisplayType: 'percentage' as 'percentage' | 'letter' | 'points' | 'real',
+    gradePassingGrade: '50',
+    completionTracking: true,
+    maxUploadSize: '128',
+    allowedFileTypes: 'jpg,png,pdf,docx',
+    showGradebook: true,
+    showActivityReports: false,
+    forceDownload: false,
+    image: '',
   });
   const [saved, setSaved] = useState(false);
 
   // Sync form with course data when it loads/changes
   useEffect(() => {
     if (!course) return;
-    
-    // Handle both camelCase (frontend) and snake_case (API) property names
+
     const getValue = (camelKey: string, snakeKey: string) => {
       return (course as Record<string, unknown>)[camelKey] ?? (course as Record<string, unknown>)[snakeKey] ?? '';
     };
-    
-    // Parse tags from various formats
+    const getBool = (camelKey: string, snakeKey: string) => {
+      const v = (course as Record<string, unknown>)[camelKey] ?? (course as Record<string, unknown>)[snakeKey];
+      return v === true || v === 'true' || v === 1 || v === '1';
+    };
+
     let tagsValue = '';
     const tagsData = getValue('tags', 'tags');
     if (Array.isArray(tagsData)) {
@@ -208,11 +227,13 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
     } else if (typeof tagsData === 'string') {
       tagsValue = tagsData;
     }
-    
+
     setForm({
       name: String(getValue('name', 'name')),
       shortName: String(getValue('shortName', 'short_name')),
       description: String(getValue('description', 'description')),
+      summary: String(getValue('summary', 'summary')),
+      idNumber: String(getValue('idNumber', 'id_number')),
       startDate: String(getValue('startDate', 'start_date')),
       endDate: String(getValue('endDate', 'end_date')),
       maxStudents: String(getValue('maxStudents', 'max_students')),
@@ -221,94 +242,254 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
       language: String(getValue('language', 'language') || 'English'),
       tags: tagsValue,
       categoryId: String(getValue('categoryId', 'category_id')),
+      groupMode: (getValue('groupMode', 'group_mode') as 'none' | 'separate' | 'visible') || 'none',
+      selfEnrollment: getBool('selfEnrollment', 'self_enrollment'),
+      enrollmentKey: String(getValue('enrollmentKey', 'enrollment_key')),
+      enrollmentStartDate: String(getValue('enrollmentStartDate', 'enrollment_start_date')),
+      enrollmentEndDate: String(getValue('enrollmentEndDate', 'enrollment_end_date')),
+      gradeDisplayType: (getValue('gradeDisplayType', 'grade_display_type') as 'percentage' | 'letter' | 'points' | 'real') || 'percentage',
+      gradePassingGrade: String(getValue('gradePassingGrade', 'grade_passing_grade') || '50'),
+      completionTracking: getBool('completionTracking', 'completion_tracking'),
+      maxUploadSize: String(getValue('maxUploadSize', 'max_upload_size') || '128'),
+      allowedFileTypes: String(getValue('allowedFileTypes', 'allowed_file_types') || 'jpg,png,pdf,docx'),
+      showGradebook: getBool('showGradebook', 'show_gradebook'),
+      showActivityReports: getBool('showActivityReports', 'show_activity_reports'),
+      forceDownload: getBool('forceDownload', 'force_download'),
+      image: String(getValue('image', 'image') || getValue('imageUrl', 'image_url')),
     });
   }, [course]);
 
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
 
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setF('image', reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = () => {
-    updateCourse(course.id, {
+    const updates: any = {
       ...form,
       maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-    });
+    };
+    updateCourse(course.id, updates);
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const formatOptions = [
-    { value: 'topics', label: 'Topics format', icon: LayoutGrid },
-    { value: 'weekly', label: 'Weekly format', icon: BookOpen },
-    { value: 'social', label: 'Social format', icon: Users },
-  ];
+  const inputCls = "w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500";
 
   return (
-    <div className="max-w-2xl space-y-5">
+    <div className="max-w-3xl space-y-6">
       <h2 className="font-semibold text-gray-900">Course Settings</h2>
 
-      {/* Basic Info */}
+      {/* General */}
       <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Basic Information</h3>
-        {[
-          { label: 'Course Full Name', key: 'name', type: 'text' },
-          { label: 'Short Name', key: 'shortName', type: 'text' },
-          { label: 'Description', key: 'description', type: 'textarea' },
-        ].map(f => (
-          <div key={f.key}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
-            {f.type === 'textarea' ? (
-              <textarea value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} rows={3} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            ) : (
-              <input type={f.type} value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Course Format & Language */}
-      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Format & Language</h3>
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">General</h3>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Course Format</label>
-          <select value={form.format} onChange={e => setF('format', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            {formatOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Course Image</label>
+          {form.image ? (
+            <div className="relative w-full h-40 rounded-lg overflow-hidden mb-2">
+              <img src={form.image} alt="Course preview" className="w-full h-full object-cover" />
+              <button
+                onClick={() => { setF('image', ''); setImageFile(null); }}
+                className="absolute top-2 right-2 bg-white/90 text-red-500 p-1 rounded-full text-xs hover:bg-white"
+              >
+                Remove
+              </button>
+            </div>
+          ) : (
+            <div className="w-full h-24 rounded-lg bg-gray-100 flex flex-col items-center justify-center mb-2 border border-dashed border-gray-300">
+              <Image className="w-8 h-8 text-gray-300 mb-1" />
+              <span className="text-xs text-gray-400">No image uploaded</span>
+            </div>
+          )}
+          <input type="file" accept="image/*" onChange={handleImageChange} className="text-sm text-gray-600" />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Course Full Name</label>
+          <input type="text" value={form.name} onChange={e => setF('name', e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Short Name</label>
+          <input type="text" value={form.shortName} onChange={e => setF('shortName', e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Course ID Number</label>
+          <input type="text" value={form.idNumber} onChange={e => setF('idNumber', e.target.value)} className={inputCls} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+          <select value={form.categoryId} onChange={e => setF('categoryId', e.target.value)} className={inputCls}>
+            {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+            <input type="date" value={form.startDate} onChange={e => setF('startDate', e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+            <input type="date" value={form.endDate} onChange={e => setF('endDate', e.target.value)} className={inputCls} />
+          </div>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+          <select value={form.visibility} onChange={e => setF('visibility', e.target.value)} className={inputCls}>
+            <option value="shown">Shown to students</option>
+            <option value="hidden">Hidden from students</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+          <select value={form.language} onChange={e => setF('language', e.target.value)} className={inputCls}>
+            {['English', 'Spanish', 'French', 'German', 'Arabic', 'Chinese', 'Japanese'].map(l => (
+              <option key={l} value={l}>{l}</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-            <Globe className="w-4 h-4" /> Language
-          </label>
-          <input type="text" value={form.language} onChange={e => setF('language', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1 flex items-center gap-1">
-            <Tag className="w-4 h-4" /> Tags (comma separated)
-          </label>
-          <input type="text" value={form.tags} onChange={e => setF('tags', e.target.value)} placeholder="e.g. programming, beginner, python" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+          <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma separated)</label>
+          <input type="text" value={form.tags} onChange={e => setF('tags', e.target.value)} placeholder="e.g. programming, beginner, python" className={inputCls} />
         </div>
       </div>
 
-      {/* Schedule & Enrollment */}
+      {/* Description */}
       <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Schedule & Enrollment</h3>
-        {[
-          { label: 'Start Date', key: 'startDate', type: 'date' },
-          { label: 'End Date', key: 'endDate', type: 'date' },
-          { label: 'Max Students (empty = unlimited)', key: 'maxStudents', type: 'number' },
-        ].map(f => (
-          <div key={f.key}>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{f.label}</label>
-            <input type={f.type} value={(form as Record<string, unknown>)[f.key] as string} onChange={e => setF(f.key, e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-          </div>
-        ))}
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Description</h3>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
-          <select value={form.visibility} onChange={e => setF('visibility', e.target.value)} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-            <option value="shown">Shown to students</option>
-            <option value="hidden">Hidden from students</option>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Course Summary</label>
+          <textarea value={form.summary} onChange={e => setF('summary', e.target.value)} rows={3} className={inputCls} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Course Description</label>
+          <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4} className={inputCls} />
+        </div>
+      </div>
+
+      {/* Course Format */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Course Format</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Format</label>
+          <select value={form.format} onChange={e => setF('format', e.target.value)} className={inputCls}>
+            <option value="topics">Topics format</option>
+            <option value="weekly">Weekly format</option>
+            <option value="social">Social format</option>
           </select>
+        </div>
+      </div>
+
+      {/* Appearance */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Appearance</h3>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.showGradebook} onChange={e => setF('showGradebook', e.target.checked)} className="rounded border-gray-300" />
+          <span className="text-sm text-gray-700">Show Gradebook to Students</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.showActivityReports} onChange={e => setF('showActivityReports', e.target.checked)} className="rounded border-gray-300" />
+          <span className="text-sm text-gray-700">Show Activity Reports</span>
+        </label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.forceDownload} onChange={e => setF('forceDownload', e.target.checked)} className="rounded border-gray-300" />
+          <span className="text-sm text-gray-700">Force Download of Files</span>
+        </label>
+      </div>
+
+      {/* Files & Uploads */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Files & Uploads</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Upload Size (MB)</label>
+          <select value={form.maxUploadSize} onChange={e => setF('maxUploadSize', e.target.value)} className={inputCls}>
+            {['16', '32', '64', '128', '256', '512', '1024'].map(s => (
+              <option key={s} value={s}>{s} MB</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Allowed File Types</label>
+          <input type="text" value={form.allowedFileTypes} onChange={e => setF('allowedFileTypes', e.target.value)} placeholder="e.g. jpg,png,pdf,docx" className={inputCls} />
+        </div>
+      </div>
+
+      {/* Completion Tracking */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Completion Tracking</h3>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.completionTracking} onChange={e => setF('completionTracking', e.target.checked)} className="rounded border-gray-300" />
+          <span className="text-sm text-gray-700">Enable Completion Tracking</span>
+        </label>
+      </div>
+
+      {/* Groups */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Groups</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Group Mode</label>
+          <select value={form.groupMode} onChange={e => setF('groupMode', e.target.value)} className={inputCls}>
+            <option value="none">No Groups</option>
+            <option value="separate">Separate Groups</option>
+            <option value="visible">Visible Groups</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Enrollment */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Enrollment</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Maximum Enrolled Students</label>
+          <input type="number" value={form.maxStudents} onChange={e => setF('maxStudents', e.target.value)} placeholder="Leave empty for unlimited" className={inputCls} />
+        </div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" checked={form.selfEnrollment} onChange={e => setF('selfEnrollment', e.target.checked)} className="rounded border-gray-300" />
+          <span className="text-sm text-gray-700">Allow students to self-enroll</span>
+        </label>
+        {form.selfEnrollment && (
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment Key</label>
+            <input type="text" value={form.enrollmentKey} onChange={e => setF('enrollmentKey', e.target.value)} placeholder="Password for enrollment (optional)" className={inputCls} />
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment Start Date</label>
+            <input type="date" value={form.enrollmentStartDate} onChange={e => setF('enrollmentStartDate', e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Enrollment End Date</label>
+            <input type="date" value={form.enrollmentEndDate} onChange={e => setF('enrollmentEndDate', e.target.value)} className={inputCls} />
+          </div>
+        </div>
+      </div>
+
+      {/* Grading */}
+      <div className="bg-gray-50 rounded-xl p-4 space-y-4">
+        <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Grading</h3>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Grade Display Type</label>
+          <select value={form.gradeDisplayType} onChange={e => setF('gradeDisplayType', e.target.value)} className={inputCls}>
+            <option value="percentage">Percentage</option>
+            <option value="letter">Letter Grade</option>
+            <option value="points">Points</option>
+            <option value="real">Real (Points/Max)</option>
+          </select>
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Passing Grade (%)</label>
+          <input type="number" min="0" max="100" value={form.gradePassingGrade} onChange={e => setF('gradePassingGrade', e.target.value)} className={inputCls} />
         </div>
       </div>
 

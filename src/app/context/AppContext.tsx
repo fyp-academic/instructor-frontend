@@ -205,7 +205,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       category_id: course.categoryId,
       format: course.format,
       visibility: course.visibility,
-      status: course.status, // Use the status passed from the component
+      status: course.status,
       start_date: course.startDate,
       end_date: course.endDate,
       language: course.language,
@@ -213,6 +213,21 @@ export function AppProvider({ children }: { children: ReactNode }) {
       tags: course.tags,
       image: course.image,
       degree_programme_ids: course.degreeProgrammeIds,
+      summary: course.summary,
+      id_number: course.idNumber,
+      group_mode: course.groupMode,
+      self_enrollment: course.selfEnrollment,
+      enrollment_key: course.enrollmentKey,
+      enrollment_start_date: course.enrollmentStartDate,
+      enrollment_end_date: course.enrollmentEndDate,
+      grade_display_type: course.gradeDisplayType,
+      grade_passing_grade: course.gradePassingGrade,
+      completion_tracking: course.completionTracking,
+      max_upload_size: course.maxUploadSize,
+      allowed_file_types: course.allowedFileTypes,
+      show_gradebook: course.showGradebook,
+      show_activity_reports: course.showActivityReports,
+      force_download: course.forceDownload,
     });
     const created = res.data.data ?? res.data;
     const newCourse: Course = {
@@ -240,6 +255,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       language: updates.language,
       max_students: updates.maxStudents,
       tags: updates.tags,
+      summary: updates.summary,
+      id_number: updates.idNumber,
+      group_mode: updates.groupMode,
+      self_enrollment: updates.selfEnrollment,
+      enrollment_key: updates.enrollmentKey,
+      enrollment_start_date: updates.enrollmentStartDate,
+      enrollment_end_date: updates.enrollmentEndDate,
+      grade_display_type: updates.gradeDisplayType,
+      grade_passing_grade: updates.gradePassingGrade,
+      completion_tracking: updates.completionTracking,
+      max_upload_size: updates.maxUploadSize,
+      allowed_file_types: updates.allowedFileTypes,
+      show_gradebook: updates.showGradebook,
+      show_activity_reports: updates.showActivityReports,
+      force_download: updates.forceDownload,
+      image: updates.image,
     });
     setCourses(prev => prev.map(c => c.id === id ? { ...c, ...updates } : c));
   }, []);

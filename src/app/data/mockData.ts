@@ -19,6 +19,21 @@ export interface Course {
   language: string;
   tags: string[];
   degreeProgrammeIds?: string[];
+  summary?: string;
+  idNumber?: string;
+  groupMode?: 'none' | 'separate' | 'visible';
+  selfEnrollment?: boolean;
+  enrollmentKey?: string;
+  enrollmentStartDate?: string;
+  enrollmentEndDate?: string;
+  gradeDisplayType?: 'percentage' | 'letter' | 'points' | 'real';
+  gradePassingGrade?: string;
+  completionTracking?: boolean;
+  maxUploadSize?: string;
+  allowedFileTypes?: string;
+  showGradebook?: boolean;
+  showActivityReports?: boolean;
+  forceDownload?: boolean;
 }
 
 export interface Section {

@@ -67,7 +67,7 @@ export function Header() {
           <div className="w-8 h-8 bg-indigo-400 rounded-lg flex items-center justify-center">
             <Puzzle className="w-5 h-5 text-white" />
           </div>
-          <span className="text-lg font-bold tracking-wide hidden sm:block">EduAI LMS</span>
+          <span className="text-lg font-bold tracking-wide hidden sm:block">APES LMS</span>
         </div>
 
         {/* Desktop Nav */}

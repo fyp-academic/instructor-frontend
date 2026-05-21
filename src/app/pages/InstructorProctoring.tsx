@@ -86,6 +86,48 @@ const actionConfig = {
   force_submit:   { label: 'Force Submit',  bg: 'bg-red-50 text-red-700 border-red-200'          },
 };
 
+function formatViolationMeta(type: string, meta: Record<string, unknown> | null): string {
+  if (!meta || Object.keys(meta).length === 0) return '';
+  switch (type) {
+    case 'keyboard_shortcut': {
+      const key = String(meta.key ?? '');
+      const ctrl = meta.ctrl ? 'Ctrl+' : '';
+      const shift = meta.shift ? 'Shift+' : '';
+      return `Pressed ${ctrl}${shift}${key.toUpperCase()}`;
+    }
+    case 'browser_blur':
+      return 'Window lost focus';
+    case 'tab_switch':
+      return 'Switched browser tabs';
+    case 'copy_attempt':
+      return 'Attempted to copy content';
+    case 'paste_attempt':
+      return 'Attempted to paste content';
+    case 'right_click':
+      return 'Right-clicked during exam';
+    case 'fullscreen_exit':
+      return 'Exited fullscreen mode';
+    case 'background_voice': {
+      const level = meta.audio_level;
+      return level !== undefined ? `Audio level detected: ${level}` : 'Background voice detected';
+    }
+    case 'suspicious_movement': {
+      const diff = meta.avg_pixel_diff;
+      return diff !== undefined ? `Movement score: ${diff}` : 'Suspicious movement detected';
+    }
+    default:
+      return '';
+  }
+}
+
+function getSnapshotUrl(v: Violation): string | null {
+  if (v.snapshot_url) return v.snapshot_url;
+  const raw = v.metadata?.snapshot ?? v.metadata?.snapshot_data ?? null;
+  if (typeof raw === 'string' && raw.startsWith('data:image')) return raw;
+  if (typeof raw === 'string' && raw.length > 100) return `data:image/jpeg;base64,${raw}`;
+  return null;
+}
+
 // ── Violation icon row ─────────────────────────────────────────────────────────
 function ViolationBadges({ count, violations }: { count: number; violations?: Violation[] }) {
   if (count === 0) return <span className="text-gray-400 text-xs">None</span>;
@@ -216,26 +258,30 @@ function SessionDetailModal({ sessionId, onClose }: { sessionId: string; onClose
                                 <span className={`text-xs font-medium px-2 py-0.5 rounded-full border ${ac.bg}`}>{ac.label}</span>
                               </div>
                               <p className="text-xs text-gray-500 mt-0.5">{fmtDate(String(v.occurred_at))}</p>
-                              {v.metadata && Object.keys(v.metadata).length > 0 && (
-                                <p className="text-xs text-gray-400 mt-0.5 font-mono truncate">
-                                  {JSON.stringify(v.metadata)}
-                                </p>
-                              )}
+                              {(() => {
+                                const metaText = formatViolationMeta(v.type, v.metadata);
+                                return metaText ? (
+                                  <p className="text-xs text-gray-500 mt-0.5">{metaText}</p>
+                                ) : null;
+                              })()}
                             </div>
                             {/* Warning count */}
                             <span className="text-xs text-gray-400 flex-shrink-0 pt-0.5">W{v.warning_count_at_time}</span>
                           </div>
                           {/* Snapshot thumbnail */}
-                          {v.snapshot_url && (
-                            <div className="border-t border-gray-100 bg-black">
-                              <img
-                                src={v.snapshot_url}
-                                alt={`Snapshot at ${info.label}`}
-                                className="w-full max-h-44 object-contain"
-                                loading="lazy"
-                              />
-                            </div>
-                          )}
+                          {(() => {
+                            const snapUrl = getSnapshotUrl(v);
+                            return snapUrl ? (
+                              <div className="border-t border-gray-100 bg-black">
+                                <img
+                                  src={snapUrl}
+                                  alt={`Snapshot at ${info.label}`}
+                                  className="w-full max-h-44 object-contain"
+                                  loading="lazy"
+                                />
+                              </div>
+                            ) : null;
+                          })()}
                         </div>
                       );
                     })}

@@ -41,10 +41,17 @@ export default function MyCourses() {
     const sections     = (course.sections as unknown[]) ?? [];
     const visibility   = String(course.visibility ?? 'shown');
     const status       = String(course.status ?? 'draft');
+    const image        = String(course.image ?? course.image_url ?? '');
     return (
     <div className="bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all group overflow-hidden">
-      {/* Color strip */}
-      <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600" />
+      {/* Image or color strip */}
+      {image ? (
+        <div className="h-32 overflow-hidden">
+          <img src={image} alt={String(course.name ?? '')} className="w-full h-full object-cover" />
+        </div>
+      ) : (
+        <div className="h-2 bg-gradient-to-r from-indigo-500 to-purple-600" />
+      )}
       <div className="p-4">
         <div className="flex items-start justify-between gap-2">
           <div
@@ -97,7 +104,7 @@ export default function MyCourses() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{String(course.description ?? '')}</p>
+        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{String(course.description ?? '').replace(/<[^>]*>/g, '').trim()}</p>
 
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs text-gray-400">
