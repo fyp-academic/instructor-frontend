@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X, ClipboardList, Monitor, BookOpen, ListChecks, BarChart3,
   Award, Database, MessageCircle, Folder, BookMarked, Box,
@@ -137,7 +137,12 @@ export function BookCreator({ onClose, onSave, initialData }: BaseCreatorProps) 
               <input className={`${inputCls} flex-1`} value={c.title} onChange={e => { const next = [...chapters]; next[i] = { ...c, title: e.target.value }; setChapters(next); }} placeholder="Chapter title" />
               <button onClick={() => setChapters(p => p.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
             </div>
-            <textarea className={inputCls} rows={3} value={c.content} onChange={e => { const next = [...chapters]; next[i] = { ...c, content: e.target.value }; setChapters(next); }} placeholder="Chapter content..." />
+            <RichTextEditor
+              value={c.content}
+              onChange={(v) => { const next = [...chapters]; next[i] = { ...c, content: v }; setChapters(next); }}
+              placeholder="Chapter content..."
+              minHeight={180}
+            />
           </div>
         ))}
       </div>
@@ -440,7 +445,30 @@ export function LessonCreator({ onClose, onSave, initialData }: BaseCreatorProps
   const [pages, setPages] = useState<{ title: string; content: string }[]>(
     (s.pages ?? [{ title: 'Page 1', content: '' }]).map((p: any) => ({ title: p.title ?? '', content: p.content ?? '' }))
   );
+  const [pagesLoading, setPagesLoading] = useState(false);
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+
+  // Fetch actual lesson pages from API when editing
+  useEffect(() => {
+    if (initialData?.id) {
+      setPagesLoading(true);
+      import('../../services/api').then(({ lessonApi }) => {
+        lessonApi.listPages(String(initialData.id))
+          .then((res: any) => {
+            const apiPages = res.data?.data ?? [];
+            if (apiPages.length > 0) {
+              setPages(apiPages.map((p: any) => ({
+                title: p.title ?? 'Page',
+                content: p.content ?? '',
+              })));
+            }
+          })
+          .catch(() => {})
+          .finally(() => setPagesLoading(false));
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData?.id]);
   return (
     <ModalShell title={`${initialData ? 'Edit' : 'Create'} Lesson`} icon={GraduationCap} iconColor="text-cyan-700" iconBg="bg-cyan-100" onClose={onClose} onSave={() => {
       if (!form.name) { alert('Name is required'); return; }
@@ -452,13 +480,19 @@ export function LessonCreator({ onClose, onSave, initialData }: BaseCreatorProps
         <div className="flex items-center justify-between"><span className="text-sm font-medium text-gray-700">Pages</span>
           <button onClick={() => setPages(p => [...p, { title: `Page ${p.length + 1}`, content: '' }])} className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800"><Plus className="w-3 h-3" /> Add Page</button>
         </div>
+        {pagesLoading && <div className="text-xs text-gray-500">Loading pages...</div>}
         {pages.map((p, i) => (
           <div key={i} className="border border-gray-200 rounded-lg p-3 space-y-2">
             <div className="flex items-center gap-2">
               <input className={`${inputCls} flex-1`} value={p.title} onChange={e => { const next = [...pages]; next[i] = { ...p, title: e.target.value }; setPages(next); }} placeholder="Page title" />
               <button onClick={() => setPages(prev => prev.filter((_, idx) => idx !== i))} className="p-1 text-red-400 hover:text-red-600"><Trash2 className="w-4 h-4" /></button>
             </div>
-            <textarea className={inputCls} rows={3} value={p.content} onChange={e => { const next = [...pages]; next[i] = { ...p, content: e.target.value }; setPages(next); }} placeholder="Page content..." />
+            <RichTextEditor
+              value={p.content}
+              onChange={(v) => { const next = [...pages]; next[i] = { ...p, content: v }; setPages(next); }}
+              placeholder="Page content..."
+              minHeight={180}
+            />
           </div>
         ))}
       </div>

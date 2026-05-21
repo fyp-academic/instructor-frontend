@@ -184,16 +184,30 @@ export function CourseContent({ courseId }: CourseContentProps) {
     }
 
     // If page/lesson with content, save as lesson page
-    if (type === 'page' && actId) {
-      const content = String(data.settings?.content || data.description || '');
-      if (content) {
-        try {
-          await lessonApi.createPage(actId, {
-            title: data.name,
-            content: content,
-            page_type: 'content',
-          });
-        } catch (e) { /* ignore page creation failure */ }
+    if ((type === 'page' || type === 'lesson') && actId) {
+      const pages = (data.settings?.pages ?? []) as Array<{ title: string; content: string }>;
+      if (pages.length > 0) {
+        for (let i = 0; i < pages.length; i++) {
+          try {
+            await lessonApi.createPage(actId, {
+              title: pages[i].title || `Page ${i + 1}`,
+              content: pages[i].content || '',
+              page_type: 'content',
+              sort_order: i,
+            });
+          } catch (e) { /* ignore page creation failure */ }
+        }
+      } else if (type === 'page') {
+        const content = String(data.settings?.content || data.description || '');
+        if (content) {
+          try {
+            await lessonApi.createPage(actId, {
+              title: data.name,
+              content: content,
+              page_type: 'content',
+            });
+          } catch (e) { /* ignore page creation failure */ }
+        }
       }
     }
 
@@ -244,6 +258,30 @@ export function CourseContent({ courseId }: CourseContentProps) {
         });
       } catch (e) { console.error('File upload failed:', e); }
     }
+    // If lesson type, sync pages: delete existing and recreate
+    if (type === 'lesson' && activityId) {
+      const pages = (data.settings?.pages ?? []) as Array<{ title: string; content: string }>;
+      try {
+        // Get existing pages and delete them
+        const existing = await lessonApi.listPages(activityId);
+        const existingPages = existing.data?.data ?? [];
+        for (const page of existingPages) {
+          try { await lessonApi.deletePage(page.id); } catch { /* ignore */ }
+        }
+        // Recreate pages
+        for (let i = 0; i < pages.length; i++) {
+          try {
+            await lessonApi.createPage(activityId, {
+              title: pages[i].title || `Page ${i + 1}`,
+              content: pages[i].content || '',
+              page_type: 'content',
+              sort_order: i,
+            });
+          } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
+    }
+
     setIsSaving(false);
     const label = activityTypeInfo[type]?.label || type;
     showToast(`${label} updated successfully`);
