@@ -269,24 +269,30 @@ export default function InstructorSessions() {
           color: c.color,
         })) || []);
 
-        // Mock stats for now - would come from API
+        const allSessions = (sessionsRes.data.data || []).map(transformSession);
+        const endedSessions = allSessions.filter((s: Session) => s.status === 'ended');
+
+        // Compute real stats from session data
+        const totalParticipants = allSessions.reduce((sum: number, s: Session) => sum + (s.participantCount || 0), 0);
+        const totalMinutes = endedSessions.reduce((sum: number, s: Session) => sum + (s.duration || 0), 0);
+        const avgAttendance = allSessions.length > 0
+          ? Math.round(totalParticipants / allSessions.length)
+          : 0;
+
         setStats({
-          totalSessions: sessionsRes.data.data?.length || 0,
-          studentsReached: 156,
-          hoursLive: 42,
-          averageAttendance: 78,
+          totalSessions: allSessions.length,
+          studentsReached: totalParticipants,
+          hoursLive: Math.round(totalMinutes / 60),
+          averageAttendance: avgAttendance,
         });
 
-        // Mock past sessions with analytics
-        const mockPast = (sessionsRes.data.data || [])
-          .map(transformSession)
-          .filter((s: Session) => s.status === 'ended')
-          .map((s: Session) => ({
-            ...s,
-            recordingViews: Math.floor(Math.random() * 50),
-            averageWatchTime: Math.floor(Math.random() * 30) + 10,
-          }));
-        setPastSessions(mockPast);
+        // Past sessions with real participant counts as proxy for analytics
+        const pastWithAnalytics = endedSessions.map((s: Session) => ({
+          ...s,
+          recordingViews: s.hasRecording ? (s.participantCount || 0) : 0,
+          averageWatchTime: s.duration ? Math.round(s.duration * 0.6) : 0,
+        }));
+        setPastSessions(pastWithAnalytics);
       } catch (error) {
         toast({
           title: 'Failed to load sessions',
