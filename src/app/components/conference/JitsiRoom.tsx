@@ -50,6 +50,7 @@ interface JitsiRoomProps {
   onClose: () => void;
   courseName?: string;
   sessionTitle?: string;
+  aiTranscription?: boolean;
 }
 
 /**
@@ -75,6 +76,7 @@ export function JitsiRoom({
   onClose,
   courseName,
   sessionTitle,
+  aiTranscription = false,
 }: JitsiRoomProps) {
   const jitsiContainerRef = useRef<HTMLDivElement>(null);
   const [activePanel, setActivePanel] = useState<TabValue>('participants');
@@ -119,12 +121,14 @@ export function JitsiRoom({
     sendMessage,
     hangUp,
   } = useJitsiRoom({
+    sessionId,
     roomName,
     jwt,
     containerRef: jitsiContainerRef,
     role,
     userInfo,
     scriptLoaded,
+    aiTranscription,
   });
 
   // Handle errors

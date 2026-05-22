@@ -99,7 +99,7 @@ const defaultFormData: SessionFormData = {
   screenShareAllowed: true,
   startMuted: false,
   startVideoOff: false,
-  aiTranscription: false,
+  aiTranscription: true,
   lobbyEnabled: false,
 };
 

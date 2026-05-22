@@ -19,6 +19,7 @@ export default function Conference() {
     room_name: string;
     course_name: string;
     jwt: string;
+    ai_transcription: boolean;
   } | null>(null);
 
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function Conference() {
           room_name: s.room_id || s.room_name || s.roomName,
           course_name: s.course?.title || s.course?.name || s.course_name || s.courseName,
           jwt: tokenRes.data.token,
+          ai_transcription: tokenRes.data.ai_transcription ?? Boolean(s.ai_transcription),
         });
       } catch (err) {
         toast({
@@ -81,6 +83,7 @@ export default function Conference() {
         onClose={() => navigate('/sessions')}
         courseName={session.course_name}
         sessionTitle={session.title}
+        aiTranscription={session.ai_transcription}
       />
     </div>
   );
