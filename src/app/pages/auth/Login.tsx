@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { Eye, EyeOff, Loader2, Mail, ArrowRight, Menu } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
 
@@ -161,18 +161,7 @@ export default function Login() {
 
       {/* Right panel — login form */}
       <div className="w-full lg:w-[52%] flex flex-col bg-white">
-        {/* Hamburger menu */}
-        <div className="flex justify-end p-6 lg:p-8">
-          <button
-            type="button"
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            aria-label="Menu"
-          >
-            <Menu className="w-6 h-6 text-gray-700" />
-          </button>
-        </div>
-
-        <div className="flex-1 flex items-center justify-center px-8 sm:px-12 lg:px-16 xl:px-24 -mt-8 lg:-mt-12">
+        <div className="flex-1 flex items-start justify-center px-8 sm:px-12 lg:px-16 xl:px-24 pt-6 lg:pt-8">
           <div className="w-full max-w-sm">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-10 leading-tight">
               Welcome<br />Back
