@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import instructorImage from '../../../assets/Instructor image.jfif';
 import { Link, useNavigate } from 'react-router';
 import { Eye, EyeOff, Loader2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
@@ -43,7 +44,7 @@ function InstagramIcon({ className }: { className?: string }) {
 }
 
 export default function Login() {
-  const { login } = useAuth();
+  const { login, logout } = useAuth();
   const navigate   = useNavigate();
 
   const [email,    setEmail]    = useState('');
@@ -76,6 +77,7 @@ export default function Login() {
       const user   = stored ? JSON.parse(stored) : null;
       const role   = String(user?.role ?? '');
       if (role === 'student') {
+        await logout();
         setWrongRole(true);
       } else {
         navigate('/');
@@ -118,7 +120,7 @@ export default function Login() {
       {/* Left panel — image with curved right edge */}
       <div className="hidden lg:block lg:w-[48%] relative overflow-hidden">
         <img
-          src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?auto=format&fit=crop&w=1600&q=80"
+          src={instructorImage}
           alt="Students studying"
           className="absolute inset-0 w-full h-full object-cover"
         />
