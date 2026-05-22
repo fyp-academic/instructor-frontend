@@ -305,6 +305,11 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
                   <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
                   <p className="text-xs text-gray-400 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
                 </>
+              ) : s.fileName ? (
+                <>
+                  <p className="text-sm font-medium text-gray-800">{String(s.fileName)}</p>
+                  <p className="text-xs text-gray-400 mt-1">Already uploaded — click to replace</p>
+                </>
               ) : (
                 <>
                   <p className="text-sm text-gray-500">Drag & drop or click to upload</p>
@@ -336,7 +341,7 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save File</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: { ...s, ...form }, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save File</button>
         </div>
       </div>
     </div>
