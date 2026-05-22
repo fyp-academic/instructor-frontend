@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import {
   Bell, MessageSquare, User, ChevronDown, Search, BookOpen,
-  LayoutDashboard, Brain, Settings, LogOut, Edit3, X,
+  LayoutDashboard, Settings, LogOut, Edit3, X,
   CheckCheck, Menu, Puzzle, BellRing, Video, BarChart2, ShieldAlert
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -43,7 +43,6 @@ export function Header() {
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
     { to: '/courses', label: 'My Courses', icon: BookOpen },
     { to: '/sessions', label: 'Live Sessions', icon: Video },
-    { to: '/ai-insights', label: 'AI Insights', icon: Brain },
     { to: '/engagement', label: 'Engagement', icon: BarChart2 },
     { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert },
     { to: '/administration', label: 'Administration', icon: Settings },
