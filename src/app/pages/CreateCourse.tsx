@@ -6,6 +6,23 @@ import { Course } from '../data/mockData';
 import { RichTextEditor } from '../components/RichTextEditor';
 import { degreeProgrammesApi } from '../services/api';
 
+const compressImage = (file: File, maxWidth = 800, maxHeight = 600, quality = 0.75): Promise<string> =>
+  new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const ratio = Math.min(maxWidth / img.width, maxHeight / img.height, 1);
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(img.width * ratio);
+      canvas.height = Math.round(img.height * ratio);
+      canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+
 const inputClass = (hasError?: string) =>
   `w-full border ${hasError ? 'border-red-400' : 'border-gray-300'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white`;
 
@@ -138,17 +155,12 @@ export default function CreateCourse() {
         forceDownload: form.forceDownload,
       };
 
-      // If image file selected, upload separately or include as base64
       if (imageFile) {
-        const reader = new FileReader();
-        reader.onloadend = async () => {
-          const base64Image = reader.result as string;
-          const courseWithImage = { ...courseData, image: base64Image };
-          const created = await addCourse(courseWithImage);
-          setSaved(true);
-          navigate(`/courses/${created.id}`);
-        };
-        reader.readAsDataURL(imageFile);
+        const compressed = await compressImage(imageFile);
+        const courseWithImage = { ...courseData, image: compressed };
+        const created = await addCourse(courseWithImage);
+        setSaved(true);
+        navigate(`/courses/${created.id}`);
       } else {
         const created = await addCourse(courseData);
         setSaved(true);
@@ -281,9 +293,7 @@ export default function CreateCourse() {
                         const file = e.target.files?.[0] || null;
                         setImageFile(file);
                         if (file) {
-                          const reader = new FileReader();
-                          reader.onloadend = () => set('image', reader.result as string);
-                          reader.readAsDataURL(file);
+                          compressImage(file).then(data => set('image', data));
                         }
                       }}
                       className="hidden"
