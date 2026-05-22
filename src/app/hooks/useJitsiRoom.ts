@@ -387,9 +387,11 @@ export function useJitsiRoom({
         }
       });
 
-      // 15. Conference left
+      // 15. Conference left — record participation end for attendance
       jitsiApi.addListener('videoConferenceLeft', () => {
-        // Cleanup happens in useEffect cleanup
+        if (sessionId) {
+          sessionsApi.participantLeft(sessionId).catch(() => {/* silent */});
+        }
       });
 
       // 16. Connection quality changed

@@ -396,6 +396,10 @@ export const sessionsApi = {
     headers: { 'Content-Type': 'multipart/form-data' },
   }),
 
+  // Participant lifecycle
+  participantLeft:   (id: string) => api.post(`/sessions/${id}/participant-left`),
+  updateMetrics:     (id: string, data: Record<string, unknown>) => api.post(`/sessions/${id}/update-metrics`, data),
+
   // Transcription consent
   grantTranscriptionConsent: (id: string) => api.post(`/sessions/${id}/transcription-consent`),
 
