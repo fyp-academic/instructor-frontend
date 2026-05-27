@@ -271,9 +271,9 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
             {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
           </button>
           {showImageOpts && (
-            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-20 min-w-56">
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-20 w-64">
               <p className="text-xs font-semibold text-gray-700 mb-2">Image Position</p>
-              <div className="flex gap-1 mb-3">
+              <div className="grid grid-cols-2 gap-2 mb-3">
                 {[
                   { key: 'left'   as const, label: 'Left',   icon: AlignLeft },
                   { key: 'center' as const, label: 'Center', icon: AlignCenter },
@@ -284,21 +284,21 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
                     key={key}
                     type="button"
                     onClick={() => setImageAlign(key)}
-                    className={`flex-1 flex flex-col items-center gap-0.5 text-[10px] px-1 py-1 rounded border transition-colors ${
+                    className={`flex items-center gap-2 text-xs px-2 py-2 rounded border transition-colors ${
                       imageAlign === key
                         ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
                         : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
-                    <Icon className="w-3.5 h-3.5" />
-                    <span>{lbl}</span>
+                    <Icon className="w-4 h-4 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{lbl}</span>
                   </button>
                 ))}
               </div>
               <button
                 type="button"
                 onClick={() => imageInputRef.current?.click()}
-                className="w-full text-xs bg-indigo-600 text-white px-2 py-1.5 rounded hover:bg-indigo-700"
+                className="w-full text-xs bg-indigo-600 text-white px-2 py-2 rounded hover:bg-indigo-700"
               >
                 Choose File & Upload
               </button>
