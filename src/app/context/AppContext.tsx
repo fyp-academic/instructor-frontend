@@ -321,11 +321,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteSection = useCallback(async (courseId: string, sectionId: string) => {
-    try {
-      await sectionsApi.remove(sectionId);
-    } catch (err) {
-      console.error('Failed to delete section:', err);
-    }
+    await sectionsApi.remove(sectionId);
     setCourses(prev => prev.map(c => {
       if (c.id !== courseId) return c;
       return { ...c, sections: c.sections.filter(s => s.id !== sectionId) };
@@ -397,11 +393,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteActivity = useCallback(async (courseId: string, sectionId: string, activityId: string) => {
-    try {
-      await activitiesApi.remove(activityId);
-    } catch (err) {
-      console.error('Failed to delete activity:', err);
-    }
+    await activitiesApi.remove(activityId);
     setCourses(prev => prev.map(c => {
       if (c.id !== courseId) return c;
       return {

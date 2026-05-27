@@ -423,7 +423,14 @@ export function CourseContent({ courseId }: CourseContentProps) {
                     {section.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                   </button>
                   {si > 0 && (
-                    <button onClick={async () => { if (confirm('Delete this section?')) await deleteSection(courseId, section.id); }} className="p-1.5 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
+                    <button onClick={async () => {
+                      if (!confirm('Delete this section?')) return;
+                      try { await deleteSection(courseId, section.id); }
+                      catch (err: any) {
+                        const msg = err?.response?.data?.message || err?.message || 'Failed to delete section.';
+                        alert(msg);
+                      }
+                    }} className="p-1.5 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   )}
@@ -476,7 +483,14 @@ export function CourseContent({ courseId }: CourseContentProps) {
                           <button onClick={async () => await updateActivity(courseId, section.id, activity.id, { visible: !activity.visible })} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700">
                             {activity.visible ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
                           </button>
-                          <button onClick={async () => { if (confirm('Delete this activity?')) await deleteActivity(courseId, section.id, activity.id); }} className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
+                          <button onClick={async () => {
+                            if (!confirm('Delete this activity?')) return;
+                            try { await deleteActivity(courseId, section.id, activity.id); }
+                            catch (err: any) {
+                              const msg = err?.response?.data?.message || err?.message || 'Failed to delete activity.';
+                              alert(msg);
+                            }
+                          }} className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
                             <Trash2 className="w-3.5 h-3.5" />
                           </button>
                         </div>
