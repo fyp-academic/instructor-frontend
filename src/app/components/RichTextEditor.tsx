@@ -32,6 +32,8 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
   const [youtubeUrl,  setYoutubeUrl]  = useState('');
   const [showYoutube, setShowYoutube] = useState(false);
   const [uploading,   setUploading]   = useState(false);
+  const [imageAlign,  setImageAlign]  = useState<'left'|'center'|'right'|'full'>('center');
+  const [showImageOpts,setShowImageOpts]= useState(false);
 
   // Seed initial content once on mount — never re-sync from props to avoid the single-char reset bug
   useEffect(() => {
@@ -83,6 +85,20 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
     setShowLink(false);
   };
 
+  // ── Image wrapper builder (small defaults + position) ─────────────────────
+  const buildImageHtml = (url: string, alt: string, align: 'left'|'center'|'right'|'full') => {
+    switch (align) {
+      case 'left':
+        return `<div style="float:left;max-width:220px;margin:0 16px 12px 0;" class="lesson-img-wrap lesson-img-left"><img src="${url}" alt="${alt}" style="width:100%;height:auto;border-radius:6px;display:block;" /></div>`;
+      case 'right':
+        return `<div style="float:right;max-width:220px;margin:0 0 12px 16px;" class="lesson-img-wrap lesson-img-right"><img src="${url}" alt="${alt}" style="width:100%;height:auto;border-radius:6px;display:block;" /></div>`;
+      case 'center':
+        return `<div style="text-align:center;" class="lesson-img-wrap lesson-img-center"><img src="${url}" alt="${alt}" style="max-width:350px;width:100%;height:auto;border-radius:6px;display:inline-block;" /></div>`;
+      case 'full':
+        return `<div style="text-align:center;" class="lesson-img-wrap lesson-img-full"><img src="${url}" alt="${alt}" style="max-width:100%;width:100%;height:auto;border-radius:6px;display:block;" /></div>`;
+    }
+  };
+
   // ── Image from machine ────────────────────────────────────────────────────
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -92,14 +108,19 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
       const res = await lessonApi.uploadMedia(file);
       const url: string = res.data?.data?.url ?? '';
       if (url) {
-        insertHtmlAtCursor(
-          `<img src="${url}" alt="${file.name}" style="max-width:100%;height:auto;border-radius:6px;margin:8px 0;display:block;" />`
-        );
+        insertHtmlAtCursor(buildImageHtml(url, file.name, imageAlign));
       }
-    } catch {
-      alert('Image upload failed. Please try again.');
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.errors?.file?.[0] ||
+        err?.response?.data?.message ||
+        err?.message ||
+        'Image upload failed. Please try again.';
+      console.error('Image upload error:', err);
+      alert(msg);
     } finally {
       setUploading(false);
+      setShowImageOpts(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
     }
   };
@@ -119,8 +140,14 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
           `Your browser does not support the video tag.</video>`
         );
       }
-    } catch {
-      alert('Video upload failed. Please try again.');
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.errors?.file?.[0] ||
+        err?.response?.data?.message ||
+        err?.message ||
+        'Video upload failed. Please try again.';
+      console.error('Video upload error:', err);
+      alert(msg);
     } finally {
       setUploading(false);
       if (videoInputRef.current) videoInputRef.current.value = '';
@@ -232,16 +259,52 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
           )}
         </div>
 
-        {/* Image upload */}
-        <button
-          type="button"
-          title={uploading ? 'Uploading…' : 'Insert Image from Computer'}
-          disabled={uploading}
-          onClick={() => { saveSelection(); imageInputRef.current?.click(); }}
-          className="p-1 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
-        >
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
-        </button>
+        {/* Image upload + position picker */}
+        <div className="relative">
+          <button
+            type="button"
+            title={uploading ? 'Uploading…' : 'Insert Image from Computer'}
+            disabled={uploading}
+            onClick={() => { saveSelection(); setShowImageOpts(v => !v); setShowLink(false); setShowYoutube(false); }}
+            className="p-1 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Image className="w-4 h-4" />}
+          </button>
+          {showImageOpts && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-3 z-20 min-w-56">
+              <p className="text-xs font-semibold text-gray-700 mb-2">Image Position</p>
+              <div className="flex gap-1 mb-3">
+                {[
+                  { key: 'left'   as const, label: 'Left',   icon: AlignLeft },
+                  { key: 'center' as const, label: 'Center', icon: AlignCenter },
+                  { key: 'right'  as const, label: 'Right',  icon: AlignRight },
+                  { key: 'full'   as const, label: 'Full',   icon: Image },
+                ].map(({ key, label: lbl, icon: Icon }) => (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => setImageAlign(key)}
+                    className={`flex-1 flex flex-col items-center gap-0.5 text-[10px] px-1 py-1 rounded border transition-colors ${
+                      imageAlign === key
+                        ? 'bg-indigo-50 border-indigo-300 text-indigo-700'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    <span>{lbl}</span>
+                  </button>
+                ))}
+              </div>
+              <button
+                type="button"
+                onClick={() => imageInputRef.current?.click()}
+                className="w-full text-xs bg-indigo-600 text-white px-2 py-1.5 rounded hover:bg-indigo-700"
+              >
+                Choose File & Upload
+              </button>
+            </div>
+          )}
+        </div>
 
         {/* Video upload */}
         <button
@@ -259,7 +322,7 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
           <button
             type="button"
             title="Embed YouTube Video"
-            onClick={() => { saveSelection(); setShowYoutube(v => !v); setShowLink(false); }}
+            onClick={() => { saveSelection(); setShowYoutube(v => !v); setShowLink(false); setShowImageOpts(false); }}
             className="p-1 rounded hover:bg-gray-200 text-red-500 hover:text-red-700 transition-colors"
           >
             <Youtube className="w-4 h-4" />
