@@ -272,6 +272,13 @@ export const lessonApi = {
   updatePage:  (id: string, data: Record<string, unknown>) =>
     api.put(`/lesson-pages/${id}`, data),
   deletePage:  (id: string) => api.delete(`/lesson-pages/${id}`),
+  uploadMedia: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/lesson-pages/media-upload', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // ─── Video Uploads ───────────────────────────────────────────────────────────
