@@ -154,6 +154,8 @@ export function CourseContent({ courseId }: CourseContentProps) {
     }
 
     // If quiz with questions, save them to backend
+    let createdQuestionCount = 0;
+    let failedQuestionCount = 0;
     if (type === 'quiz' && data.questions && data.questions.length > 0 && actId) {
       for (const q of data.questions) {
         try {
@@ -165,22 +167,37 @@ export function CourseContent({ courseId }: CourseContentProps) {
             shuffle_answers: q.shuffleAnswers ?? true,
             choice_numbering: q.choiceNumbering ?? 'none',
             penalty: q.penalty ?? 0,
+            matching_pairs: q.matchingPairs ?? undefined,
+            correct_answer: q.correctAnswer ?? undefined,
           });
           const savedQ = qRes.data.data ?? qRes.data;
           const qid = savedQ?.id;
-          if (qid && q.answers && q.answers.length > 0) {
-            for (const a of q.answers) {
-              try {
-                await quizApi.createAnswer(qid, {
-                  answer_text: a.text ?? '',
-                  grade_fraction: (a.grade ?? 0) / 100,
-                  feedback: a.feedback ?? '',
-                });
-              } catch (e: any) { console.error('Failed to create answer:', e); }
+          if (qid) {
+            createdQuestionCount++;
+            if (q.answers && q.answers.length > 0) {
+              for (const a of q.answers) {
+                try {
+                  await quizApi.createAnswer(qid, {
+                    answer_text: a.text ?? '',
+                    grade_fraction: (a.grade ?? 0) / 100,
+                    feedback: a.feedback ?? '',
+                  });
+                } catch (e: any) {
+                  console.error('Failed to create answer:', e);
+                  alert('Failed to save answer for question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+                }
+              }
             }
           }
-        } catch (e: any) { console.error('Failed to create question:', e); }
+        } catch (e: any) {
+          failedQuestionCount++;
+          console.error('Failed to create question:', e);
+          alert('Failed to save question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+        }
       }
+    }
+    if (type === 'quiz' && failedQuestionCount > 0) {
+      alert(`Quiz saved but ${failedQuestionCount} of ${data.questions.length} questions failed to save. Check console for details.`);
     }
 
     // If page/lesson with content, save as lesson page
@@ -314,6 +331,8 @@ export function CourseContent({ courseId }: CourseContentProps) {
       }
     } catch (e: any) { console.error('Failed to list existing questions:', e); }
 
+    let editCreatedCount = 0;
+    let editFailedCount = 0;
     if (data.questions && data.questions.length > 0) {
       for (const q of data.questions) {
         try {
@@ -325,26 +344,42 @@ export function CourseContent({ courseId }: CourseContentProps) {
             shuffle_answers: q.shuffleAnswers ?? true,
             choice_numbering: q.choiceNumbering ?? 'none',
             penalty: q.penalty ?? 0,
+            matching_pairs: q.matchingPairs ?? undefined,
+            correct_answer: q.correctAnswer ?? undefined,
           });
           const savedQ = qRes.data.data ?? qRes.data;
           const qid = savedQ?.id;
-          if (qid && q.answers && q.answers.length > 0) {
-            for (const a of q.answers) {
-              try {
-                await quizApi.createAnswer(qid, {
-                  answer_text: a.text ?? '',
-                  grade_fraction: (a.grade ?? 0) / 100,
-                  feedback: a.feedback ?? '',
-                });
-              } catch (e: any) { console.error('Failed to create answer:', e); }
+          if (qid) {
+            editCreatedCount++;
+            if (q.answers && q.answers.length > 0) {
+              for (const a of q.answers) {
+                try {
+                  await quizApi.createAnswer(qid, {
+                    answer_text: a.text ?? '',
+                    grade_fraction: (a.grade ?? 0) / 100,
+                    feedback: a.feedback ?? '',
+                  });
+                } catch (e: any) {
+                  console.error('Failed to create answer:', e);
+                  alert('Failed to save answer for question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+                }
+              }
             }
           }
-        } catch (e: any) { console.error('Failed to create question:', e); }
+        } catch (e: any) {
+          editFailedCount++;
+          console.error('Failed to create question:', e);
+          alert('Failed to save question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+        }
       }
     }
 
     setIsSaving(false);
-    showToast('Quiz updated successfully');
+    if (editFailedCount > 0) {
+      alert(`Quiz updated but ${editFailedCount} of ${data.questions.length} questions failed to save.`);
+    } else {
+      showToast('Quiz updated successfully');
+    }
     setActivityCreator(null);
   };
 
