@@ -197,7 +197,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
       }
     }
     if (type === 'quiz' && failedQuestionCount > 0) {
-      alert(`Quiz saved but ${failedQuestionCount} of ${data.questions.length} questions failed to save. Check console for details.`);
+      alert(`Quiz saved but ${failedQuestionCount} of ${data.questions?.length ?? 0} questions failed to save. Check console for details.`);
     }
 
     // If page/lesson with content, save as lesson page
