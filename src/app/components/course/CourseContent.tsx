@@ -79,7 +79,6 @@ export function CourseContent({ courseId }: CourseContentProps) {
   };
 
   const handleAddActivity = async (type: ActivityType | 'subsection', sectionId: string) => {
-    console.log('[CourseContent] handleAddActivity called:', { type, sectionId });
     setAddActivityTarget(null);
     if (type === 'subsection') {
       await addSection(courseId, 'New Subsection');
@@ -90,7 +89,6 @@ export function CourseContent({ courseId }: CourseContentProps) {
       setActivityCreator({ type: 'label', sectionId });
       return;
     }
-    console.log('[CourseContent] opening activityCreator for type:', type);
     setActivityCreator({ type, sectionId });
   };
 

@@ -162,7 +162,6 @@ export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
                   type="button"
                   disabled={!selectedType}
                   onClick={() => {
-                    console.log('[AddActivityModal] clicked Add, selectedType:', selectedType);
                     if (selectedType) {
                       onSelect(selectedType as ActivityType);
                       onClose();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle, HelpCircle, ListChecks, ToggleLeft, Link2, Type, Hash, FileText, Calculator, Move, MapPin, List } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { QuizQuestion, QuizAnswer } from '../../data/mockData';
@@ -61,26 +61,12 @@ const questionTypeIcon = (type: string) => {
 };
 
 export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCreatorProps) {
-  const mountCount = useRef(0);
-  mountCount.current += 1;
-  const isFirstRender = mountCount.current === 1;
-  if (isFirstRender) {
-    console.log('[QuizCreator] MOUNT initialData:', initialData?.name ?? 'none', 'activityId:', activityId ?? 'none');
-  }
-
-  useEffect(() => {
-    console.log('[QuizCreator] MOUNTED');
-    return () => console.log('[QuizCreator] UNMOUNTED');
-  }, []);
-
   const [step, setStep] = useState<'settings' | 'questions'>('settings');
   const [activeTab, setActiveTab] = useState('general');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [newQType, setNewQType] = useState<QuizQuestion['type']>('multiple_choice');
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
-
-  console.log('[QuizCreator] render #', mountCount.current, 'step:', step, 'questions:', questions.length, 'addingQuestion:', addingQuestion);
 
   const s = (initialData?.settings ?? {}) as Record<string, any>;
   const [settings, setSettings] = useState({
@@ -160,14 +146,9 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
       penalty: 0,
       correctAnswer: newQType === 'true_false' ? 'True' : undefined,
     };
-    console.log('[QuizCreator] addQuestion adding question:', q.type, 'id:', q.id);
     setQuestions(p => [...p, q]);
     setExpandedQ(q.id);
-    // Delay closing picker to prevent click-through to Save Quiz button
-    setTimeout(() => {
-      console.log('[QuizCreator] closing question picker after delay');
-      setAddingQuestion(false);
-    }, 100);
+    setAddingQuestion(false);
   };
 
   const updateQ = (id: string, updates: Partial<QuizQuestion>) => {
@@ -403,7 +384,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
               <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
               <button
                 type="button"
-                onClick={() => { if (!settings.name) { alert('Please enter a quiz name'); return; } console.log('[QuizCreator] switching to questions step'); setStep('questions'); }}
+                onClick={() => { if (!settings.name) { alert('Please enter a quiz name'); return; } setStep('questions'); }}
                 className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
                 Next: Add Questions →
@@ -541,7 +522,28 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                         {(q.type === 'short_answer' || q.type === 'numerical' || q.type === 'essay') && (
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Model Answer / Notes</label>
-                            <textarea rows={3} className={inputCls} placeholder={q.type === 'essay' ? 'Rubric or grading notes...' : 'Accepted answer...'} />
+                            <textarea
+                              rows={3}
+                              value={q.correctAnswer ?? ''}
+                              onChange={e => updateQ(q.id, { correctAnswer: e.target.value })}
+                              className={inputCls}
+                              placeholder={q.type === 'essay' ? 'Rubric or grading notes...' : 'Accepted answer...'}
+                            />
+                          </div>
+                        )}
+
+                        {/* Fallback editor for question types without dedicated UI (calculated, drag_drop variants, etc.) */}
+                        {!['multiple_choice', 'true_false', 'matching', 'short_answer', 'numerical', 'essay'].includes(q.type) && (
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">Correct Answer / Configuration</label>
+                            <textarea
+                              rows={3}
+                              value={q.correctAnswer ?? ''}
+                              onChange={e => updateQ(q.id, { correctAnswer: e.target.value })}
+                              className={inputCls}
+                              placeholder="Enter the correct answer or configuration for this question type..."
+                            />
+                            <p className="text-xs text-gray-400 mt-1">Advanced editor for this question type is not yet available; the question will be saved with this answer text.</p>
                           </div>
                         )}
 
@@ -562,96 +564,14 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                 ))
               )}
 
-              {/* Add question form */}
-              {addingQuestion ? (
-                <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-                    <p className="text-sm font-semibold text-gray-900">Choose a question type to add</p>
-                    <button
-                      onClick={() => setAddingQuestion(false)}
-                      className="p-1 rounded hover:bg-gray-200 text-gray-400"
-                      type="button"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Two-panel body */}
-                  <div className="flex flex-col md:flex-row" style={{ minHeight: 280 }}>
-                    {/* Left panel — question type list */}
-                    <div className="md:w-72 border-r border-gray-200 overflow-y-auto max-h-80 md:max-h-96">
-                      <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Questions</p>
-                      <div className="divide-y divide-gray-100">
-                        {Object.entries(questionTypeLabels).map(([type, label]) => {
-                          const selected = newQType === type;
-                          return (
-                            <label
-                              key={type}
-                              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
-                              onClick={() => setNewQType(type as QuizQuestion['type'])}
-                            >
-                              <input
-                                type="radio"
-                                name="questionType"
-                                checked={selected}
-                                onChange={() => setNewQType(type as QuizQuestion['type'])}
-                                className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                              />
-                              <span className="flex items-center justify-center w-7 h-7 flex-shrink-0">
-                                {questionTypeIcon(type)}
-                              </span>
-                              <span className={`text-sm ${selected ? 'font-medium text-blue-900' : 'text-gray-700'}`}>
-                                {label}
-                              </span>
-                            </label>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Right panel — description */}
-                    <div className="flex-1 p-5 flex flex-col justify-between">
-                      <div>
-                        <p className="text-sm text-gray-700 leading-relaxed">
-                          {questionTypeDescriptions[newQType]}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Footer buttons */}
-                  <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50">
-                    <button
-                      type="button"
-                      onClick={() => setAddingQuestion(false)}
-                      className="px-5 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        console.log('[QuizCreator] addQuestion clicked, type:', newQType);
-                        addQuestion();
-                      }}
-                      className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Add
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[QuizCreator] Add Question button clicked'); setAddingQuestion(true); }}
-                  className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-                >
-                  <Plus className="w-4 h-4" /> Add Question
-                </button>
-              )}
+              {/* Always show Add Question dashed button — picker opens as a separate overlay modal */}
+              <button
+                type="button"
+                onClick={() => setAddingQuestion(true)}
+                className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+              >
+                <Plus className="w-4 h-4" /> Add Question
+              </button>
             </div>
 
             <div className="flex items-center justify-between p-5 border-t border-gray-200 flex-shrink-0">
@@ -660,8 +580,15 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                 <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button
                   type="button"
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[QuizCreator] Save Quiz clicked, questions:', questions.length); onSave({ name: settings.name, description: settings.description, questions, settings }); }}
-                  className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                  disabled={addingQuestion}
+                  onClick={() => {
+                    if (questions.length === 0) {
+                      const ok = window.confirm('You have not added any questions yet. Save quiz anyway?');
+                      if (!ok) return;
+                    }
+                    onSave({ name: settings.name, description: settings.description, questions, settings });
+                  }}
+                  className={`px-6 py-2 text-sm font-semibold rounded-lg ${addingQuestion ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                 >
                   Save Quiz ({questions.length} questions)
                 </button>
@@ -670,6 +597,83 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
           </>
         )}
       </div>
+
+      {/* Question type picker — separate overlay modal so it cannot click-through to Save Quiz */}
+      {addingQuestion && (
+        <div
+          className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4"
+          onClick={() => setAddingQuestion(false)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200 bg-gray-50">
+              <p className="text-base font-semibold text-gray-900">Choose a question type to add</p>
+              <button type="button" onClick={() => setAddingQuestion(false)} className="p-1 rounded hover:bg-gray-200 text-gray-400">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex flex-col md:flex-row flex-1 overflow-hidden" style={{ minHeight: 320 }}>
+              <div className="md:w-72 border-r border-gray-200 overflow-y-auto">
+                <p className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50">Questions</p>
+                <div className="divide-y divide-gray-100">
+                  {Object.entries(questionTypeLabels).map(([type, label]) => {
+                    const selected = newQType === type;
+                    return (
+                      <button
+                        type="button"
+                        key={type}
+                        onClick={() => setNewQType(type as QuizQuestion['type'])}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${selected ? 'bg-blue-50' : 'hover:bg-gray-50'}`}
+                      >
+                        <input
+                          type="radio"
+                          name="questionType"
+                          readOnly
+                          checked={selected}
+                          className="w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 pointer-events-none"
+                        />
+                        <span className="flex items-center justify-center w-7 h-7 flex-shrink-0">
+                          {questionTypeIcon(type)}
+                        </span>
+                        <span className={`text-sm ${selected ? 'font-medium text-blue-900' : 'text-gray-700'}`}>
+                          {label}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex-1 p-5 overflow-y-auto">
+                <h3 className="text-sm font-semibold text-gray-900 mb-2">{questionTypeLabels[newQType]}</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {questionTypeDescriptions[newQType]}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 px-5 py-3 border-t border-gray-200 bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setAddingQuestion(false)}
+                className="px-5 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => addQuestion()}
+                className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                Add Question
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
