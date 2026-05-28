@@ -192,7 +192,14 @@ export function CourseContent({ courseId }: CourseContentProps) {
         } catch (e: any) {
           failedQuestionCount++;
           console.error('Failed to create question:', e);
-          alert('Failed to save question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+          const data = e?.response?.data ?? {};
+          const errors = data.errors ?? {};
+          const errorMessages = Object.values(errors).flat().filter(Boolean);
+          const mainMessage = data.message || e?.message || 'Unknown error';
+          const displayMsg = errorMessages.length > 0
+            ? `${mainMessage}\n\n${errorMessages.join('\n')}`
+            : mainMessage;
+          alert('Failed to save question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + displayMsg);
         }
       }
     }
@@ -369,14 +376,21 @@ export function CourseContent({ courseId }: CourseContentProps) {
         } catch (e: any) {
           editFailedCount++;
           console.error('Failed to create question:', e);
-          alert('Failed to save question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+          const data = e?.response?.data ?? {};
+          const errors = data.errors ?? {};
+          const errorMessages = Object.values(errors).flat().filter(Boolean);
+          const mainMessage = data.message || e?.message || 'Unknown error';
+          const displayMsg = errorMessages.length > 0
+            ? `${mainMessage}\n\n${errorMessages.join('\n')}`
+            : mainMessage;
+          alert('Failed to save question "' + (q.questionText?.slice(0, 30) ?? '') + '": ' + displayMsg);
         }
       }
     }
 
     setIsSaving(false);
     if (editFailedCount > 0) {
-      alert(`Quiz updated but ${editFailedCount} of ${data.questions.length} questions failed to save.`);
+      alert(`Quiz updated but ${editFailedCount} of ${data.questions?.length ?? 0} questions failed to save.`);
     } else {
       showToast('Quiz updated successfully');
     }
