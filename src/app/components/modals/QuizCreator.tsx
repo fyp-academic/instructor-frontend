@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { X, Plus, Trash2, ChevronDown, ChevronUp, AlertCircle, HelpCircle, ListChecks, ToggleLeft, Link2, Type, Hash, FileText, Calculator, Move, MapPin, List } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { QuizQuestion, QuizAnswer } from '../../data/mockData';
@@ -61,13 +61,26 @@ const questionTypeIcon = (type: string) => {
 };
 
 export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCreatorProps) {
-  console.log('[QuizCreator] mounting, initialData:', initialData?.name ?? 'none', 'activityId:', activityId ?? 'none');
+  const mountCount = useRef(0);
+  mountCount.current += 1;
+  const isFirstRender = mountCount.current === 1;
+  if (isFirstRender) {
+    console.log('[QuizCreator] MOUNT initialData:', initialData?.name ?? 'none', 'activityId:', activityId ?? 'none');
+  }
+
+  useEffect(() => {
+    console.log('[QuizCreator] MOUNTED');
+    return () => console.log('[QuizCreator] UNMOUNTED');
+  }, []);
+
   const [step, setStep] = useState<'settings' | 'questions'>('settings');
   const [activeTab, setActiveTab] = useState('general');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [newQType, setNewQType] = useState<QuizQuestion['type']>('multiple_choice');
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
+
+  console.log('[QuizCreator] render #', mountCount.current, 'step:', step, 'questions:', questions.length, 'addingQuestion:', addingQuestion);
 
   const s = (initialData?.settings ?? {}) as Record<string, any>;
   const [settings, setSettings] = useState({
@@ -150,7 +163,11 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
     console.log('[QuizCreator] addQuestion adding question:', q.type, 'id:', q.id);
     setQuestions(p => [...p, q]);
     setExpandedQ(q.id);
-    setAddingQuestion(false);
+    // Delay closing picker to prevent click-through to Save Quiz button
+    setTimeout(() => {
+      console.log('[QuizCreator] closing question picker after delay');
+      setAddingQuestion(false);
+    }, 100);
   };
 
   const updateQ = (id: string, updates: Partial<QuizQuestion>) => {
@@ -614,7 +631,12 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                     </button>
                     <button
                       type="button"
-                      onClick={() => { console.log('[QuizCreator] addQuestion clicked, type:', newQType); addQuestion(); }}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        console.log('[QuizCreator] addQuestion clicked, type:', newQType);
+                        addQuestion();
+                      }}
                       className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Add
@@ -624,7 +646,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
               ) : (
                 <button
                   type="button"
-                  onClick={() => setAddingQuestion(true)}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[QuizCreator] Add Question button clicked'); setAddingQuestion(true); }}
                   className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                 >
                   <Plus className="w-4 h-4" /> Add Question
@@ -638,7 +660,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                 <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button
                   type="button"
-                  onClick={() => { console.log('[QuizCreator] Save Quiz clicked, questions:', questions.length); onSave({ name: settings.name, description: settings.description, questions, settings }); }}
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); console.log('[QuizCreator] Save Quiz clicked, questions:', questions.length); onSave({ name: settings.name, description: settings.description, questions, settings }); }}
                   className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                 >
                   Save Quiz ({questions.length} questions)
