@@ -118,23 +118,26 @@ export default function CourseView() {
 
       {/* Tab Navigation */}
       <div className="bg-white rounded-xl border border-gray-200 relative z-20">
-        <div className="flex items-center border-b border-gray-200 overflow-x-auto relative">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
-              className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
-                activeTab === tab.id
-                  ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
-                  : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
-              }`}
-            >
-              <tab.icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          ))}
-          {/* More dropdown */}
-          <div className="relative ml-auto shrink-0" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center border-b border-gray-200 relative">
+          {/* Scrollable tabs */}
+          <div className="flex items-center overflow-x-auto flex-1">
+            {tabs.map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => { setActiveTab(tab.id); setMoreOpen(false); }}
+                className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                  activeTab === tab.id
+                    ? 'border-indigo-600 text-indigo-700 bg-indigo-50'
+                    : 'border-transparent text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                }`}
+              >
+                <tab.icon className="w-4 h-4" />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+          {/* More dropdown — outside overflow container */}
+          <div className="relative shrink-0" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setMoreOpen(!moreOpen)}
               className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
