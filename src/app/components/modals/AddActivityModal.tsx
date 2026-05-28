@@ -137,8 +137,10 @@ export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
                         </div>
                         <span className="text-sm font-medium text-gray-800">{info.label}</span>
                         <div className="flex items-center gap-1.5 mt-1">
-                          <Info className="w-3.5 h-3.5 text-gray-400 cursor-help" title={info.description} />
-                          <button onClick={(e) => toggleStar(type, e)} className="p-0.5 rounded hover:bg-gray-200 transition-colors">
+                          <span title={info.description} className="cursor-help">
+                            <Info className="w-3.5 h-3.5 text-gray-400" />
+                          </span>
+                          <button type="button" onClick={(e) => toggleStar(type, e)} className="p-0.5 rounded hover:bg-gray-200 transition-colors">
                             <Star className={`w-3.5 h-3.5 ${isStarred ? 'fill-yellow-400 text-yellow-400' : 'text-gray-400'}`} />
                           </button>
                         </div>
@@ -157,8 +159,15 @@ export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
               {/* Footer */}
               <div className="px-5 py-3 border-t border-gray-200 flex items-center justify-end bg-gray-50">
                 <button
+                  type="button"
                   disabled={!selectedType}
-                  onClick={() => { if (selectedType) { onSelect(selectedType as ActivityType); onClose(); } }}
+                  onClick={() => {
+                    console.log('[AddActivityModal] clicked Add, selectedType:', selectedType);
+                    if (selectedType) {
+                      onSelect(selectedType as ActivityType);
+                      onClose();
+                    }
+                  }}
                   className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
                     selectedType ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}>

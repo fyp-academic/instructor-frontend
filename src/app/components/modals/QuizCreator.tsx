@@ -61,6 +61,7 @@ const questionTypeIcon = (type: string) => {
 };
 
 export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCreatorProps) {
+  console.log('[QuizCreator] mounting, initialData:', initialData?.name ?? 'none', 'activityId:', activityId ?? 'none');
   const [step, setStep] = useState<'settings' | 'questions'>('settings');
   const [activeTab, setActiveTab] = useState('general');
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -146,6 +147,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
       penalty: 0,
       correctAnswer: newQType === 'true_false' ? 'True' : undefined,
     };
+    console.log('[QuizCreator] addQuestion adding question:', q.type, 'id:', q.id);
     setQuestions(p => [...p, q]);
     setExpandedQ(q.id);
     setAddingQuestion(false);
@@ -203,7 +205,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
               <p className="text-xs text-gray-500">{step === 'settings' ? 'Configure quiz settings' : `${questions.length} question(s)`}</p>
             </div>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
+          <button type="button" onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
         </div>
 
         {step === 'settings' ? (
@@ -212,6 +214,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
             <div className="flex border-b border-gray-200 px-5 overflow-x-auto flex-shrink-0">
               {tabs.map(t => (
                 <button
+                  type="button"
                   key={t.id}
                   onClick={() => setActiveTab(t.id)}
                   className={`px-3 py-3 text-xs font-medium border-b-2 whitespace-nowrap transition-colors ${activeTab === t.id ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
@@ -380,9 +383,10 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
             </div>
 
             <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
-              <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
               <button
-                onClick={() => { if (!settings.name) { alert('Please enter a quiz name'); return; } setStep('questions'); }}
+                type="button"
+                onClick={() => { if (!settings.name) { alert('Please enter a quiz name'); return; } console.log('[QuizCreator] switching to questions step'); setStep('questions'); }}
                 className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
               >
                 Next: Add Questions →
@@ -413,7 +417,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400">{q.defaultMark} pt</span>
-                        <button onClick={e => { e.stopPropagation(); deleteQ(q.id); }} className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
+                        <button type="button" onClick={e => { e.stopPropagation(); deleteQ(q.id); }} className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
                           <Trash2 className="w-4 h-4" />
                         </button>
                         {expandedQ === q.id ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />}
@@ -479,11 +483,11 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                                   </div>
                                 </div>
                                 {(q.answers?.length || 0) > 2 && (
-                                  <button onClick={() => removeAnswer(q.id, a.id)} className="p-1 text-red-400 hover:text-red-600 mt-2"><Trash2 className="w-3 h-3" /></button>
+                                  <button type="button" onClick={() => removeAnswer(q.id, a.id)} className="p-1 text-red-400 hover:text-red-600 mt-2"><Trash2 className="w-3 h-3" /></button>
                                 )}
                               </div>
                             ))}
-                            <button onClick={() => addAnswer(q.id)} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                            <button type="button" onClick={() => addAnswer(q.id)} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
                               <Plus className="w-3 h-3" /> Add Choice
                             </button>
                           </div>
@@ -513,7 +517,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                                 <input value={pair.answer} onChange={e => { const pairs = [...(q.matchingPairs || [])]; pairs[pi].answer = e.target.value; updateQ(q.id, { matchingPairs: pairs }); }} placeholder="Answer" className={`${inputCls} flex-1`} />
                               </div>
                             ))}
-                            <button onClick={() => addMatchingPair(q.id)} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Pair</button>
+                            <button type="button" onClick={() => addMatchingPair(q.id)} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Pair</button>
                           </div>
                         )}
 
@@ -602,16 +606,16 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                   {/* Footer buttons */}
                   <div className="flex items-center justify-end gap-3 px-4 py-3 border-t border-gray-200 bg-gray-50">
                     <button
+                      type="button"
                       onClick={() => setAddingQuestion(false)}
                       className="px-5 py-2 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-100 transition-colors"
-                      type="button"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={addQuestion}
-                      className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                       type="button"
+                      onClick={() => { console.log('[QuizCreator] addQuestion clicked, type:', newQType); addQuestion(); }}
+                      className="px-5 py-2 text-sm font-medium bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       Add
                     </button>
@@ -619,6 +623,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                 </div>
               ) : (
                 <button
+                  type="button"
                   onClick={() => setAddingQuestion(true)}
                   className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm text-gray-500 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
                 >
@@ -628,11 +633,12 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
             </div>
 
             <div className="flex items-center justify-between p-5 border-t border-gray-200 flex-shrink-0">
-              <button onClick={() => setStep('settings')} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">← Back to Settings</button>
+              <button type="button" onClick={() => setStep('settings')} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">← Back to Settings</button>
               <div className="flex gap-3">
-                <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
                 <button
-                  onClick={() => onSave({ name: settings.name, description: settings.description, questions, settings })}
+                  type="button"
+                  onClick={() => { console.log('[QuizCreator] Save Quiz clicked, questions:', questions.length); onSave({ name: settings.name, description: settings.description, questions, settings }); }}
                   className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
                 >
                   Save Quiz ({questions.length} questions)
