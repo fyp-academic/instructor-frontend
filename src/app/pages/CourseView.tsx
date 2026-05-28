@@ -117,7 +117,7 @@ export default function CourseView() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-xl border border-gray-200">
+      <div className="bg-white rounded-xl border border-gray-200 relative z-20">
         <div className="flex items-center border-b border-gray-200 overflow-x-auto relative">
           {tabs.map(tab => (
             <button
