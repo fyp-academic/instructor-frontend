@@ -444,3 +444,19 @@ export const pollsApi = {
   getResults: (pollId: string) => api.get(`/polls/${pollId}/results`),
   endPoll:    (pollId: string) => api.post(`/polls/${pollId}/end`),
 };
+
+// ─── Adaptive Content (Instructor) ─────────────────────────────────────────
+export const instructorAdaptationApi = {
+  getSettings: (courseId: string, topicId: string) =>
+    api.get(`/instructor/settings/${courseId}/${topicId}`),
+  updateSettings: (courseId: string, topicId: string, data: Record<string, unknown>) =>
+    api.put(`/instructor/settings/${courseId}/${topicId}`, data),
+  auditLog: (params?: Record<string, unknown>) =>
+    api.get('/instructor/adaptations', { params }),
+  flag: (adaptationId: string) =>
+    api.post(`/instructor/adaptations/${adaptationId}/flag`),
+  unflag: (adaptationId: string) =>
+    api.post(`/instructor/adaptations/${adaptationId}/unflag`),
+  studentProfile: (studentId: string) =>
+    api.get(`/instructor/students/${studentId}/profile`),
+};
