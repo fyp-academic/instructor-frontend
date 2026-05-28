@@ -25,6 +25,8 @@ interface AdaptationRow {
   flagged: boolean;
   original_text: string;
   adapted_text: string;
+  profile_snapshot?: Record<string, any>;
+  instructor_settings_snapshot?: Record<string, any>;
 }
 
 interface AdaptationAuditLogProps {
@@ -254,17 +256,47 @@ export const AdaptationAuditLog: React.FC<AdaptationAuditLogProps> = ({ courseId
             <DialogTitle>Adaptation Detail</DialogTitle>
           </DialogHeader>
           {viewingRow && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div>
-                <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Original</h4>
-                <div className="max-h-96 overflow-y-auto rounded-lg border bg-muted/40 p-3">
-                  <SafeMarkdown content={viewingRow.original_text} />
+            <div className="space-y-4">
+              {/* Profile snapshot */}
+              {viewingRow.profile_snapshot && (
+                <div className="rounded-lg border bg-muted/30 p-3">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Student Profile Used</h4>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="rounded bg-background p-2 border">
+                      <span className="text-muted-foreground">Pace</span>
+                      <p className="font-semibold capitalize">{viewingRow.profile_snapshot.pace ?? 'medium'}</p>
+                    </div>
+                    <div className="rounded bg-background p-2 border">
+                      <span className="text-muted-foreground">Quiz Avg</span>
+                      <p className="font-semibold">{viewingRow.profile_snapshot.quiz_average ?? 0}%</p>
+                    </div>
+                    <div className="rounded bg-background p-2 border">
+                      <span className="text-muted-foreground">Modality</span>
+                      <p className="font-semibold capitalize">{viewingRow.profile_snapshot.preferred_modality ?? 'text'}</p>
+                    </div>
+                    <div className="rounded bg-background p-2 border">
+                      <span className="text-muted-foreground">Completion</span>
+                      <p className="font-semibold">{viewingRow.profile_snapshot.completion_rate ?? 0}%</p>
+                    </div>
+                    <div className="col-span-2 rounded bg-background p-2 border">
+                      <span className="text-muted-foreground">Weak Topics</span>
+                      <p className="font-semibold">{(viewingRow.profile_snapshot.weak_topics ?? []).join(', ') || 'None'}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Adapted</h4>
-                <div className="max-h-96 overflow-y-auto rounded-lg border bg-muted/40 p-3">
-                  <SafeMarkdown content={viewingRow.adapted_text} />
+              )}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Original</h4>
+                  <div className="max-h-96 overflow-y-auto rounded-lg border bg-muted/40 p-3">
+                    <SafeMarkdown content={viewingRow.original_text} />
+                  </div>
+                </div>
+                <div>
+                  <h4 className="mb-2 text-sm font-semibold text-muted-foreground">Adapted</h4>
+                  <div className="max-h-96 overflow-y-auto rounded-lg border bg-muted/40 p-3">
+                    <SafeMarkdown content={viewingRow.adapted_text} />
+                  </div>
                 </div>
               </div>
             </div>
