@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft, Users, Settings, BookOpen, BarChart2, Activity,
   ChevronDown, Edit3, Eye, EyeOff, Star, MoreHorizontal,
-  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image
+  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image, Sparkles
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CourseContent } from '../components/course/CourseContent';
@@ -11,6 +11,8 @@ import { ParticipantsTab } from '../components/course/ParticipantsTab';
 import { GradesTab } from '../components/course/GradesTab';
 import { ActivitiesTab } from '../components/course/ActivitiesTab';
 import { AssignmentsTab } from '../components/course/AssignmentsTab';
+import { AdaptationSettingsPanel } from '../components/instructor/AdaptationSettingsPanel';
+import { AdaptationAuditLog } from '../components/instructor/AdaptationAuditLog';
 
 type Tab = 'course' | 'settings' | 'participants' | 'grades' | 'assignments' | 'activities' | 'more';
 
@@ -53,6 +55,7 @@ export default function CourseView() {
 
   const moreItems = [
     { id: 'reports', label: 'Reports', icon: FileText },
+    { id: 'adaptive', label: 'Adaptive Content', icon: Sparkles },
     { id: 'questionbank', label: 'Question Bank', icon: Database },
     { id: 'competencies', label: 'Competencies', icon: Star },
     { id: 'badges', label: 'Badges', icon: Award },
@@ -586,6 +589,18 @@ function MoreTabContent({ subTab, course }: { subTab: string; course: any }) {
             <span className="text-sm text-gray-700">{crit}</span>
           </label>
         ))}
+      </div>
+    </div>
+  );
+
+  if (subTab === 'adaptive') return (
+    <div className="space-y-6">
+      <AdaptationSettingsPanel
+        courseId={course.id}
+        topicId={course.sections?.[0]?.id ?? ''}
+      />
+      <div className="mt-8">
+        <AdaptationAuditLog courseId={course.id} />
       </div>
     </div>
   );
