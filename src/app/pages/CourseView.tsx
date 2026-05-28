@@ -117,8 +117,8 @@ export default function CourseView() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        <div className="flex items-center border-b border-gray-200 overflow-x-auto">
+      <div className="bg-white rounded-xl border border-gray-200">
+        <div className="flex items-center border-b border-gray-200 overflow-x-auto relative">
           {tabs.map(tab => (
             <button
               key={tab.id}
@@ -134,7 +134,7 @@ export default function CourseView() {
             </button>
           ))}
           {/* More dropdown */}
-          <div className="relative ml-auto" onClick={e => e.stopPropagation()}>
+          <div className="relative ml-auto shrink-0" onClick={e => e.stopPropagation()}>
             <button
               onClick={() => setMoreOpen(!moreOpen)}
               className={`flex items-center gap-1.5 px-4 py-3.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
@@ -144,7 +144,7 @@ export default function CourseView() {
               <MoreHorizontal className="w-4 h-4" /> More <ChevronDown className="w-3 h-3" />
             </button>
             {moreOpen && (
-              <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-xl shadow-xl z-30 py-1 w-48 mt-0.5">
+              <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 w-48 mt-0.5">
                 {moreItems.map(item => (
                   <button
                     key={item.id}
