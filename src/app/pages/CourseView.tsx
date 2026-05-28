@@ -144,21 +144,18 @@ export default function CourseView() {
               <MoreHorizontal className="w-4 h-4" /> More <ChevronDown className="w-3 h-3" />
             </button>
             {moreOpen && (
-              <>
-                <div className="fixed inset-0 z-40" onClick={() => setMoreOpen(false)} />
-                <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 w-48 mt-0.5">
-                  {moreItems.map(item => (
-                    <button
-                      key={item.id}
-                      onClick={() => { setActiveTab('more'); setMoreSubTab(item.id); setMoreOpen(false); }}
-                      className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${moreSubTab === item.id && activeTab === 'more' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}
-                    >
-                      <item.icon className="w-4 h-4 text-gray-400" />
-                      {item.label}
-                    </button>
-                  ))}
-                </div>
-              </>
+              <div className="absolute right-0 top-full bg-white border border-gray-200 rounded-xl shadow-xl z-50 py-1 w-48 mt-0.5">
+                {moreItems.map(item => (
+                  <button
+                    key={item.id}
+                    onClick={() => { setActiveTab('more'); setMoreSubTab(item.id); setMoreOpen(false); }}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${moreSubTab === item.id && activeTab === 'more' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-700 hover:bg-gray-50'}`}
+                  >
+                    <item.icon className="w-4 h-4 text-gray-400" />
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             )}
           </div>
         </div>
