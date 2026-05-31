@@ -569,11 +569,11 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                                     className="text-xs border border-gray-200 rounded px-1.5 py-0.5 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                   >
                                     <option value="none">No numbering</option>
-                                    <option value="a,b,c...">a, b, c...</option>
-                                    <option value="A,B,C...">A, B, C...</option>
-                                    <option value="i,ii,iii...">i, ii, iii...</option>
-                                    <option value="I,II,III...">I, II, III...</option>
-                                    <option value="1,2,3...">1, 2, 3...</option>
+                                    <option value="a">a, b, c...</option>
+                                    <option value="A">A, B, C...</option>
+                                    <option value="i">i, ii, iii...</option>
+                                    <option value="I">I, II, III...</option>
+                                    <option value="1">1, 2, 3...</option>
                                   </select>
                                 </label>
                                 <label className="flex items-center gap-1.5 cursor-pointer">

@@ -153,7 +153,7 @@ export interface QuizQuestion {
   matchingPairs?: { question: string; answer: string }[];
   shuffleAnswers?: boolean;
   multipleAnswers?: boolean;
-  choiceNumbering?: 'none' | 'a,b,c...' | 'A,B,C...' | 'i,ii,iii...' | 'I,II,III...' | '1,2,3...';
+  choiceNumbering?: 'none' | 'a' | 'A' | 'i' | 'I' | '1';
   hints?: string[];
   penalty?: number;
 }
