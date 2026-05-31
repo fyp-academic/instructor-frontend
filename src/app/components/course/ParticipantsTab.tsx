@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Trash2, Shield, Mail, MoreVertical, Loader2 } from 'lucide-react';
+import { Search, UserPlus, Trash2, Shield, Mail, MoreVertical, Loader2, Users } from 'lucide-react';
 import { Participant } from '../../data/mockData';
 import { coursesApi } from '../../services/api';
+import { GroupManagementModal } from '../modals/GroupManagementModal';
 
 interface ParticipantsTabProps {
   courseId: string;
@@ -10,6 +11,7 @@ interface ParticipantsTabProps {
 export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showGroupModal, setShowGroupModal] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -99,12 +101,20 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
           <h2 className="font-semibold text-gray-900">Participants</h2>
           <p className="text-sm text-gray-500">{participants.length} enrolled users</p>
         </div>
-        <button
-          onClick={() => setShowEnrollModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700"
-        >
-          <UserPlus className="w-4 h-4" /> Enroll User
-        </button>
+        <div className="flex gap-2 items-center flex-wrap">
+          <button
+            onClick={() => setShowGroupModal(true)}
+            className="flex items-center gap-2 border border-gray-300 text-gray-700 px-4 py-2 rounded-xl text-sm font-semibold hover:bg-gray-50"
+          >
+            <Users className="w-4 h-4" /> Manage Groups
+          </button>
+          <button
+            onClick={() => setShowEnrollModal(true)}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-indigo-700"
+          >
+            <UserPlus className="w-4 h-4" /> Enroll User
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -251,6 +261,17 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
           </div>
         </div>
       )}
+
+      {/* Group Management Modal */}
+      <GroupManagementModal
+        courseId={courseId}
+        participants={participants}
+        isOpen={showGroupModal}
+        onClose={() => setShowGroupModal(false)}
+        onGroupsUpdated={() => {
+          // Groups have been updated, UI will refresh automatically
+        }}
+      />
     </div>
   );
 }

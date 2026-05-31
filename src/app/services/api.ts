@@ -460,3 +460,25 @@ export const instructorAdaptationApi = {
   studentProfile: (studentId: string) =>
     api.get(`/instructor/students/${studentId}/profile`),
 };
+
+// ─── Groups Management ────────────────────────────────────────────────────────
+export const groupsApi = {
+  list:           (courseId: string) => api.get(`/courses/${courseId}/groups`),
+  show:           (courseId: string, groupName: string) => api.get(`/courses/${courseId}/groups/${groupName}`),
+  addStudent:     (courseId: string, groupName: string, data: Record<string, unknown>) =>
+    api.post(`/courses/${courseId}/groups/${groupName}/add-student`, data),
+  removeStudent:  (courseId: string, groupName: string, userId: string) =>
+    api.delete(`/courses/${courseId}/groups/${groupName}/remove-student/${userId}`),
+  delete:         (courseId: string, groupName: string) =>
+    api.delete(`/courses/${courseId}/groups/${groupName}`),
+  rename:         (courseId: string, groupName: string, data: Record<string, unknown>) =>
+    api.put(`/courses/${courseId}/groups/${groupName}/rename`, data),
+};
+
+// ─── Essay Grading ────────────────────────────────────────────────────────────
+export const essayGradingApi = {
+  getEssayAttempts: (activityId: string) => api.get(`/activities/${activityId}/essay-attempts`),
+  gradeResponse:    (responseId: string, data: Record<string, unknown>) =>
+    api.put(`/quiz-attempt-responses/${responseId}/grade`, data),
+};
+

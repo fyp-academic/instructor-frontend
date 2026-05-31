@@ -178,6 +178,111 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
   };
 
   const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500';
+  
+  const [validationErrors, setValidationErrors] = useState<Record<string, string[]>>({});
+
+  // Comprehensive validation for all question types
+  const validateQuestions = (): { valid: boolean; errors: Record<string, string[]> } => {
+    const errors: Record<string, string[]> = {};
+    
+    questions.forEach((q, idx) => {
+      const qKey = `q_${idx}`;
+      const qErrors: string[] = [];
+      
+      // Check question text for all types
+      if (!q.questionText || !q.questionText.trim()) {
+        qErrors.push('Question text is required');
+      }
+      
+      switch (q.type) {
+        case 'multiple_choice':
+          // Multiple choice needs at least 2 answers
+          if (!q.answers || q.answers.length < 2) {
+            qErrors.push('Multiple choice requires at least 2 answer options');
+          }
+          // At least one answer must have positive grade (correct answer)
+          const hasCorrectMC = q.answers && q.answers.some(a => Number(a.grade) > 0);
+          if (!hasCorrectMC) {
+            qErrors.push('At least one answer must be marked as correct (grade > 0)');
+          }
+          // Each answer must have text
+          const emptyAnswers = q.answers?.filter(a => !a.text || !a.text.trim()).length || 0;
+          if (emptyAnswers > 0) {
+            qErrors.push(`${emptyAnswers} answer option(s) are empty`);
+          }
+          break;
+          
+        case 'true_false':
+          // True/False must have a correct answer selected
+          if (!q.correctAnswer) {
+            qErrors.push('True/False requires selecting a correct answer');
+          }
+          break;
+          
+        case 'matching':
+          // Matching needs at least 2 pairs
+          if (!q.matchingPairs || q.matchingPairs.length < 2) {
+            qErrors.push('Matching requires at least 2 question-answer pairs');
+          }
+          // Each pair must have both question and answer
+          const incompletePairs = q.matchingPairs?.filter(
+            p => !p.question?.trim() || !p.answer?.trim()
+          ).length || 0;
+          if (incompletePairs > 0) {
+            qErrors.push(`${incompletePairs} pair(s) have empty question or answer`);
+          }
+          break;
+          
+        case 'short_answer':
+          // Short answer needs at least one answer
+          if (!q.answers || q.answers.length === 0) {
+            qErrors.push('Short answer requires at least one model answer');
+          }
+          // Each answer must have text
+          const emptyShortAnswers = q.answers?.filter(a => !a.text || !a.text.trim()).length || 0;
+          if (emptyShortAnswers > 0) {
+            qErrors.push(`${emptyShortAnswers} model answer(s) are empty`);
+          }
+          break;
+          
+        case 'numerical':
+          // Numerical needs at least one answer
+          if (!q.answers || q.answers.length === 0) {
+            qErrors.push('Numerical requires at least one correct answer');
+          }
+          // Check that answers contain valid numbers
+          const invalidNumerical = q.answers?.filter(a => {
+            const val = Number(a.text);
+            return isNaN(val);
+          }).length || 0;
+          if (invalidNumerical > 0) {
+            qErrors.push(`${invalidNumerical} answer(s) are not valid numbers`);
+          }
+          break;
+          
+        case 'essay':
+          // Essay only needs question text (already checked above)
+          break;
+          
+        case 'drag_drop':
+          // Drag and drop needs at least one answer for dragging
+          if (!q.answers || q.answers.length === 0) {
+            qErrors.push('Drag and drop requires at least one draggable item');
+          }
+          break;
+          
+        default:
+          // For other types, basic validation only (question text)
+          break;
+      }
+      
+      if (qErrors.length > 0) {
+        errors[qKey] = qErrors;
+      }
+    });
+    
+    return { valid: Object.keys(errors).length === 0, errors };
+  };
 
   const tabs = [
     { id: 'general', label: 'General' },
@@ -402,18 +507,22 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                   <p className="text-sm text-gray-400 mt-1">Click "Add Question" to start building your quiz</p>
                 </div>
               ) : (
-                questions.map((q, qi) => (
-                  <div key={q.id} className="border border-gray-200 rounded-xl overflow-hidden">
+                questions.map((q, qi) => {
+                  const qKey = `q_${qi}`;
+                  const qErrors = validationErrors[qKey] || [];
+                  return (
+                  <div key={q.id} className={`border rounded-xl overflow-hidden ${qErrors.length > 0 ? 'border-red-300 bg-red-50' : 'border-gray-200'}`}>
                     <div
-                      className="flex items-center gap-3 p-4 bg-gray-50 cursor-pointer hover:bg-gray-100"
+                      className={`flex items-center gap-3 p-4 cursor-pointer ${qErrors.length > 0 ? 'bg-red-100 hover:bg-red-200' : 'bg-gray-50 hover:bg-gray-100'}`}
                       onClick={() => setExpandedQ(expandedQ === q.id ? null : q.id)}
                     >
-                      <div className="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-bold text-indigo-700">{qi + 1}</div>
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${qErrors.length > 0 ? 'bg-red-200 text-red-700' : 'bg-indigo-100 text-indigo-700'}`}>{qi + 1}</div>
                       <div className="flex-1 min-w-0">
                         <span className="text-xs text-indigo-600 font-medium">{questionTypeLabels[q.type]}</span>
                         <p className="text-sm text-gray-700 truncate">{q.questionText || '(No question text yet)'}</p>
                       </div>
                       <div className="flex items-center gap-2">
+                        {qErrors.length > 0 && <AlertCircle className="w-4 h-4 text-red-600" />}
                         <span className="text-xs text-gray-400">{q.defaultMark} pt</span>
                         <button type="button" onClick={e => { e.stopPropagation(); deleteQ(q.id); }} className="p-1 rounded hover:bg-red-100 text-gray-400 hover:text-red-500">
                           <Trash2 className="w-4 h-4" />
@@ -423,6 +532,14 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                     </div>
                     {expandedQ === q.id && (
                       <div className="p-4 space-y-4">
+                        {qErrors.length > 0 && (
+                          <div className="p-3 bg-red-100 border border-red-300 rounded-lg">
+                            <p className="text-sm font-semibold text-red-800 mb-1">Validation Errors:</p>
+                            <ul className="text-sm text-red-700 list-disc list-inside space-y-0.5">
+                              {qErrors.map((err, i) => <li key={i}>{err}</li>)}
+                            </ul>
+                          </div>
+                        )}
                         <div className="grid grid-cols-2 gap-4">
                           <div>
                             <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
@@ -513,6 +630,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                                 <input value={pair.question} onChange={e => { const pairs = [...(q.matchingPairs || [])]; pairs[pi].question = e.target.value; updateQ(q.id, { matchingPairs: pairs }); }} placeholder="Question" className={`${inputCls} flex-1`} />
                                 <span className="text-gray-400">→</span>
                                 <input value={pair.answer} onChange={e => { const pairs = [...(q.matchingPairs || [])]; pairs[pi].answer = e.target.value; updateQ(q.id, { matchingPairs: pairs }); }} placeholder="Answer" className={`${inputCls} flex-1`} />
+                                <button type="button" onClick={() => { const pairs = q.matchingPairs?.filter((_, i) => i !== pi); updateQ(q.id, { matchingPairs: pairs }); }} className="text-red-600 hover:text-red-800"><Trash2 className="w-4 h-4" /></button>
                               </div>
                             ))}
                             <button type="button" onClick={() => addMatchingPair(q.id)} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1"><Plus className="w-3 h-3" /> Add Pair</button>
@@ -561,7 +679,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                       </div>
                     )}
                   </div>
-                ))
+                )})
               )}
 
               {/* Always show Add Question dashed button — picker opens as a separate overlay modal */}
@@ -586,6 +704,22 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                       const ok = window.confirm('You have not added any questions yet. Save quiz anyway?');
                       if (!ok) return;
                     }
+                    
+                    // Validate all questions
+                    const { valid, errors } = validateQuestions();
+                    if (!valid) {
+                      setValidationErrors(errors);
+                      // Show error summary
+                      const errorCount = Object.values(errors).reduce((sum, errs) => sum + errs.length, 0);
+                      const errorSummary = Object.entries(errors)
+                        .map(([qKey, errs]) => `Question ${qKey.replace('q_', '')}: ${errs.join('; ')}`)
+                        .join('\n\n');
+                      alert(`Cannot save quiz: ${errorCount} validation error(s) found:\n\n${errorSummary}`);
+                      return;
+                    }
+                    
+                    // Clear errors and save
+                    setValidationErrors({});
                     onSave({ name: settings.name, description: settings.description, questions, settings });
                   }}
                   className={`px-6 py-2 text-sm font-semibold rounded-lg ${addingQuestion ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}

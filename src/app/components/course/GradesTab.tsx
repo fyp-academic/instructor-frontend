@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Search, CheckCircle, Clock, AlertCircle, XCircle, Loader2 } from 'lucide-react';
+import { Download, Search, CheckCircle, Clock, AlertCircle, XCircle, Loader2, BookOpen } from 'lucide-react';
 import { GradeItem, StudentGrade } from '../../data/mockData';
-import { gradesApi } from '../../services/api';
+import { gradesApi, essayGradingApi } from '../../services/api';
+import { EssayGradingModal } from '../modals/EssayGradingModal';
 
 interface GradesTabProps {
   courseId: string;
@@ -10,6 +11,9 @@ interface GradesTabProps {
 export function GradesTab({ courseId }: GradesTabProps) {
   const [grades, setGrades] = useState<GradeItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showEssayModal, setShowEssayModal] = useState(false);
+  const [selectedEssayResponse, setSelectedEssayResponse] = useState<any>(null);
+  const [selectedEssayStudent, setSelectedEssayStudent] = useState<string>('');
 
   useEffect(() => {
     setLoading(true);
@@ -108,6 +112,54 @@ export function GradesTab({ courseId }: GradesTabProps) {
     return 'bg-red-50';
   };
 
+  const openEssayGrading = (response: any, studentName: string) => {
+    setSelectedEssayResponse(response);
+    setSelectedEssayStudent(studentName);
+    setShowEssayModal(true);
+  };
+
+  const handleEssayGraded = () => {
+    // Reload grades after essay is graded
+    loadGrades();
+    setShowEssayModal(false);
+  };
+
+  const loadGrades = () => {
+    gradesApi.gradebook(courseId)
+      .then(r => {
+        const raw: Record<string, unknown>[] = r.data.data ?? r.data ?? [];
+        setGrades(raw.map(item => {
+          const gradeMax = Number(item.gradeMax ?? item.grade_max ?? 100);
+          const students: StudentGrade[] = ((item.students as Record<string, unknown>[]) ?? []).map(sg => {
+            const grade = sg.grade !== null && sg.grade !== undefined ? Number(sg.grade) : null;
+            const pct   = grade !== null && gradeMax > 0 ? Math.round((grade / gradeMax) * 100) : null;
+            return {
+              studentId:     String(sg.studentId   ?? sg.student_id   ?? ''),
+              studentName:   String(sg.studentName  ?? sg.student_name ?? ''),
+              grade,
+              percentage:    pct,
+              feedback:      sg.feedback ? String(sg.feedback) : undefined,
+              submittedDate: sg.submittedAt ? String(sg.submittedAt).split('T')[0] : undefined,
+              status: grade !== null
+                ? 'graded'
+                : sg.submittedAt
+                  ? 'submitted'
+                  : 'not_submitted',
+            } as StudentGrade;
+          });
+          return {
+            id:           String(item.id),
+            activityName: String(item.activityName ?? item.activity_name ?? ''),
+            activityType: String(item.activityType ?? item.activity_type ?? 'quiz') as GradeItem['activityType'],
+            gradeMax,
+            students,
+          } as GradeItem;
+        }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center py-16">
       <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
@@ -143,6 +195,12 @@ export function GradesTab({ courseId }: GradesTabProps) {
               Single Item
             </button>
           </div>
+          <button 
+            onClick={() => setView('essays')}
+            className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors flex items-center gap-1 ${view === 'essays' ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'text-gray-600 hover:text-gray-900 border border-gray-300'}`}
+          >
+            <BookOpen className="w-3 h-3" /> Essays
+          </button>
           <button className="flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50">
             <Download className="w-4 h-4" /> Export
           </button>
@@ -322,6 +380,31 @@ export function GradesTab({ courseId }: GradesTabProps) {
           )}
         </div>
       )}
+
+      {/* Essays View */}
+      {view === 'essays' && (
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <h3 className="font-semibold text-gray-900">Essays Pending Grading</h3>
+            <p className="text-xs text-gray-500 mt-0.5">View and grade essay submissions from your quizzes</p>
+          </div>
+          <div className="p-4">
+            <p className="text-sm text-gray-600 text-center py-8">
+              <BookOpen className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+              Select a quiz with essay questions from the grade items above to view pending essays.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Essay Grading Modal */}
+      <EssayGradingModal
+        isOpen={showEssayModal}
+        onClose={() => setShowEssayModal(false)}
+        essayResponse={selectedEssayResponse}
+        studentName={selectedEssayStudent}
+        onGraded={handleEssayGraded}
+      />
     </div>
   );
 }
