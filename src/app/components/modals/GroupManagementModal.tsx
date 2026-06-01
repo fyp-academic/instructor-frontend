@@ -38,6 +38,7 @@ export function GroupManagementModal({
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [studentToAdd, setStudentToAdd] = useState('');
   const [renamingGroup, setRenamingGroup] = useState<string | null>(null);
@@ -62,16 +63,13 @@ export function GroupManagementModal({
   };
 
   const handleCreateGroup = async () => {
-    if (!newGroupName.trim()) return;
+   if (!newGroupName.trim()) return;
     
-    try {
-      // Groups are created implicitly by adding students
-      // For now, we'll show a message that group will be created when first student is added
-      setNewGroupName('');
-      alert('Group will be created when you add the first student.');
-    } catch (err) {
-      console.error('Failed to create group:', err);
-    }
+   // Group will be created implicitly when first student is added
+   // For now, just select it and prompt user to add a student
+   setSelectedGroup(newGroupName.trim());
+   setNewGroupName('');
+   setIsCreatingGroup(false);
   };
 
   const handleAddStudent = async () => {
@@ -169,12 +167,47 @@ export function GroupManagementModal({
               <div className="flex items-center justify-between gap-2 mb-3">
                 <h3 className="font-medium text-sm text-slate-700">Groups ({groups.length})</h3>
                 <button
+                  onClick={() => setIsCreatingGroup(true)}
                   className="p-1 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700"
                   title="Create new group"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
               </div>
+
+              {isCreatingGroup && (
+                <div className="mb-3 flex gap-2">
+                  <input
+                    type="text"
+                    value={newGroupName}
+                    onChange={e => setNewGroupName(e.target.value)}
+                    placeholder="Group name..."
+                    className="flex-1 text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    autoFocus
+                    onKeyPress={e => {
+                      if (e.key === 'Enter') {
+                        handleCreateGroup();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleCreateGroup}
+                    disabled={!newGroupName.trim()}
+                    className="px-3 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Create
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsCreatingGroup(false);
+                      setNewGroupName('');
+                    }}
+                    className="px-3 py-2 text-xs border border-slate-300 text-slate-600 rounded-lg hover:bg-slate-50"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
 
               <div className="space-y-1 bg-slate-50 rounded-lg p-2">
                 {groups.length === 0 ? (
