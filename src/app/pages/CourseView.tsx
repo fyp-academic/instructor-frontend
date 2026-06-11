@@ -13,6 +13,7 @@ import { ActivitiesTab } from '../components/course/ActivitiesTab';
 import { AssignmentsTab } from '../components/course/AssignmentsTab';
 import { AdaptationSettingsPanel } from '../components/instructor/AdaptationSettingsPanel';
 import { AdaptationAuditLog } from '../components/instructor/AdaptationAuditLog';
+import { AiQuizGenerator } from '../components/AiQuizGenerator';
 
 type Tab = 'course' | 'settings' | 'participants' | 'grades' | 'assignments' | 'activities' | 'more';
 
@@ -507,12 +508,17 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
 }
 
 function MoreTabContent({ subTab, course }: { subTab: string; course: any }) {
+  const [showAiQuiz, setShowAiQuiz] = useState(false);
+
   const questionBankItems = [
     { category: 'Default', count: 12, difficulty: 'Mixed' },
     { category: 'Week 1', count: 8, difficulty: 'Easy' },
     { category: 'Week 2', count: 15, difficulty: 'Medium' },
     { category: 'Advanced', count: 5, difficulty: 'Hard' },
   ];
+
+  const sections: { id: string; title: string }[] =
+    course?.sections?.map((s: any) => ({ id: s.id, title: s.title })) ?? [];
 
   if (subTab === 'reports') return (
     <div className="space-y-4">
@@ -535,11 +541,30 @@ function MoreTabContent({ subTab, course }: { subTab: string; course: any }) {
 
   if (subTab === 'questionbank') return (
     <div className="space-y-4">
+      {showAiQuiz && (
+        <AiQuizGenerator
+          courseId={course?.id ?? ''}
+          sections={sections}
+          onClose={() => setShowAiQuiz(false)}
+          onPublished={(activityId, name) => {
+            setShowAiQuiz(false);
+            alert(`Quiz "${name}" published (hidden). Open it in Activities to make it visible.`);
+          }}
+        />
+      )}
       <div className="flex items-center justify-between">
         <h2 className="font-semibold text-gray-900">Question Bank</h2>
-        <button className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700">
-          + Add Question
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowAiQuiz(true)}
+            className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700"
+          >
+            <Sparkles size={14} /> Generate with AI
+          </button>
+          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">
+            + Add Question
+          </button>
+        </div>
       </div>
       <div className="space-y-2">
         {questionBankItems.map(item => (

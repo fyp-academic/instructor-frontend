@@ -264,6 +264,33 @@ export const quizApi = {
     api.post(`/questions/${questionId}/answers`, data),
 };
 
+// ─── AI Quiz Generator ───────────────────────────────────────────────────────
+export const aiQuizApi = {
+  generate: (courseId: string, data: {
+    section_id: string;
+    question_count?: number;
+    question_types?: string[];
+    difficulty?: 'easy' | 'medium' | 'hard';
+  }) => api.post(`/courses/${courseId}/ai-quiz/generate`, data),
+
+  publish: (courseId: string, data: {
+    section_id: string;
+    activity_name: string;
+    description?: string;
+    grade_max?: number;
+    existing_activity_id?: string | null;
+    questions: Array<{
+      type: string;
+      question_text: string;
+      bloom_level?: string;
+      difficulty?: string;
+      explanation?: string;
+      correct_answer?: string | null;
+      answers?: Array<{ text: string; is_correct: boolean; feedback?: string }>;
+    }>;
+  }) => api.post(`/courses/${courseId}/ai-quiz/publish`, data),
+};
+
 // ─── Lesson Pages ────────────────────────────────────────────────────────────
 export const lessonApi = {
   listPages:   (activityId: string)               => api.get(`/activities/${activityId}/lesson-pages`),
