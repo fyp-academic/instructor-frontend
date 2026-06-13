@@ -286,35 +286,37 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
   };
 
   const handleSave = () => {
-    // Send snake_case keys — the backend persists snake_case only, so spreading
-    // the camelCase form silently dropped every settings field on save.
+    // Send camelCase keys — updateCourse() is the single translation boundary that
+    // maps Partial<Course> (camelCase) to the snake_case API. Emitting snake_case here
+    // double-translated and dropped every multi-word field (only single-word names
+    // that match in both cases survived).
     const updates: any = {
       name: form.name,
-      short_name: form.shortName,
+      shortName: form.shortName,
       description: form.description,
       summary: form.summary,
-      id_number: form.idNumber,
-      category_id: form.categoryId || undefined,
+      idNumber: form.idNumber,
+      categoryId: form.categoryId || undefined,
       format: form.format,
       visibility: form.visibility,
       language: form.language,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
-      max_students: form.maxStudents ? parseInt(form.maxStudents) : undefined,
-      start_date: form.startDate || undefined,
-      end_date: form.endDate || undefined,
-      group_mode: form.groupMode,
-      self_enrollment: form.selfEnrollment,
-      enrollment_key: form.enrollmentKey,
-      enrollment_start_date: form.enrollmentStartDate || undefined,
-      enrollment_end_date: form.enrollmentEndDate || undefined,
-      grade_display_type: form.gradeDisplayType,
-      grade_passing_grade: form.gradePassingGrade ? parseInt(form.gradePassingGrade) : undefined,
-      completion_tracking: form.completionTracking,
-      max_upload_size: form.maxUploadSize ? parseInt(form.maxUploadSize) : undefined,
-      allowed_file_types: form.allowedFileTypes,
-      show_gradebook: form.showGradebook,
-      show_activity_reports: form.showActivityReports,
-      force_download: form.forceDownload,
+      maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
+      startDate: form.startDate || undefined,
+      endDate: form.endDate || undefined,
+      groupMode: form.groupMode,
+      selfEnrollment: form.selfEnrollment,
+      enrollmentKey: form.enrollmentKey,
+      enrollmentStartDate: form.enrollmentStartDate || undefined,
+      enrollmentEndDate: form.enrollmentEndDate || undefined,
+      gradeDisplayType: form.gradeDisplayType,
+      gradePassingGrade: form.gradePassingGrade ? parseInt(form.gradePassingGrade) : undefined,
+      completionTracking: form.completionTracking,
+      maxUploadSize: form.maxUploadSize ? parseInt(form.maxUploadSize) : undefined,
+      allowedFileTypes: form.allowedFileTypes,
+      showGradebook: form.showGradebook,
+      showActivityReports: form.showActivityReports,
+      forceDownload: form.forceDownload,
       image: form.image,
     };
     updateCourse(course.id, updates);
