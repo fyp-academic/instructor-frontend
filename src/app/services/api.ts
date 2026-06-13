@@ -30,7 +30,13 @@ api.interceptors.response.use(
 // ─── Auth ────────────────────────────────────────────────────────────────────
 export const authApi = {
   login: (email: string, password: string) =>
-    api.post('/auth/login', { email, password }),
+    api.post('/auth/login', {
+      email,
+      password,
+      // Sent explicitly so device/browser/OS are captured even if a proxy
+      // strips the User-Agent header before it reaches the API.
+      user_agent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    }),
   register: (data: Record<string, unknown>) =>
     api.post('/auth/register', data),
   me: () => api.get('/auth/me'),
