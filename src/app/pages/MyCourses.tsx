@@ -104,7 +104,7 @@ export default function MyCourses() {
           </div>
         </div>
 
-        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{String(course.description ?? '').replace(/<[^>]*>/g, '').trim()}</p>
+        <p className="text-xs text-gray-500 mt-2 line-clamp-2">{String(course.description ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()}</p>
 
         <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3 text-xs text-gray-400">

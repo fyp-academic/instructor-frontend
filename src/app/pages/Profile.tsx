@@ -62,6 +62,93 @@ interface ProfileData {
   registration_number?: string;
 }
 
+interface SelectFieldProps {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  editKey: string;
+  options: { value: string; label: string }[];
+  form: Record<string, unknown>;
+  editing: boolean;
+  setForm: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
+}
+
+const SelectField = ({ icon: Icon, label, value, editKey, options, form, editing, setForm }: SelectFieldProps) => (
+  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+      {editing ? (
+        <select
+          value={(form[editKey] as string) || ''}
+          onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
+          className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+        >
+          <option value="">Select {label}</option>
+          {options.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+      ) : (
+        <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
+      )}
+    </div>
+  </div>
+);
+
+interface FieldProps {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  editKey?: string;
+  type?: string;
+  form?: Record<string, unknown>;
+  editing?: boolean;
+  setForm?: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
+}
+
+const Field = ({ icon: Icon, label, value, editKey, type = 'text', form, editing, setForm }: FieldProps) => (
+  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
+    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
+    <div className="flex-1 min-w-0">
+      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
+      {editing && editKey ? (
+        editKey === 'bio' ? (
+          <textarea
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            rows={3}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+          />
+        ) : type === 'number' ? (
+          <input
+            type="number"
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        ) : type === 'date' ? (
+          <input
+            type="date"
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        ) : (
+          <input
+            type="text"
+            value={String(form?.[editKey] ?? '')}
+            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
+            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+        )
+      ) : (
+        <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
+      )}
+    </div>
+  </div>
+);
+
 export default function Profile() {
   const { currentUser, courses } = useApp();
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -195,93 +282,6 @@ export default function Profile() {
   const getDisplayName = () => {
     return profile?.instructor_profile?.full_name || profile?.name || '';
   };
-
-interface SelectFieldProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  editKey: string;
-  options: { value: string; label: string }[];
-  form: Record<string, unknown>;
-  editing: boolean;
-  setForm: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
-}
-
-const SelectField = ({ icon: Icon, label, value, editKey, options, form, editing, setForm }: SelectFieldProps) => (
-  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-    <div className="flex-1 min-w-0">
-      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-      {editing ? (
-        <select
-          value={(form[editKey] as string) || ''}
-          onChange={e => setForm(f => ({ ...f, [editKey]: e.target.value }))}
-          className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-        >
-          <option value="">Select {label}</option>
-          {options.map(opt => (
-            <option key={opt.value} value={opt.value}>{opt.label}</option>
-          ))}
-        </select>
-      ) : (
-        <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
-      )}
-    </div>
-  </div>
-);
-
-interface FieldProps {
-  icon: React.ElementType;
-  label: string;
-  value: string;
-  editKey?: string;
-  type?: string;
-  form?: Record<string, unknown>;
-  editing?: boolean;
-  setForm?: (updater: (prev: Record<string, unknown>) => Record<string, unknown>) => void;
-}
-
-const Field = ({ icon: Icon, label, value, editKey, type = 'text', form, editing, setForm }: FieldProps) => (
-  <div className="flex items-start gap-3 py-3 border-b border-gray-100 last:border-0">
-    <Icon className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />
-    <div className="flex-1 min-w-0">
-      <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">{label}</p>
-      {editing && editKey ? (
-        editKey === 'bio' ? (
-          <textarea
-            value={String(form?.[editKey] ?? '')}
-            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
-            rows={3}
-            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-          />
-        ) : type === 'number' ? (
-          <input
-            type="number"
-            value={String(form?.[editKey] ?? '')}
-            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
-            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        ) : type === 'date' ? (
-          <input
-            type="date"
-            value={String(form?.[editKey] ?? '')}
-            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
-            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        ) : (
-          <input
-            type="text"
-            value={String(form?.[editKey] ?? '')}
-            onChange={e => setForm?.(f => ({ ...f, [editKey]: e.target.value }))}
-            className="mt-1 w-full text-sm border border-gray-300 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-          />
-        )
-      ) : (
-        <p className="text-sm text-gray-800 mt-0.5">{value || '—'}</p>
-      )}
-    </div>
-  </div>
-);
 
   if (loading) {
     return (

@@ -14,6 +14,7 @@ import { AssignmentsTab } from '../components/course/AssignmentsTab';
 import { AdaptationSettingsPanel } from '../components/instructor/AdaptationSettingsPanel';
 import { AdaptationAuditLog } from '../components/instructor/AdaptationAuditLog';
 import { AiQuizGenerator } from '../components/AiQuizGenerator';
+import { RichTextEditor } from '../components/RichTextEditor';
 
 type Tab = 'course' | 'settings' | 'participants' | 'grades' | 'assignments' | 'activities' | 'more';
 
@@ -226,6 +227,8 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
       const v = (course as Record<string, unknown>)[camelKey] ?? (course as Record<string, unknown>)[snakeKey];
       return v === true || v === 'true' || v === 1 || v === '1';
     };
+    // <input type="date"> needs YYYY-MM-DD; tolerate ISO datetimes from the API.
+    const getDate = (camelKey: string, snakeKey: string) => String(getValue(camelKey, snakeKey)).slice(0, 10);
 
     let tagsValue = '';
     const tagsData = getValue('tags', 'tags');
@@ -241,8 +244,8 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
       description: String(getValue('description', 'description')),
       summary: String(getValue('summary', 'summary')),
       idNumber: String(getValue('idNumber', 'id_number')),
-      startDate: String(getValue('startDate', 'start_date')),
-      endDate: String(getValue('endDate', 'end_date')),
+      startDate: getDate('startDate', 'start_date'),
+      endDate: getDate('endDate', 'end_date'),
       maxStudents: String(getValue('maxStudents', 'max_students')),
       visibility: (getValue('visibility', 'visibility') as 'shown' | 'hidden') || 'shown',
       format: (getValue('format', 'format') as 'topics' | 'weekly' | 'social') || 'topics',
@@ -252,8 +255,8 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
       groupMode: (getValue('groupMode', 'group_mode') as 'none' | 'separate' | 'visible') || 'none',
       selfEnrollment: getBool('selfEnrollment', 'self_enrollment'),
       enrollmentKey: String(getValue('enrollmentKey', 'enrollment_key')),
-      enrollmentStartDate: String(getValue('enrollmentStartDate', 'enrollment_start_date')),
-      enrollmentEndDate: String(getValue('enrollmentEndDate', 'enrollment_end_date')),
+      enrollmentStartDate: getDate('enrollmentStartDate', 'enrollment_start_date'),
+      enrollmentEndDate: getDate('enrollmentEndDate', 'enrollment_end_date'),
       gradeDisplayType: (getValue('gradeDisplayType', 'grade_display_type') as 'percentage' | 'letter' | 'points' | 'real') || 'percentage',
       gradePassingGrade: String(getValue('gradePassingGrade', 'grade_passing_grade') || '50'),
       completionTracking: getBool('completionTracking', 'completion_tracking'),
@@ -283,10 +286,36 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
   };
 
   const handleSave = () => {
+    // Send snake_case keys — the backend persists snake_case only, so spreading
+    // the camelCase form silently dropped every settings field on save.
     const updates: any = {
-      ...form,
-      maxStudents: form.maxStudents ? parseInt(form.maxStudents) : undefined,
+      name: form.name,
+      short_name: form.shortName,
+      description: form.description,
+      summary: form.summary,
+      id_number: form.idNumber,
+      category_id: form.categoryId || undefined,
+      format: form.format,
+      visibility: form.visibility,
+      language: form.language,
       tags: form.tags.split(',').map(t => t.trim()).filter(Boolean),
+      max_students: form.maxStudents ? parseInt(form.maxStudents) : undefined,
+      start_date: form.startDate || undefined,
+      end_date: form.endDate || undefined,
+      group_mode: form.groupMode,
+      self_enrollment: form.selfEnrollment,
+      enrollment_key: form.enrollmentKey,
+      enrollment_start_date: form.enrollmentStartDate || undefined,
+      enrollment_end_date: form.enrollmentEndDate || undefined,
+      grade_display_type: form.gradeDisplayType,
+      grade_passing_grade: form.gradePassingGrade ? parseInt(form.gradePassingGrade) : undefined,
+      completion_tracking: form.completionTracking,
+      max_upload_size: form.maxUploadSize ? parseInt(form.maxUploadSize) : undefined,
+      allowed_file_types: form.allowedFileTypes,
+      show_gradebook: form.showGradebook,
+      show_activity_reports: form.showActivityReports,
+      force_download: form.forceDownload,
+      image: form.image,
     };
     updateCourse(course.id, updates);
     setSaved(true);
@@ -376,11 +405,11 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
         <h3 className="text-sm font-medium text-gray-600 uppercase tracking-wide">Description</h3>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Course Summary</label>
-          <textarea value={form.summary} onChange={e => setF('summary', e.target.value)} rows={3} className={inputCls} />
+          <RichTextEditor value={form.summary} onChange={v => setF('summary', v)} placeholder="Brief summary shown on course listings..." minHeight={120} />
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Course Description</label>
-          <textarea value={form.description} onChange={e => setF('description', e.target.value)} rows={4} className={inputCls} />
+          <RichTextEditor value={form.description} onChange={v => setF('description', v)} placeholder="Full description of the course, objectives, and outcomes..." minHeight={200} />
         </div>
       </div>
 
