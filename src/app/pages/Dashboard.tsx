@@ -85,7 +85,7 @@ export default function Dashboard() {
             <Plus className="w-4 h-4" /> Create Course
           </button>
           <button
-            onClick={() => navigate('/categories')}
+            onClick={() => navigate('/categories', { state: { openCreate: true } })}
             className="flex items-center gap-2 bg-indigo-700 text-white border border-indigo-500 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors"
           >
             <FolderPlus className="w-4 h-4" /> Add Category

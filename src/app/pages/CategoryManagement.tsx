@@ -1,15 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { FolderPlus, Edit, Trash2, ChevronRight, ChevronDown, FolderOpen, Folder, Search, Plus, X, Check } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Category } from '../data/mockData';
 
 export default function CategoryManagement() {
   const { categories, addCategory, updateCategory, deleteCategory } = useApp();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set(['cat1', 'cat4']));
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
-  const [form, setForm] = useState({ name: '', description: '', parentId: '', idNumber: '' });
+  const [form, setForm] = useState<{ name: string; description: string; parentId: string; idNumber: string; type: 'parent' | 'sub' }>({ name: '', description: '', parentId: '', idNumber: '', type: 'parent' });
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const rootCategories = categories.filter(c => !c.parentId);
@@ -30,21 +33,41 @@ export default function CategoryManagement() {
 
   const openCreate = () => {
     setEditingCategory(null);
-    setForm({ name: '', description: '', parentId: '', idNumber: '' });
+    setForm({ name: '', description: '', parentId: '', idNumber: '', type: 'parent' });
     setErrors({});
     setShowModal(true);
   };
 
   const openEdit = (cat: Category) => {
     setEditingCategory(cat);
-    setForm({ name: cat.name, description: cat.description, parentId: cat.parentId || '', idNumber: cat.idNumber });
+    setForm({ name: cat.name, description: cat.description, parentId: cat.parentId || '', idNumber: cat.idNumber, type: cat.parentId ? 'sub' : 'parent' });
     setErrors({});
     setShowModal(true);
   };
 
+  const openAddSubcategory = (parent: Category) => {
+    setEditingCategory(null);
+    setForm({ name: '', description: '', parentId: parent.id, idNumber: '', type: 'sub' });
+    setErrors({});
+    setShowModal(true);
+  };
+
+  // Open the create modal directly when arriving from a quick-create action.
+  useEffect(() => {
+    if ((location.state as { openCreate?: boolean } | null)?.openCreate) {
+      setEditingCategory(null);
+      setForm({ name: '', description: '', parentId: '', idNumber: '', type: 'parent' });
+      setErrors({});
+      setShowModal(true);
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.name.trim()) e.name = 'Category name is required';
+    if (form.type === 'sub' && !form.parentId) e.parentId = 'Select a parent category';
     return e;
   };
 
@@ -52,12 +75,16 @@ export default function CategoryManagement() {
     const e = validate();
     if (Object.keys(e).length > 0) { setErrors(e); return; }
 
+    // Top-level categories never carry a parent. An empty string is normalized
+    // to null by the API, which also clears a parent when demoting a subcategory.
+    const parentId = form.type === 'sub' ? form.parentId : '';
+
     try {
       if (editingCategory) {
         await updateCategory(editingCategory.id, {
           name: form.name,
           description: form.description,
-          parentId: form.parentId || undefined,
+          parentId,
           idNumber: form.idNumber,
         });
       } else {
@@ -65,7 +92,7 @@ export default function CategoryManagement() {
           id: `temp_${Date.now()}`,
           name: form.name,
           description: form.description,
-          parentId: form.parentId || undefined,
+          parentId,
           idNumber: form.idNumber,
           courseCount: 0,
           childCount: 0,
@@ -145,7 +172,7 @@ export default function CategoryManagement() {
           {/* Actions */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
             <button
-              onClick={() => { setForm({ name: '', description: '', parentId: cat.id, idNumber: '' }); setEditingCategory(null); setErrors({}); setShowModal(true); }}
+              onClick={() => openAddSubcategory(cat)}
               title="Add subcategory"
               className="p-1.5 rounded-lg hover:bg-indigo-100 text-gray-400 hover:text-indigo-600"
             >
@@ -170,6 +197,16 @@ export default function CategoryManagement() {
 
   // Stats
   const totalCourses = categories.reduce((sum, c) => sum + c.courseCount, 0);
+
+  // Modal helpers — enforce a strict two-level hierarchy.
+  const topLevelCategories = categories.filter(c => !c.parentId && (!editingCategory || c.id !== editingCategory.id));
+  const editingHasChildren = !!editingCategory && categories.some(c => c.parentId === editingCategory.id);
+  const selectedParent = categories.find(c => c.id === form.parentId);
+  const modalTitle = editingCategory
+    ? 'Edit Category'
+    : form.type === 'sub'
+      ? (selectedParent ? `Add Subcategory under ${selectedParent.name}` : 'Add Subcategory')
+      : 'Add Parent Category';
 
   return (
     <div className="space-y-6">
@@ -262,15 +299,46 @@ export default function CategoryManagement() {
       {showModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-5 border-b border-gray-200">
-              <h3 className="text-lg font-bold text-gray-900">
-                {editingCategory ? 'Edit Category' : 'Add New Category'}
-              </h3>
-              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+            <div className="flex items-start justify-between p-5 border-b border-gray-200">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900">{modalTitle}</h3>
+                <p className="text-xs text-gray-500 mt-0.5">Categories have two levels: a top-level <span className="font-medium text-gray-600">parent</span> (e.g. “Computing &amp; Technology”) and its <span className="font-medium text-gray-600">subcategories</span> (e.g. “Computer Science”).</p>
+              </div>
+              <button onClick={() => setShowModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 flex-shrink-0">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <div className="p-5 space-y-4">
+              {/* Category type */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1.5">Category Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {([
+                    { value: 'parent', label: 'Top-level (Parent)', desc: 'A main category' },
+                    { value: 'sub', label: 'Subcategory', desc: 'Nested under a parent' },
+                  ] as const).map(opt => {
+                    const disabled = opt.value === 'sub' && editingHasChildren;
+                    const active = form.type === opt.value;
+                    return (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        disabled={disabled}
+                        onClick={() => setForm(f => ({ ...f, type: opt.value, parentId: opt.value === 'parent' ? '' : f.parentId }))}
+                        className={`text-left rounded-lg border px-3 py-2 transition-colors ${
+                          active ? 'border-indigo-500 bg-indigo-50 ring-1 ring-indigo-500' : 'border-gray-300 hover:bg-gray-50'
+                        } ${disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <span className={`block text-sm font-semibold ${active ? 'text-indigo-700' : 'text-gray-800'}`}>{opt.label}</span>
+                        <span className="block text-[11px] text-gray-400">{opt.desc}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+                {editingHasChildren && (
+                  <p className="text-xs text-amber-600 mt-1.5">This category has subcategories and must stay top-level.</p>
+                )}
+              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Category Name <span className="text-red-500">*</span></label>
                 <input
@@ -295,19 +363,32 @@ export default function CategoryManagement() {
                 />
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
-                <select
-                  value={form.parentId}
-                  onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                >
-                  <option value="">Top-level category (no parent)</option>
-                  {categories.filter(c => !editingCategory || c.id !== editingCategory.id).map(c => (
-                    <option key={c.id} value={c.id}>{c.name}</option>
-                  ))}
-                </select>
-              </div>
+              {form.type === 'sub' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Parent Category <span className="text-red-500">*</span></label>
+                  <select
+                    value={form.parentId}
+                    onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}
+                    className={`w-full border ${errors.parentId ? 'border-red-400' : 'border-gray-300'} rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white`}
+                  >
+                    <option value="">Select a parent category…</option>
+                    {topLevelCategories.map(c => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  {errors.parentId && <p className="text-xs text-red-600 mt-1">{errors.parentId}</p>}
+                  {topLevelCategories.length === 0 && (
+                    <p className="text-xs text-amber-600 mt-1">No top-level categories yet. Create a parent category first.</p>
+                  )}
+                  {selectedParent && form.name.trim() && (
+                    <p className="text-xs text-gray-500 mt-1.5">
+                      Path: <span className="font-medium text-gray-700">{selectedParent.name}</span>
+                      <span className="mx-1">›</span>
+                      <span className="font-medium text-gray-700">{form.name.trim()}</span>
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
