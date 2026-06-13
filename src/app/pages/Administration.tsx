@@ -455,7 +455,7 @@ export default function Administration() {
       </div>
 
       {/* Overview stats - role-based */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div data-tour="admin-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {(isAdmin ? (
           // Admin sees all stats
           [
@@ -486,11 +486,12 @@ export default function Administration() {
       </div>
 
       {/* Tab navigation */}
-      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+      <div data-tour="admin-tabs" className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <div className="flex border-b border-gray-200 overflow-x-auto">
           {tabs.map(tab => (
             <button
               key={tab.id}
+              data-tour={`admin-tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 px-5 py-3.5 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
                 activeTab === tab.id ? 'border-indigo-600 text-indigo-700 bg-indigo-50' : 'border-transparent text-gray-600 hover:text-gray-900'

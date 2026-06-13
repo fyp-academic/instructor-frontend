@@ -40,12 +40,12 @@ export function Header() {
   }, []);
 
   const navLinks = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/courses', label: 'My Courses', icon: BookOpen },
-    { to: '/sessions', label: 'Live Sessions', icon: Video },
-    { to: '/engagement', label: 'Engagement', icon: BarChart2 },
-    { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert },
-    { to: '/administration', label: 'Administration', icon: Settings },
+    { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+    { to: '/courses', label: 'My Courses', icon: BookOpen, tourId: 'nav-courses' },
+    { to: '/sessions', label: 'Live Sessions', icon: Video, tourId: 'nav-sessions' },
+    { to: '/engagement', label: 'Engagement', icon: BarChart2, tourId: 'nav-engagement' },
+    { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert, tourId: 'nav-proctoring' },
+    { to: '/administration', label: 'Administration', icon: Settings, tourId: 'nav-administration' },
   ];
 
   const isActive = (path: string) => {
@@ -74,6 +74,7 @@ export function Header() {
           {navLinks.map(link => (
             <button
               key={link.to}
+              data-tour={link.tourId}
               onClick={() => navigate(link.to)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
                 isActive(link.to)
@@ -88,7 +89,7 @@ export function Header() {
         </nav>
 
         {/* Search */}
-        <div className={`hidden sm:flex items-center gap-2 bg-indigo-800 rounded-lg px-3 py-1.5 ml-auto transition-all ${searchFocused ? 'ring-2 ring-indigo-400' : ''}`}>
+        <div data-tour="search" className={`hidden sm:flex items-center gap-2 bg-indigo-800 rounded-lg px-3 py-1.5 ml-auto transition-all ${searchFocused ? 'ring-2 ring-indigo-400' : ''}`}>
           <Search className="w-4 h-4 text-indigo-300 flex-shrink-0" />
           <input
             type="text"
@@ -110,6 +111,7 @@ export function Header() {
         <div className="flex items-center gap-1 ml-auto sm:ml-2">
           {/* Edit Mode Toggle */}
           <button
+            data-tour="edit-mode"
             onClick={toggleEditMode}
             className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
               editMode ? 'bg-amber-500 text-white' : 'text-indigo-200 hover:bg-indigo-800'
@@ -121,7 +123,7 @@ export function Header() {
           </button>
 
           {/* Notifications */}
-          <div className="relative" ref={notifRef}>
+          <div className="relative" ref={notifRef} data-tour="notifications">
             <button
               onClick={() => { setNotifOpen(!notifOpen); setMsgOpen(false); setProfileOpen(false); }}
               className="relative p-2 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
@@ -167,7 +169,7 @@ export function Header() {
           </div>
 
           {/* Messaging */}
-          <div className="relative" ref={msgRef}>
+          <div className="relative" ref={msgRef} data-tour="messages">
             <button
               onClick={() => { setMsgOpen(!msgOpen); setNotifOpen(false); setProfileOpen(false); }}
               className="relative p-2 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
@@ -216,7 +218,7 @@ export function Header() {
           </div>
 
           {/* Profile */}
-          <div className="relative" ref={profileRef}>
+          <div className="relative" ref={profileRef} data-tour="profile">
             <button
               onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); setMsgOpen(false); }}
               className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"

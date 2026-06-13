@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createBrowserRouter, Navigate, Outlet } from 'react-router';
 import { Layout } from './components/Layout';
 import { useApp } from './context/AppContext';
@@ -44,47 +44,68 @@ function LandingRedirect() {
 function RootWithOnboarding({ children }: { children?: React.ReactNode }) {
   const { showOnboarding, setShowOnboarding, onboardingCompleted } = useApp();
   const [showOnboardingPrompt, setShowOnboardingPrompt] = useState(false);
+  const autoStarted = useRef(false);
 
+  // Auto-launch the guided tour on first login.
   useEffect(() => {
+    if (onboardingCompleted || autoStarted.current) return;
     const timer = setTimeout(() => {
-      if (!onboardingCompleted) setShowOnboardingPrompt(true);
-    }, 1500);
+      if (!onboardingCompleted) {
+        autoStarted.current = true;
+        setShowOnboarding(true);
+      }
+    }, 1200);
     return () => clearTimeout(timer);
-  }, [onboardingCompleted]);
+  }, [onboardingCompleted, setShowOnboarding]);
+
+  // Once the tour has been auto-started and then dismissed without finishing,
+  // offer a subtle way back in instead of forcing it again.
+  const showPrompt = showOnboardingPrompt && !onboardingCompleted && !showOnboarding;
 
   return (
     <>
       {children ?? <Outlet />}
       {showOnboarding && (
-        <OnboardingTutorial onDismiss={() => setShowOnboarding(false)} />
+        <OnboardingTutorial
+          onDismiss={() => {
+            setShowOnboarding(false);
+            if (!onboardingCompleted) setShowOnboardingPrompt(true);
+          }}
+        />
       )}
-      {showOnboardingPrompt && !onboardingCompleted && !showOnboarding && (
-        <div className="fixed bottom-6 right-6 z-50 bg-white border border-indigo-200 rounded-2xl shadow-2xl p-4 max-w-xs">
-          <div className="flex items-start gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0">
-              <span className="text-white text-lg">👋</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-gray-900">New to EduAI LMS?</p>
-              <p className="text-xs text-gray-500 mt-0.5">Take the guided tutorial to get started quickly.</p>
-              <div className="flex gap-2 mt-3">
-                <button
-                  onClick={() => { setShowOnboarding(true); setShowOnboardingPrompt(false); }}
-                  className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded-lg hover:bg-indigo-700 font-medium"
-                >
-                  Start Tutorial
-                </button>
-                <button
-                  onClick={() => setShowOnboardingPrompt(false)}
-                  className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5"
-                >
-                  Maybe later
+      {showPrompt && (
+        <div className="fixed bottom-6 right-6 z-50 w-[19rem] max-w-[calc(100vw-3rem)] animate-[apes-prompt-in_.4s_ease]">
+          <style>{`@keyframes apes-prompt-in { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }`}</style>
+          <div className="relative bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 overflow-hidden">
+            <div className="h-1 bg-gradient-to-r from-indigo-500 to-purple-600" />
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg shadow-indigo-500/30">
+                  <span className="text-white text-lg">✨</span>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-bold text-gray-900">New here?</p>
+                  <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">Take the 60-second guided tour to learn your way around.</p>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => { setShowOnboarding(true); setShowOnboardingPrompt(false); }}
+                      className="text-xs font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-3 py-1.5 rounded-lg hover:from-indigo-700 hover:to-purple-700 shadow-md shadow-indigo-500/25"
+                    >
+                      Take the tour
+                    </button>
+                    <button
+                      onClick={() => setShowOnboardingPrompt(false)}
+                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1.5"
+                    >
+                      Maybe later
+                    </button>
+                  </div>
+                </div>
+                <button onClick={() => setShowOnboardingPrompt(false)} className="text-gray-300 hover:text-gray-500 flex-shrink-0">
+                  <span className="text-sm">✕</span>
                 </button>
               </div>
             </div>
-            <button onClick={() => setShowOnboardingPrompt(false)} className="text-gray-400 hover:text-gray-600 flex-shrink-0">
-              <span className="text-sm">✕</span>
-            </button>
           </div>
         </div>
       )}
