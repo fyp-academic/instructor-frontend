@@ -20,7 +20,7 @@ function getEchoInstance(): Echo<'reverb'> | null {
       wssPort:      Number(import.meta.env.VITE_REVERB_PORT),
       forceTLS:     true,
       enabledTransports: ['ws', 'wss'],
-      authEndpoint: 'https://api.codagenz.com/broadcasting/auth',
+      authEndpoint: 'https://api.codagenz.com/api/broadcasting/auth',
       auth: { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` } },
     } as ConstructorParameters<typeof Echo>[0]);
   }

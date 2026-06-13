@@ -85,6 +85,7 @@ export default function Administration() {
   const [addForm, setAddForm]           = useState<typeof emptyStudentForm | typeof emptyInstructorForm>(emptyStudentForm);
   const [addLoading, setAddLoading]     = useState(false);
   const [addError, setAddError]         = useState('');
+  const [flash, setFlash]               = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const [parsedReg, setParsedReg]       = useState<{
     nationality?: string;
     flag?: string;
@@ -437,6 +438,19 @@ export default function Administration() {
 
   return (
     <div className="space-y-6" onClick={() => setMenuOpenId(null)}>
+      {/* Flash toast */}
+      {flash && (
+        <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[200] animate-[apes-flash-in_.3s_ease]">
+          <style>{`@keyframes apes-flash-in { from { opacity:0; transform: translate(-50%, -8px); } to { opacity:1; transform: translate(-50%, 0); } }`}</style>
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-xl shadow-2xl ring-1 ${
+            flash.type === 'success' ? 'bg-green-600 text-white ring-green-700/30' : 'bg-red-600 text-white ring-red-700/30'
+          }`}>
+            {flash.type === 'success' ? <CheckCircle className="w-5 h-5 flex-shrink-0" /> : <AlertTriangle className="w-5 h-5 flex-shrink-0" />}
+            <span className="text-sm font-medium">{flash.message}</span>
+            <button onClick={() => setFlash(null)} className="ml-1 opacity-80 hover:opacity-100"><X className="w-4 h-4" /></button>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
@@ -1766,11 +1780,15 @@ export default function Administration() {
                       : { ...addForm, password_confirmation: addForm.password, degree_programme_id: (addForm as typeof emptyStudentForm).degree_programme_id, auto_verify: true };
                     const r = await authApi.register(payload);
                     const created = r.data.user ?? r.data;
+                    const createdName = (created as { name?: string })?.name ?? addForm.name;
+                    const roleLabel = addFormRole.charAt(0).toUpperCase() + addFormRole.slice(1);
                     setUsers(prev => [created as UserRow, ...prev]);
                     setShowAddUser(false);
                     setAddForm(addFormRole === 'instructor' ? emptyInstructorForm : emptyStudentForm);
                     setAddFormRole('student');
                     setParsedReg(null);
+                    setFlash({ type: 'success', message: `${roleLabel} “${createdName}” created successfully. They can sign in immediately.` });
+                    setTimeout(() => setFlash(null), 5000);
                   } catch (e: unknown) {
                     const msg = (e as {response?: {data?: {errors?: Record<string, string[]>; message?: string}}})?.response?.data?.errors
                       ? Object.values((e as {response?: {data?: {errors?: Record<string, string[]>}}}).response!.data!.errors!).flat().join(', ')

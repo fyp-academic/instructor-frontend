@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router';
 import {
   Bell, MessageSquare, User, ChevronDown, Search, BookOpen,
   LayoutDashboard, Settings, LogOut, Edit3, X,
-  CheckCheck, Menu, Puzzle, BellRing, Video, BarChart2, ShieldAlert
+  CheckCheck, Menu, Puzzle, BellRing, Video, BarChart2, ShieldAlert, GraduationCap
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
@@ -39,14 +39,22 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const navLinks = [
-    { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
-    { to: '/courses', label: 'My Courses', icon: BookOpen, tourId: 'nav-courses' },
-    { to: '/sessions', label: 'Live Sessions', icon: Video, tourId: 'nav-sessions' },
-    { to: '/engagement', label: 'Engagement', icon: BarChart2, tourId: 'nav-engagement' },
-    { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert, tourId: 'nav-proctoring' },
-    { to: '/administration', label: 'Administration', icon: Settings, tourId: 'nav-administration' },
-  ];
+  // Role-aware navigation: admins handle administration & oversight; instructors
+  // handle course delivery. Each role only sees what it is allowed to use.
+  const navLinks = isAdmin
+    ? [
+        { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+        { to: '/administration', label: 'Administration', icon: Settings, tourId: 'nav-administration' },
+        { to: '/notifications', label: 'Logs', icon: Bell, tourId: 'nav-logs' },
+      ]
+    : [
+        { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
+        { to: '/courses', label: 'My Courses', icon: BookOpen, tourId: 'nav-courses' },
+        { to: '/sessions', label: 'Live Sessions', icon: Video, tourId: 'nav-sessions' },
+        { to: '/engagement', label: 'Engagement', icon: BarChart2, tourId: 'nav-engagement' },
+        { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert, tourId: 'nav-proctoring' },
+        { to: '/administration', label: 'Programme Management', icon: GraduationCap, tourId: 'nav-administration' },
+      ];
 
   const isActive = (path: string) => {
     if (path === '/') return location.pathname === '/';

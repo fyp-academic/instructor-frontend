@@ -122,6 +122,19 @@ function ProtectedLayout() {
   );
 }
 
+// Restrict a route to specific roles; redirect others to their home.
+function RequireRole({ roles, children }: { roles: string[]; children: React.ReactNode }) {
+  const { user, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (user && roles.includes(user.role)) return <>{children}</>;
+  return <Navigate to="/dashboard" replace />;
+}
+
+// Course-delivery pages belong to instructors only.
+const instructorOnly = (el: React.ReactNode) => (
+  <RequireRole roles={['instructor']}>{el}</RequireRole>
+);
+
 export const router = createBrowserRouter([
   // Public routes - no layout
   { path: '/login', element: <Login /> },
@@ -139,22 +152,22 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute><ProtectedLayout /></ProtectedRoute>,
     children: [
       { path: 'dashboard', element: <Layout><Dashboard /></Layout> },
-      { path: 'courses', element: <Layout><MyCourses /></Layout> },
-      { path: 'courses/create', element: <Layout><CreateCourse /></Layout> },
-      { path: 'courses/:id', element: <Layout><CourseView /></Layout> },
+      { path: 'courses', element: instructorOnly(<Layout><MyCourses /></Layout>) },
+      { path: 'courses/create', element: instructorOnly(<Layout><CreateCourse /></Layout>) },
+      { path: 'courses/:id', element: instructorOnly(<Layout><CourseView /></Layout>) },
       { path: 'categories', element: <Layout><CategoryManagement /></Layout> },
-      { path: 'ai-insights', element: <Layout><AIInsights /></Layout> },
+      { path: 'ai-insights', element: instructorOnly(<Layout><AIInsights /></Layout>) },
       { path: 'administration', element: <Layout><Administration /></Layout> },
       { path: 'notifications', element: <Layout><Notifications /></Layout> },
       { path: 'admin/notifications', element: <Layout><Notifications /></Layout> },
       { path: 'messaging', element: <Layout><Messaging /></Layout> },
-      { path: 'sessions', element: <Layout><InstructorSessions /></Layout> },
-      { path: 'conference/:id', element: <Conference /> },
+      { path: 'sessions', element: instructorOnly(<Layout><InstructorSessions /></Layout>) },
+      { path: 'conference/:id', element: instructorOnly(<Conference />) },
       { path: 'profile', element: <Layout><Profile /></Layout> },
       { path: 'notification-preferences', element: <Layout><NotificationPreferences /></Layout> },
       { path: 'admin/notification-preferences', element: <Layout><AdminNotificationPreferences /></Layout> },
-      { path: 'engagement', element: <Layout><InstructorEngagement /></Layout> },
-      { path: 'proctoring', element: <Layout><InstructorProctoring /></Layout> },
+      { path: 'engagement', element: instructorOnly(<Layout><InstructorEngagement /></Layout>) },
+      { path: 'proctoring', element: instructorOnly(<Layout><InstructorProctoring /></Layout>) },
     ],
   },
 
