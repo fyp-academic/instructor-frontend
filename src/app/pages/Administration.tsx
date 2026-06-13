@@ -1581,7 +1581,7 @@ export default function Administration() {
                       <label className="block text-xs font-medium text-gray-700 mb-1">College *</label>
                       <select
                         value={(addForm as typeof emptyInstructorForm).college_id}
-                        onChange={e => setAddForm(prev => ({ ...prev, college_id: e.target.value }))}
+                        onChange={e => setAddForm(prev => ({ ...prev, college_id: e.target.value, assigned_programme_ids: [] }))}
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-white"
                       >
                         <option value="">Select College</option>
@@ -1609,25 +1609,33 @@ export default function Administration() {
                   </h3>
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">Assigned Degree Programme(s)</label>
+                    <p className="text-xs text-gray-500 mb-1">Students in a programme see this instructor only if it is checked here.</p>
                     <div className="border border-gray-200 rounded-lg p-3 space-y-2 max-h-32 overflow-y-auto">
-                      {programmes.map(p => (
-                        <label key={p.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                          <input
-                            type="checkbox"
-                            checked={(addForm as typeof emptyInstructorForm).assigned_programme_ids.includes(p.id)}
-                            onChange={e => {
-                              const current = (addForm as typeof emptyInstructorForm).assigned_programme_ids;
-                              const updated = e.target.checked
-                                ? [...current, p.id]
-                                : current.filter(id => id !== p.id);
-                              setAddForm(prev => ({ ...prev, assigned_programme_ids: updated }));
-                            }}
-                            className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
-                          />
-                          <span className="text-sm text-gray-700">{p.name}</span>
-                          <span className="text-xs text-gray-400">({p.college?.name || 'No College'})</span>
-                        </label>
-                      ))}
+                      {!(addForm as typeof emptyInstructorForm).college_id ? (
+                        <p className="text-sm text-gray-400">Select a college first to choose its programmes.</p>
+                      ) : (() => {
+                        const collegeProgrammes = programmes.filter(p => p.college_id === (addForm as typeof emptyInstructorForm).college_id);
+                        if (collegeProgrammes.length === 0) {
+                          return <p className="text-sm text-gray-400">No programmes found for the selected college.</p>;
+                        }
+                        return collegeProgrammes.map(p => (
+                          <label key={p.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input
+                              type="checkbox"
+                              checked={(addForm as typeof emptyInstructorForm).assigned_programme_ids.includes(p.id)}
+                              onChange={e => {
+                                const current = (addForm as typeof emptyInstructorForm).assigned_programme_ids;
+                                const updated = e.target.checked
+                                  ? [...current, p.id]
+                                  : current.filter(id => id !== p.id);
+                                setAddForm(prev => ({ ...prev, assigned_programme_ids: updated }));
+                              }}
+                              className="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500"
+                            />
+                            <span className="text-sm text-gray-700">{p.name}</span>
+                          </label>
+                        ));
+                      })()}
                     </div>
                   </div>
                 </div>
