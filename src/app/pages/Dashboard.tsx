@@ -42,11 +42,12 @@ export default function Dashboard() {
   const recentCourses = courses.slice(0, 4);
   const recentNotifs  = notifications.slice(0, 4);
 
+  const statsObj = (snapshot?.stats ?? {}) as Record<string, number>;
   const quickStats = [
-    { label: 'Upcoming Deadlines', value: (snapshot?.upcoming_deadlines as number | undefined) ?? '—', color: 'text-red-600 bg-red-50'       },
-    { label: 'Pending Grading',    value: (snapshot?.pending_grading    as number | undefined) ?? '—', color: 'text-amber-600 bg-amber-50'   },
-    { label: 'New Enrollments',    value: (snapshot?.new_enrollments    as number | undefined) ?? '—', color: 'text-green-600 bg-green-50'   },
-    { label: 'Forum Posts',        value: (snapshot?.forum_posts        as number | undefined) ?? '—', color: 'text-indigo-600 bg-indigo-50' },
+    { label: 'Upcoming Deadlines', value: statsObj.upcoming_deadlines ?? '—', color: 'text-red-600 bg-red-50',     to: '/courses',        hint: 'View courses' },
+    { label: 'Pending Grading',    value: statsObj.pending_grading    ?? '—', color: 'text-amber-600 bg-amber-50', to: '/courses',        hint: 'Open gradebook' },
+    { label: 'New Enrollments',    value: statsObj.new_enrollments    ?? '—', color: 'text-green-600 bg-green-50', to: '/administration', hint: 'View students' },
+    { label: 'Forum Posts',        value: statsObj.forum_posts        ?? '—', color: 'text-indigo-600 bg-indigo-50', to: '/engagement',    hint: 'View engagement' },
   ];
 
   const stats = [
@@ -240,10 +241,18 @@ export default function Dashboard() {
       {/* Quick Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {quickStats.map(item => (
-          <div key={item.label} className={`${item.color} rounded-xl p-4 text-center`}>
+          <button
+            key={item.label}
+            type="button"
+            onClick={() => navigate(item.to)}
+            title={item.hint}
+            className={`${item.color} relative rounded-xl p-4 text-center cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-current group`}
+          >
+            <ChevronRight className="w-4 h-4 absolute top-3 right-3 opacity-0 group-hover:opacity-70 transition-opacity" />
             <p className="text-2xl font-bold">{item.value}</p>
             <p className="text-xs font-medium mt-1 opacity-80">{item.label}</p>
-          </div>
+            <p className="text-[10px] mt-1.5 font-medium opacity-0 group-hover:opacity-70 transition-opacity">{item.hint} →</p>
+          </button>
         ))}
       </div>
     </div>
