@@ -21,6 +21,7 @@ import InstructorSessions from './pages/InstructorSessions';
 import Conference from './pages/Conference';
 import InstructorEngagement from './pages/InstructorEngagement';
 import InstructorProctoring from './pages/InstructorProctoring';
+import AdminLogs from './pages/AdminLogs';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import ForgotPassword from './pages/auth/ForgotPassword';
@@ -135,6 +136,11 @@ const instructorOnly = (el: React.ReactNode) => (
   <RequireRole roles={['instructor']}>{el}</RequireRole>
 );
 
+// Administration oversight pages belong to admins only.
+const adminOnly = (el: React.ReactNode) => (
+  <RequireRole roles={['admin']}>{el}</RequireRole>
+);
+
 export const router = createBrowserRouter([
   // Public routes - no layout
   { path: '/login', element: <Login /> },
@@ -158,6 +164,7 @@ export const router = createBrowserRouter([
       { path: 'categories', element: <Layout><CategoryManagement /></Layout> },
       { path: 'ai-insights', element: instructorOnly(<Layout><AIInsights /></Layout>) },
       { path: 'administration', element: <Layout><Administration /></Layout> },
+      { path: 'logs', element: adminOnly(<Layout><AdminLogs /></Layout>) },
       { path: 'notifications', element: <Layout><Notifications /></Layout> },
       { path: 'admin/notifications', element: <Layout><Notifications /></Layout> },
       { path: 'messaging', element: <Layout><Messaging /></Layout> },

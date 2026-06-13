@@ -45,7 +45,7 @@ export function Header() {
     ? [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
         { to: '/administration', label: 'Administration', icon: Settings, tourId: 'nav-administration' },
-        { to: '/notifications', label: 'Logs', icon: Bell, tourId: 'nav-logs' },
+        { to: '/logs', label: 'Logs', icon: Bell, tourId: 'nav-logs' },
       ]
     : [
         { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },

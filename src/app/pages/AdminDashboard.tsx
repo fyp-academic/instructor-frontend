@@ -83,7 +83,7 @@ export default function AdminDashboard() {
             <Settings className="w-4 h-4" /> Manage Courses
           </button>
           <button
-            onClick={() => navigate('/notifications')}
+            onClick={() => navigate('/logs')}
             className="flex items-center gap-2 bg-indigo-700 text-white border border-indigo-500 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors"
           >
             <Bell className="w-4 h-4" /> View Logs
@@ -185,7 +185,7 @@ export default function AdminDashboard() {
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-gray-900">Recent Logs & Notifications</h2>
-          <button onClick={() => navigate('/notifications')} className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+          <button onClick={() => navigate('/logs')} className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
             View all <ChevronRight className="w-4 h-4" />
           </button>
         </div>

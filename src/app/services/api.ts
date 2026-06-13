@@ -206,6 +206,11 @@ export const instructorsApi = {
   delete: (id: string) => api.delete(`/instructors/${id}`),
 };
 
+// ─── Activity Logs (admin) ────────────────────────────────────────────────────
+export const logsApi = {
+  list: (params?: Record<string, unknown>) => api.get('/admin/activity-logs', { params }),
+};
+
 // ─── Colleges & Degree Programmes ─────────────────────────────────────────────
 export const collegesApi = {
   list:   () => api.get('/colleges'),
