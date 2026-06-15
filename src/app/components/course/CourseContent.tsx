@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Activity, ActivityType, activityTypeInfo } from '../../data/mockData';
-import { quizApi, lessonApi, videoApi, fileApi } from '../../services/api';
+import { quizApi, lessonApi, videoApi, fileApi, scormApi, h5pApi } from '../../services/api';
 import { AddActivityModal } from '../modals/AddActivityModal';
 import { QuizCreator } from '../modals/QuizCreator';
 import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator, LabelCreator } from '../modals/ActivityCreators';
@@ -153,6 +153,48 @@ export function CourseContent({ courseId }: CourseContentProps) {
       } catch (e) { console.error('File upload failed:', e); }
     }
 
+    // If SCORM with a package, upload + extract after creation
+    if (type === 'scorm' && data.file && actId) {
+      try {
+        const uploadRes = await scormApi.upload(actId, data.file);
+        const uploadData = uploadRes.data?.data ?? {};
+        await updateActivity(courseId, sectionId, actId, {
+          settings: {
+            ...data.settings,
+            fileName: data.file.name,
+            scormVersion: uploadData.scorm_version ?? '',
+            scormPath: uploadData.scorm_path ?? '',
+            launchHref: uploadData.launch_href ?? '',
+          },
+        });
+      } catch (e: any) {
+        alert('SCORM upload failed: ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+      }
+    }
+
+    // If H5P: upload a .h5p package OR persist content authored in the editor
+    if (type === 'h5p' && actId) {
+      const authoredLibrary = data.settings?.h5pLibrary as string | undefined;
+      const authoredParams = data.settings?.h5pParams as string | undefined;
+      // Do not persist the (potentially large) editor payload in activity settings.
+      const { h5pLibrary: _l, h5pParams: _p, ...cleanSettings } = (data.settings ?? {}) as Record<string, unknown>;
+      try {
+        if (data.file) {
+          const res = await h5pApi.upload(actId, data.file);
+          await updateActivity(courseId, sectionId, actId, {
+            settings: { ...cleanSettings, h5pContentId: res.data?.data?.h5p_content_id, fileName: data.file.name },
+          });
+        } else if (authoredLibrary && authoredParams) {
+          const res = await h5pApi.saveContent(actId, { library: authoredLibrary, params: authoredParams });
+          await updateActivity(courseId, sectionId, actId, {
+            settings: { ...cleanSettings, h5pContentId: res.data?.data?.h5p_content_id },
+          });
+        }
+      } catch (e: any) {
+        alert('H5P save failed: ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+      }
+    }
+
     // If quiz with questions, save them to backend
     let createdQuestionCount = 0;
     let failedQuestionCount = 0;
@@ -281,6 +323,45 @@ export function CourseContent({ courseId }: CourseContentProps) {
           },
         });
       } catch (e) { console.error('File upload failed:', e); }
+    }
+    // If SCORM with a new package, re-upload
+    if (type === 'scorm' && data.file && activityId) {
+      try {
+        const uploadRes = await scormApi.upload(activityId, data.file);
+        const uploadData = uploadRes.data?.data ?? {};
+        await updateActivity(courseId, sectionId, activityId, {
+          settings: {
+            ...data.settings,
+            fileName: data.file.name,
+            scormVersion: uploadData.scorm_version ?? '',
+            scormPath: uploadData.scorm_path ?? '',
+            launchHref: uploadData.launch_href ?? '',
+          },
+        });
+      } catch (e: any) {
+        alert('SCORM upload failed: ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+      }
+    }
+    // If H5P: re-upload a .h5p package OR save re-authored content
+    if (type === 'h5p' && activityId) {
+      const authoredLibrary = data.settings?.h5pLibrary as string | undefined;
+      const authoredParams = data.settings?.h5pParams as string | undefined;
+      const { h5pLibrary: _l, h5pParams: _p, ...cleanSettings } = (data.settings ?? {}) as Record<string, unknown>;
+      try {
+        if (data.file) {
+          const res = await h5pApi.upload(activityId, data.file);
+          await updateActivity(courseId, sectionId, activityId, {
+            settings: { ...cleanSettings, h5pContentId: res.data?.data?.h5p_content_id, fileName: data.file.name },
+          });
+        } else if (authoredLibrary && authoredParams) {
+          const res = await h5pApi.saveContent(activityId, { library: authoredLibrary, params: authoredParams });
+          await updateActivity(courseId, sectionId, activityId, {
+            settings: { ...cleanSettings, h5pContentId: res.data?.data?.h5p_content_id },
+          });
+        }
+      } catch (e: any) {
+        alert('H5P save failed: ' + (e?.response?.data?.message || e?.message || 'Unknown error'));
+      }
     }
     // If lesson type, sync pages: delete existing and recreate
     if (type === 'lesson' && activityId) {

@@ -343,6 +343,37 @@ export const fileApi = {
   remove: (activityId: string) => api.delete(`/activities/${activityId}/file`),
 };
 
+// ─── SCORM packages ────────────────────────────────────────────────────────────
+export const scormApi = {
+  upload: (activityId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/activities/${activityId}/scorm-upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  remove: (activityId: string) => api.delete(`/activities/${activityId}/scorm`),
+};
+
+// ─── H5P interactive content ─────────────────────────────────────────────────────
+export const h5pApi = {
+  // Upload a pre-built .h5p package.
+  upload: (activityId: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post(`/activities/${activityId}/h5p-upload`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  // Persist content authored inline with the H5P editor.
+  saveContent: (activityId: string, data: { library: string; params: string }) =>
+    api.post(`/activities/${activityId}/h5p/content`, data),
+  // Open an authoring session; returns { editor_url } for the editor iframe.
+  editorSession: (activityId?: string) =>
+    api.post(`/h5p/editor-session${activityId ? `/${activityId}` : ''}`),
+  remove: (activityId: string) => api.delete(`/activities/${activityId}/h5p`),
+};
+
 // ─── AI Insights ─────────────────────────────────────────────────────────────
 export const aiApi = {
   snapshots:          (courseId: string) => api.get(`/ai/courses/${courseId}/performance-snapshots`),

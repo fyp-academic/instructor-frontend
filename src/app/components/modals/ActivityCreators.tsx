@@ -1,13 +1,14 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { ActivityType } from '../../data/mockData';
+import { h5pApi } from '../../services/api';
 
 interface BaseCreatorProps {
   type: ActivityType;
   onClose: () => void;
   onSave: (data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }) => void;
-  initialData?: { name: string; description?: string; settings?: Record<string, unknown> };
+  initialData?: { id?: string; name: string; description?: string; settings?: Record<string, unknown> };
 }
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
@@ -502,6 +503,7 @@ export function WorkshopCreator({ onClose, onSave, initialData }: Omit<BaseCreat
 
 export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
   const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const hasAuthored = !!s.h5pContentId;
   const [form, setForm] = useState({
     name: initialData?.name ?? '',
     description: initialData?.description ?? '',
@@ -510,8 +512,16 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
     maxGrade: s.maxGrade ?? '100',
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const [mode, setMode] = useState<'author' | 'upload'>(hasAuthored ? 'author' : 'author');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+
+  // Authoring (editor iframe) state
+  const [editorUrl, setEditorUrl] = useState<string>('');
+  const [editorLoading, setEditorLoading] = useState(false);
+  const [editorError, setEditorError] = useState('');
+  const [saving, setSaving] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
 
   const handleFiles = (files: FileList | null) => {
     if (files && files.length > 0) {
@@ -519,57 +529,110 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
       if (!form.name) setF('name', files[0].name.replace(/\.h5p$/i, ''));
     }
   };
+  const onDrop = (e: React.DragEvent) => { e.preventDefault(); handleFiles(e.dataTransfer.files); };
 
-  const onDrop = (e: React.DragEvent) => {
-    e.preventDefault();
-    handleFiles(e.dataTransfer.files);
+  // Open an authoring session when entering author mode.
+  useEffect(() => {
+    if (mode !== 'author' || editorUrl) return;
+    let cancelled = false;
+    setEditorLoading(true);
+    setEditorError('');
+    h5pApi.editorSession(initialData?.id)
+      .then(res => { if (!cancelled) setEditorUrl(res.data?.editor_url ?? ''); })
+      .catch(err => { if (!cancelled) setEditorError(err?.response?.data?.message || 'Could not open the H5P editor.'); })
+      .finally(() => { if (!cancelled) setEditorLoading(false); });
+    return () => { cancelled = true; };
+  }, [mode, editorUrl, initialData?.id]);
+
+  // Ask the editor iframe for the authored content, then save.
+  const saveAuthored = () => {
+    if (!form.name) { alert('Please enter a name'); return; }
+    if (!iframeRef.current?.contentWindow) { alert('Editor is not ready yet.'); return; }
+    setSaving(true);
+
+    const onMessage = (e: MessageEvent) => {
+      const d = e.data || {};
+      if (d.type === 'h5p-content') {
+        window.removeEventListener('message', onMessage);
+        setSaving(false);
+        onSave({
+          name: form.name,
+          description: form.description,
+          settings: { ...form, h5pLibrary: d.library, h5pParams: d.params },
+          file: null,
+        });
+      } else if (d.type === 'h5p-content-error') {
+        window.removeEventListener('message', onMessage);
+        setSaving(false);
+        alert('Please complete the required fields in the H5P editor.');
+      }
+    };
+    window.addEventListener('message', onMessage);
+    iframeRef.current.contentWindow.postMessage({ type: 'h5p-get-content' }, '*');
+    // Safety timeout
+    setTimeout(() => { window.removeEventListener('message', onMessage); setSaving(false); }, 15000);
   };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
+      <div className={`bg-white rounded-2xl shadow-2xl w-full ${mode === 'author' ? 'max-w-5xl' : 'max-w-xl'} max-h-[92vh] flex flex-col overflow-hidden`}>
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-pink-100 rounded-lg flex items-center justify-center"><Layers className="w-5 h-5 text-pink-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} H5P Interactive Content</h2></div>
           <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
         </div>
+
+        <div className="flex border-b border-gray-200">
+          {(['author', 'upload'] as const).map(m => (
+            <button key={m} onClick={() => setMode(m)}
+              className={`px-5 py-3 text-sm font-medium ${mode === m ? 'text-pink-600 border-b-2 border-pink-600' : 'text-gray-500 hover:text-gray-700'}`}>
+              {m === 'author' ? 'Create with H5P editor' : 'Upload .h5p file'}
+            </button>
+          ))}
+        </div>
+
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Interactive Video: Python Loops" className={inputCls} /></FormField>
-          <FormField label="H5P File Upload">
-            <div
-              onClick={() => fileRef.current?.click()}
-              onDragOver={e => e.preventDefault()}
-              onDrop={onDrop}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors cursor-pointer"
-            >
-              <Layers className="w-10 h-10 text-gray-300 mx-auto mb-2" />
-              {selectedFile ? (
-                <>
-                  <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
-                  <p className="text-xs text-gray-400 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
-                </>
-              ) : (
-                <>
-                  <p className="text-sm text-gray-500">Upload .h5p file</p>
-                  <p className="text-xs text-gray-400 mt-1">Supported content types: Interactive Video, Quiz, Drag & Drop, and more</p>
-                </>
+
+          {mode === 'author' ? (
+            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ height: '55vh' }}>
+              {editorLoading && <div className="flex items-center justify-center h-full text-sm text-gray-500">Loading H5P editor…</div>}
+              {editorError && <div className="flex items-center justify-center h-full text-sm text-red-500 px-6 text-center">{editorError}</div>}
+              {editorUrl && !editorError && (
+                <iframe ref={iframeRef} src={editorUrl} title="H5P Editor" className="w-full h-full border-0" />
               )}
-              <input ref={fileRef} type="file" accept=".h5p" className="hidden" onChange={e => handleFiles(e.target.files)} />
             </div>
-          </FormField>
-          <FormField label="Description"><RichTextEditor value={form.description} onChange={v => setF('description', v)} minHeight={80} /></FormField>
-          <FormField label="Grade Method">
-            <select value={form.gradeMethod} onChange={e => setF('gradeMethod', e.target.value)} className={inputCls}>
-              <option value="highest">Highest score</option>
-              <option value="average">Average</option>
-              <option value="first">First attempt</option>
-              <option value="last">Last attempt</option>
-            </select>
-          </FormField>
+          ) : (
+            <FormField label="H5P File Upload">
+              <div onClick={() => fileRef.current?.click()} onDragOver={e => e.preventDefault()} onDrop={onDrop}
+                className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center hover:border-pink-400 transition-colors cursor-pointer">
+                <Layers className="w-10 h-10 text-gray-300 mx-auto mb-2" />
+                {selectedFile ? (
+                  <>
+                    <p className="text-sm font-medium text-gray-800">{selectedFile.name}</p>
+                    <p className="text-xs text-gray-400 mt-1">{(selectedFile.size / 1024 / 1024).toFixed(2)} MB</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-gray-500">Upload .h5p file</p>
+                    <p className="text-xs text-gray-400 mt-1">Supported content types: Interactive Video, Quiz, Drag & Drop, and more</p>
+                  </>
+                )}
+                <input ref={fileRef} type="file" accept=".h5p" className="hidden" onChange={e => handleFiles(e.target.files)} />
+              </div>
+            </FormField>
+          )}
+
+          <FormField label="Description"><RichTextEditor value={form.description} onChange={v => setF('description', v)} minHeight={70} /></FormField>
           <FormField label="Maximum Grade"><input type="number" value={form.maxGrade} onChange={e => setF('maxGrade', e.target.value)} className={inputCls} /></FormField>
         </div>
+
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save H5P</button>
+          {mode === 'author' ? (
+            <button disabled={saving || !editorUrl} onClick={saveAuthored} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">{saving ? 'Saving…' : 'Save H5P'}</button>
+          ) : (
+            <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } if (!selectedFile) { alert('Please choose a .h5p file'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save H5P</button>
+          )}
         </div>
       </div>
     </div>
