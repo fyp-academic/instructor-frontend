@@ -783,10 +783,14 @@ export function CourseContent({ courseId }: CourseContentProps) {
         <H5PCreator
           onClose={() => setActivityCreator(null)}
           onSave={(data) => {
-            if (activityCreator.activity) {
-              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
+            // Close the modal immediately so the global "Saving…" overlay is visible
+            // while the package/content is persisted (content is already in `data`).
+            const c = activityCreator;
+            setActivityCreator(null);
+            if (c.activity) {
+              handleEditActivitySave(c.sectionId, c.activity.id, data, 'h5p');
             } else {
-              handleSaveActivity(activityCreator.sectionId, 'h5p', data);
+              handleSaveActivity(c.sectionId, 'h5p', data);
             }
           }}
           initialData={activityCreator.activity}

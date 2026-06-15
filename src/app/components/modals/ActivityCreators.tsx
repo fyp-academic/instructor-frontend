@@ -550,11 +550,15 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
     if (!iframeRef.current?.contentWindow) { alert('Editor is not ready yet.'); return; }
     setSaving(true);
 
+    let settled = false;
+    const finish = () => { settled = true; window.removeEventListener('message', onMessage); clearTimeout(timer); };
+
     const onMessage = (e: MessageEvent) => {
       const d = e.data || {};
       if (d.type === 'h5p-content') {
-        window.removeEventListener('message', onMessage);
-        setSaving(false);
+        finish();
+        // Keep `saving` true — the modal closes immediately and the parent shows
+        // its global "Saving…" overlay while the content is persisted.
         onSave({
           name: form.name,
           description: form.description,
@@ -562,15 +566,25 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
           file: null,
         });
       } else if (d.type === 'h5p-content-error') {
-        window.removeEventListener('message', onMessage);
+        finish();
         setSaving(false);
-        alert('Please complete the required fields in the H5P editor.');
+        const map: Record<string, string> = {
+          'content-not-selected': 'Pick a content type in the editor first.',
+          'missing-library': 'Pick a content type in the editor first.',
+          'missing-title': 'Add a title in the editor (use the “Tools/metadata” title field).',
+        };
+        alert(map[d.reason] || 'Please complete the required fields in the H5P editor.');
       }
     };
     window.addEventListener('message', onMessage);
     iframeRef.current.contentWindow.postMessage({ type: 'h5p-get-content' }, '*');
-    // Safety timeout
-    setTimeout(() => { window.removeEventListener('message', onMessage); setSaving(false); }, 15000);
+    // Safety timeout — if the editor never responds, surface it instead of hanging.
+    const timer = setTimeout(() => {
+      if (settled) return;
+      window.removeEventListener('message', onMessage);
+      setSaving(false);
+      alert('The H5P editor did not respond. Make sure a content type is selected, then try again.');
+    }, 8000);
   };
 
   return (
@@ -594,11 +608,19 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Interactive Video: Python Loops" className={inputCls} /></FormField>
 
           {mode === 'author' ? (
-            <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ height: '55vh' }}>
+            <div className="relative border border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ height: '55vh' }}>
               {editorLoading && <div className="flex items-center justify-center h-full text-sm text-gray-500">Loading H5P editor…</div>}
               {editorError && <div className="flex items-center justify-center h-full text-sm text-red-500 px-6 text-center">{editorError}</div>}
               {editorUrl && !editorError && (
                 <iframe ref={iframeRef} src={editorUrl} title="H5P Editor" className="w-full h-full border-0" />
+              )}
+              {saving && (
+                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm">
+                  <div className="flex items-center gap-3 text-sm font-medium text-gray-700">
+                    <span className="w-5 h-5 border-2 border-pink-500 border-t-transparent rounded-full animate-spin" />
+                    Saving…
+                  </div>
+                </div>
               )}
             </div>
           ) : (
