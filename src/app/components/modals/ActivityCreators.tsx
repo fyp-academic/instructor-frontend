@@ -608,11 +608,11 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Interactive Video: Python Loops" className={inputCls} /></FormField>
 
           {mode === 'author' ? (
-            <div className="relative border border-gray-200 rounded-xl overflow-hidden bg-gray-50" style={{ height: '55vh' }}>
+            <div className="relative border border-gray-200 rounded-xl overflow-x-auto overflow-y-hidden bg-gray-50" style={{ height: '55vh' }}>
               {editorLoading && <div className="flex items-center justify-center h-full text-sm text-gray-500">Loading H5P editor…</div>}
               {editorError && <div className="flex items-center justify-center h-full text-sm text-red-500 px-6 text-center">{editorError}</div>}
               {editorUrl && !editorError && (
-                <iframe ref={iframeRef} src={editorUrl} title="H5P Editor" className="w-full h-full border-0" />
+                <iframe ref={iframeRef} src={editorUrl} title="H5P Editor" className="w-full h-full min-w-[720px] border-0" />
               )}
               {saving && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80 backdrop-blur-sm">
