@@ -160,6 +160,33 @@ export function GradesTab({ courseId }: GradesTabProps) {
       .finally(() => setLoading(false));
   };
 
+  const saveGrade = async (itemId: string, studentId: string, rawValue: string, gradeMax: number) => {
+    const value = rawValue.trim();
+    setEditingGrade(null);
+    if (value === '') return;                       // empty → no change
+    const grade = Number(value);
+    if (isNaN(grade) || grade < 0) { alert('Please enter a valid grade.'); return; }
+    if (gradeMax > 0 && grade > gradeMax) { alert(`Grade cannot exceed the maximum of ${gradeMax}.`); return; }
+
+    // Optimistic update
+    const pct = gradeMax > 0 ? Math.round((grade / gradeMax) * 100) : null;
+    const apply = (item: GradeItem): GradeItem =>
+      item.id !== itemId ? item : {
+        ...item,
+        students: item.students.map(s =>
+          s.studentId !== studentId ? s : { ...s, grade, percentage: pct, status: 'graded' as const }),
+      };
+    setGrades(prev => prev.map(apply));
+    setSelectedItem(prev => (prev ? apply(prev) : prev));
+
+    try {
+      await gradesApi.submit(itemId, { student_id: studentId, grade });
+    } catch {
+      alert('Failed to save grade. Please try again.');
+      loadGrades();                                 // revert to server truth
+    }
+  };
+
   if (loading) return (
     <div className="flex items-center justify-center py-16">
       <Loader2 className="w-6 h-6 animate-spin text-indigo-500" />
@@ -354,7 +381,8 @@ export function GradesTab({ courseId }: GradesTabProps) {
                               type="number"
                               value={editingGrade.value}
                               onChange={e => setEditingGrade(prev => prev ? { ...prev, value: e.target.value } : null)}
-                              onBlur={() => setEditingGrade(null)}
+                              onBlur={() => saveGrade(selectedItem.id, sg.studentId, editingGrade.value, selectedItem.gradeMax)}
+                              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur(); } else if (e.key === 'Escape') { setEditingGrade(null); } }}
                               className="w-16 text-center border border-indigo-300 rounded px-1 py-0.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
                               autoFocus
                               max={selectedItem.gradeMax}

@@ -8,15 +8,16 @@ import {
 import { useApp } from '../context/AppContext';
 import { CourseContent } from '../components/course/CourseContent';
 import { ParticipantsTab } from '../components/course/ParticipantsTab';
+import { GroupsTab } from '../components/course/GroupsTab';
+import { QuestionBankPanel } from '../components/course/QuestionBankPanel';
 import { GradesTab } from '../components/course/GradesTab';
 import { ActivitiesTab } from '../components/course/ActivitiesTab';
 import { AssignmentsTab } from '../components/course/AssignmentsTab';
 import { AdaptationSettingsPanel } from '../components/instructor/AdaptationSettingsPanel';
 import { AdaptationAuditLog } from '../components/instructor/AdaptationAuditLog';
-import { AiQuizGenerator } from '../components/AiQuizGenerator';
 import { RichTextEditor } from '../components/RichTextEditor';
 
-type Tab = 'course' | 'settings' | 'participants' | 'grades' | 'assignments' | 'activities' | 'more';
+type Tab = 'course' | 'settings' | 'participants' | 'groups' | 'grades' | 'assignments' | 'activities' | 'more';
 
 export default function CourseView() {
   const { id } = useParams<{ id: string }>();
@@ -32,7 +33,7 @@ export default function CourseView() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['course', 'settings', 'participants', 'grades', 'assignments', 'activities'].includes(tab)) {
+    if (tab && ['course', 'settings', 'participants', 'groups', 'grades', 'assignments', 'activities'].includes(tab)) {
       setActiveTab(tab as Tab);
     }
   }, [searchParams]);
@@ -50,6 +51,7 @@ export default function CourseView() {
     { id: 'course', label: 'Course', icon: BookOpen },
     { id: 'settings', label: 'Course Settings', icon: Settings },
     { id: 'participants', label: 'Participants', icon: Users },
+    { id: 'groups', label: 'Groups', icon: LayoutGrid },
     { id: 'grades', label: 'Grades', icon: BarChart2 },
     { id: 'assignments', label: 'Assignments', icon: FileText },
     { id: 'activities', label: 'Activities', icon: Activity },
@@ -169,6 +171,7 @@ export default function CourseView() {
         <div className="p-5">
           {activeTab === 'course' && <CourseContent courseId={course.id} />}
           {activeTab === 'participants' && <ParticipantsTab courseId={course.id} />}
+          {activeTab === 'groups' && <GroupsTab courseId={course.id} />}
           {activeTab === 'grades' && <GradesTab courseId={course.id} />}
           {activeTab === 'assignments' && (
             <AssignmentsTab courseId={course.id} sectionId={activeSection || (course.sections?.[0]?.id as string) || ''} />
@@ -539,15 +542,6 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
 }
 
 function MoreTabContent({ subTab, course }: { subTab: string; course: any }) {
-  const [showAiQuiz, setShowAiQuiz] = useState(false);
-
-  const questionBankItems = [
-    { category: 'Default', count: 12, difficulty: 'Mixed' },
-    { category: 'Week 1', count: 8, difficulty: 'Easy' },
-    { category: 'Week 2', count: 15, difficulty: 'Medium' },
-    { category: 'Advanced', count: 5, difficulty: 'Hard' },
-  ];
-
   const sections: { id: string; title: string }[] =
     course?.sections?.map((s: any) => ({ id: s.id, title: s.title })) ?? [];
 
@@ -570,49 +564,7 @@ function MoreTabContent({ subTab, course }: { subTab: string; course: any }) {
     </div>
   );
 
-  if (subTab === 'questionbank') return (
-    <div className="space-y-4">
-      {showAiQuiz && (
-        <AiQuizGenerator
-          courseId={course?.id ?? ''}
-          sections={sections}
-          onClose={() => setShowAiQuiz(false)}
-          onPublished={(activityId, name) => {
-            setShowAiQuiz(false);
-            alert(`Quiz "${name}" published (hidden). Open it in Activities to make it visible.`);
-          }}
-        />
-      )}
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-gray-900">Question Bank</h2>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowAiQuiz(true)}
-            className="flex items-center gap-2 bg-indigo-600 text-white px-3 py-2 rounded-lg text-sm hover:bg-indigo-700"
-          >
-            <Sparkles size={14} /> Generate with AI
-          </button>
-          <button className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-3 py-2 rounded-lg text-sm hover:bg-gray-50">
-            + Add Question
-          </button>
-        </div>
-      </div>
-      <div className="space-y-2">
-        {questionBankItems.map(item => (
-          <div key={item.category} className="bg-white border border-gray-200 rounded-xl p-4 flex items-center justify-between hover:shadow-sm transition-all">
-            <div>
-              <p className="font-medium text-gray-800">{item.category}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{item.count} questions · {item.difficulty}</p>
-            </div>
-            <div className="flex gap-2">
-              <button className="text-xs bg-gray-100 text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-200">Edit</button>
-              <button className="text-xs bg-indigo-50 text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-100">View</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+  if (subTab === 'questionbank') return <QuestionBankPanel course={course} />;
 
   if (subTab === 'badges') return (
     <div className="space-y-4">

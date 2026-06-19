@@ -89,7 +89,18 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
     password: s.password ?? '',
     requireSafeBrowser: s.requireSafeBrowser ?? false,
     completionGrade: s.completionGrade ?? '',
+    proctoring: {
+      enabled:        s.proctoring?.enabled        ?? false,
+      tab_blur:       s.proctoring?.tab_blur        ?? true,
+      fullscreen:     s.proctoring?.fullscreen      ?? true,
+      copy_paste:     s.proctoring?.copy_paste      ?? true,
+      webcam_ai:      s.proctoring?.webcam_ai       ?? true,
+      audio_noise:    s.proctoring?.audio_noise     ?? false,
+      camera_motion:  s.proctoring?.camera_motion   ?? false,
+      auto_submit_threshold: s.proctoring?.auto_submit_threshold ?? 5,
+    },
   });
+  const setProc = (k: string, v: unknown) => setSettings(p => ({ ...p, proctoring: { ...p.proctoring, [k]: v } }));
 
   useEffect(() => {
     if (!activityId) return;
@@ -292,6 +303,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
     { id: 'behaviour', label: 'Question Behaviour' },
     { id: 'review', label: 'Review Options' },
     { id: 'security', label: 'Security' },
+    { id: 'proctoring', label: 'Proctoring' },
     { id: 'completion', label: 'Completion' },
   ];
 
@@ -472,6 +484,36 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                       <span className="text-sm text-gray-700">Require Safe Exam Browser</span>
                     </label>
                   </div>
+                </div>
+              )}
+
+              {activeTab === 'proctoring' && (
+                <div className="space-y-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={settings.proctoring.enabled} onChange={e => setProc('enabled', e.target.checked)} />
+                    <span className="text-sm font-semibold text-gray-800">Enable proctoring for this quiz</span>
+                  </label>
+                  {settings.proctoring.enabled && (
+                    <div className="space-y-2 pl-1 border-l-2 border-indigo-100 ml-1">
+                      {[
+                        { k: 'tab_blur',      label: 'Tab switch / window blur', hint: 'Flag leaving the tab or window' },
+                        { k: 'fullscreen',    label: 'Fullscreen exit',          hint: 'Require and monitor fullscreen' },
+                        { k: 'copy_paste',    label: 'Copy / paste / right-click', hint: 'Block clipboard and context menu' },
+                        { k: 'webcam_ai',     label: 'Webcam AI (face / phone)',  hint: 'Periodic camera analysis for no-face / multiple faces / phone' },
+                        { k: 'audio_noise',   label: 'Background noise / sound',   hint: 'Off by default — only enable for controlled environments' },
+                        { k: 'camera_motion', label: 'Camera motion detection',   hint: 'Off by default — prone to false positives' },
+                      ].map(item => (
+                        <label key={item.k} className="flex items-start gap-2 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 ml-2">
+                          <input type="checkbox" checked={(settings.proctoring as Record<string, unknown>)[item.k] as boolean} onChange={e => setProc(item.k, e.target.checked)} className="mt-0.5" />
+                          <div><p className="text-sm font-medium text-gray-700">{item.label}</p><p className="text-xs text-gray-400">{item.hint}</p></div>
+                        </label>
+                      ))}
+                      <div className="ml-2">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Violations before auto-submit</label>
+                        <input type="number" min={1} max={20} value={settings.proctoring.auto_submit_threshold} onChange={e => setProc('auto_submit_threshold', Number(e.target.value))} className={inputCls + ' w-32'} />
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 

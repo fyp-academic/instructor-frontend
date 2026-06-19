@@ -48,10 +48,12 @@ export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCre
     maxAttempts: s.maxAttempts ?? '1',
     notifyGraders: s.notifyGraders ?? true,
     notifyStudents: s.notifyStudents ?? true,
+    groupMode: s.groupMode ?? 'none',               // none | same | per_group
+    groupTasks: s.groupTasks ?? [] as { group: string; instructions: string }[],
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
 
-  const tabs = ['General', 'Availability', 'Submission Types', 'Feedback Types', 'Grade', 'Notifications'];
+  const tabs = ['General', 'Availability', 'Submission Types', 'Feedback Types', 'Grade', 'Groups', 'Notifications'];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -130,6 +132,46 @@ export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCre
                 <span className="text-sm text-gray-700">Hide student names from graders</span>
               </label>
             </FormField>
+          </>}
+          {tab === 'groups' && <>
+            <FormField label="Group Mode" hint="Control whether this assignment is the same for every group or differs per group">
+              <div className="space-y-2">
+                {[
+                  { v: 'none', label: 'No groups', hint: 'Individual assignment for all students' },
+                  { v: 'same', label: 'Same task for all groups', hint: 'Every group works on the same task; submissions are tagged by group' },
+                  { v: 'per_group', label: 'Each group its own task', hint: 'Provide different instructions per group' },
+                ].map(item => (
+                  <label key={item.v} className="flex items-start gap-2 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <input type="radio" name="groupMode" checked={form.groupMode === item.v} onChange={() => setF('groupMode', item.v)} className="mt-0.5" />
+                    <div><p className="text-sm font-medium text-gray-700">{item.label}</p><p className="text-xs text-gray-400">{item.hint}</p></div>
+                  </label>
+                ))}
+              </div>
+            </FormField>
+            {form.groupMode === 'per_group' && (
+              <FormField label="Per-Group Tasks" hint="Add a task for each group (group name must match a group in this course)">
+                <div className="space-y-2">
+                  {(form.groupTasks as { group: string; instructions: string }[]).map((gt, i) => (
+                    <div key={i} className="flex gap-2 items-start">
+                      <input
+                        value={gt.group}
+                        onChange={e => setF('groupTasks', (form.groupTasks as any[]).map((x, j) => j === i ? { ...x, group: e.target.value } : x))}
+                        placeholder="Group name"
+                        className={inputCls + ' w-1/3'}
+                      />
+                      <input
+                        value={gt.instructions}
+                        onChange={e => setF('groupTasks', (form.groupTasks as any[]).map((x, j) => j === i ? { ...x, instructions: e.target.value } : x))}
+                        placeholder="Task instructions for this group"
+                        className={inputCls + ' flex-1'}
+                      />
+                      <button onClick={() => setF('groupTasks', (form.groupTasks as any[]).filter((_, j) => j !== i))} className="px-2 py-2 text-gray-400 hover:text-red-600"><X className="w-4 h-4" /></button>
+                    </div>
+                  ))}
+                  <button onClick={() => setF('groupTasks', [...(form.groupTasks as any[]), { group: '', instructions: '' }])} className="text-sm text-indigo-600 hover:text-indigo-800 font-medium">+ Add group task</button>
+                </div>
+              </FormField>
+            )}
           </>}
           {tab === 'notifications' && <>
             <FormField label="Notify Graders">

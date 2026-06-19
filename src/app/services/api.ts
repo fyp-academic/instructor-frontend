@@ -273,6 +273,9 @@ export const quizApi = {
   listAnswers:     (questionId: string)               => api.get(`/questions/${questionId}/answers`),
   createAnswer:    (questionId: string, data: Record<string, unknown>) =>
     api.post(`/questions/${questionId}/answers`, data),
+  questionBank:    (courseId: string) => api.get(`/courses/${courseId}/question-bank`),
+  addFromBank:     (activityId: string, sourceQuestionId: string) =>
+    api.post(`/activities/${activityId}/questions/from-bank`, { source_question_id: sourceQuestionId }),
 };
 
 // ─── AI Quiz Generator ───────────────────────────────────────────────────────
@@ -533,6 +536,7 @@ export const instructorAdaptationApi = {
 // ─── Groups Management ────────────────────────────────────────────────────────
 export const groupsApi = {
   list:           (courseId: string) => api.get(`/courses/${courseId}/groups`),
+  create:         (courseId: string, data: Record<string, unknown>) => api.post(`/courses/${courseId}/groups`, data),
   show:           (courseId: string, groupName: string) => api.get(`/courses/${courseId}/groups/${groupName}`),
   addStudent:     (courseId: string, groupName: string, data: Record<string, unknown>) =>
     api.post(`/courses/${courseId}/groups/${groupName}/add-student`, data),
