@@ -69,7 +69,7 @@ export default function Login() {
         await logout();
         setWrongRole(true);
       } else {
-        navigate('/');
+        navigate('/dashboard');
       }
     } catch (err: unknown) {
       const data = (err as { response?: { data?: { message?: string; requires_verification?: boolean; email?: string } } })?.response?.data;
@@ -168,7 +168,7 @@ export default function Login() {
                 <p className="font-semibold text-amber-800 mb-1">Student account detected</p>
                 <p className="text-amber-700">
                   This portal is for instructors &amp; admins. Please use the{' '}
-                  <a href={STUDENT_URL} className="text-clay font-semibold hover:underline">
+                  <a href={`${STUDENT_URL}/login`} className="text-clay font-semibold hover:underline">
                     student portal →
                   </a>
                 </p>

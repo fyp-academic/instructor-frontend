@@ -16,7 +16,8 @@ export function Header() {
 
   const handleLogout = async () => {
     await logout();
-    navigate('/login');
+    // Instructor app has no landing page — send users to the shared public landing.
+    window.location.href = import.meta.env.VITE_STUDENT_URL ?? 'https://apesudom.codagenz.com';
   };
 
   const [notifOpen, setNotifOpen] = useState(false);
