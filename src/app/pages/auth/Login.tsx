@@ -4,6 +4,7 @@ import { Link, useNavigate } from 'react-router';
 import { Eye, EyeOff, Loader2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
+import ThemeToggle from '../../components/editorial/ThemeToggle';
 
 function validate(email: string, password: string) {
   const e: Record<string, string> = {};
@@ -12,18 +13,6 @@ function validate(email: string, password: string) {
   if (!password) e.password = 'Password is required';
   else if (password.length < 6) e.password = 'Password must be at least 6 characters';
   return e;
-}
-
-/* Inline Google icon since lucide doesn't provide one */
-function GoogleIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 24 24" width="18" height="18">
-      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" />
-      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-    </svg>
-  );
 }
 
 /* Social icons (Twitter/X and Instagram) using simple SVGs */
@@ -109,64 +98,68 @@ export default function Login() {
   };
 
   const fieldCls = (hasErr: boolean) =>
-    `w-full px-4 py-3 rounded-lg border text-sm outline-none transition-all ${
+    `w-full px-4 py-3 rounded-md border text-step-2 text-ink outline-none transition-all placeholder:text-ink-2/60 ${
       hasErr
         ? 'border-red-400 bg-red-50 focus:ring-2 focus:ring-red-100'
-        : 'border-gray-300 bg-white focus:border-blue-900 focus:ring-1 focus:ring-blue-900'
+        : 'border-line bg-paper focus:border-clay focus:ring-1 focus:ring-clay'
     }`;
 
   return (
-    <div className="min-h-screen flex">
-      {/* Left panel — image with curved right edge */}
-      <div className="hidden lg:block lg:w-[48%] relative overflow-hidden">
-        <img
-          src={instructorImage}
-          alt="Students studying"
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-        <div className="absolute inset-0 bg-black/10" />
-
-        {/* Curved edge overlay */}
-        <svg
-          className="absolute right-0 top-0 h-full w-20 xl:w-28 text-white"
-          viewBox="0 0 100 100"
-          preserveAspectRatio="none"
-        >
-          <path
-            d="M0,0 C70,30 70,70 0,100 L100,100 L100,0 Z"
-            fill="currentColor"
+    <div
+      className="min-h-screen flex bg-paper text-ink"
+      style={{ fontFamily: '"Inter Variable", Inter, system-ui, sans-serif' }}
+    >
+      {/* Left panel — framed image */}
+      <div className="hidden lg:block lg:w-[48%] p-4">
+        <div className="relative h-full overflow-hidden rounded-[18px] bg-paper-2">
+          <img
+            src={instructorImage}
+            alt="Instructor teaching"
+            className="absolute inset-0 h-full w-full object-cover"
           />
-        </svg>
+          <div className="absolute inset-0 bg-gradient-to-t from-ink/70 via-ink/20 to-transparent" />
 
-        {/* Bottom overlay bar */}
-        <div className="absolute bottom-0 left-0 right-0 p-8">
-          <div className="flex items-end">
-            <div className="flex items-center gap-5">
-              <div className="flex items-center gap-2 text-white/90">
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+          <div className="absolute left-8 top-8">
+            <Link to="/" className="font-display ed-display text-step-5 leading-none text-paper">
+              APES
+            </Link>
+            <p className="eyebrow mt-3 !text-paper/80">Instructor Portal</p>
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 p-8">
+            <p className="max-w-sm font-display ed-display text-step-3 text-paper">
+              Teach smarter with AI-powered insight.
+            </p>
+            <div className="mt-6 flex items-center gap-5 text-paper/80">
+              <span className="flex items-center gap-2">
+                <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
                 </svg>
-                <span className="text-sm font-medium">Facebook</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/90">
-                <InstagramIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">Instagram</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/90">
-                <TwitterIcon className="w-4 h-4" />
-                <span className="text-sm font-medium">Twitter (X)</span>
-              </div>
+                <span className="text-step-1 font-medium">Facebook</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <InstagramIcon className="h-4 w-4" />
+                <span className="text-step-1 font-medium">Instagram</span>
+              </span>
+              <span className="flex items-center gap-2">
+                <TwitterIcon className="h-4 w-4" />
+                <span className="text-step-1 font-medium">Twitter (X)</span>
+              </span>
             </div>
           </div>
         </div>
       </div>
 
       {/* Right panel — login form */}
-      <div className="w-full lg:w-[52%] flex flex-col bg-white">
-        <div className="flex-1 flex items-start justify-center px-8 sm:px-12 lg:px-16 xl:px-24 pt-6 lg:pt-8">
+      <div className="relative flex w-full flex-col bg-paper lg:w-[52%]">
+        <div className="absolute right-5 top-5 z-10">
+          <ThemeToggle />
+        </div>
+        <div className="flex flex-1 items-start justify-center px-8 pt-16 sm:px-12 lg:px-16 lg:pt-20 xl:px-24">
           <div className="w-full max-w-sm">
-            <h1 className="text-4xl font-extrabold text-gray-900 mb-10 leading-tight">
-              Welcome<br />Back
+            <p className="eyebrow mb-4">Welcome back</p>
+            <h1 className="font-display ed-display text-step-7 text-ink mb-9">
+              Sign in to<br />APES
             </h1>
 
             {/* Wrong-role banner */}
@@ -175,7 +168,7 @@ export default function Login() {
                 <p className="font-semibold text-amber-800 mb-1">Student account detected</p>
                 <p className="text-amber-700">
                   This portal is for instructors &amp; admins. Please use the{' '}
-                  <a href={STUDENT_URL} className="text-indigo-600 font-semibold hover:underline">
+                  <a href={STUDENT_URL} className="text-clay font-semibold hover:underline">
                     student portal →
                   </a>
                 </p>
@@ -204,7 +197,7 @@ export default function Login() {
                     <div className="flex items-center gap-3 mb-3">
                       <Link
                         to={`/verify-email?email=${encodeURIComponent(unverifiedEmail)}`}
-                        className="text-sm text-indigo-600 font-semibold hover:text-indigo-800 inline-flex items-center gap-1"
+                        className="text-sm text-clay font-semibold hover:text-clay-deep inline-flex items-center gap-1"
                       >
                         <ArrowRight className="w-3 h-3" /> Enter verification code
                       </Link>
@@ -218,7 +211,7 @@ export default function Login() {
                         type="button"
                         onClick={handleResendVerification}
                         disabled={resending}
-                        className="text-sm text-indigo-600 font-semibold hover:text-indigo-800 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                        className="text-sm text-clay font-semibold hover:text-clay-deep disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-1"
                       >
                         {resending ? (
                           <><Loader2 className="w-3 h-3 animate-spin" /> Sending…</>
@@ -235,7 +228,7 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5" noValidate>
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-step-1 font-medium text-ink-2 mb-1.5">
                   Email
                 </label>
                 <input
@@ -255,7 +248,7 @@ export default function Login() {
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                <label className="block text-step-1 font-medium text-ink-2 mb-1.5">
                   Password
                 </label>
                 <div className="relative">
@@ -270,7 +263,7 @@ export default function Login() {
                   <button
                     type="button"
                     onClick={() => setShowPass(p => !p)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink transition-colors"
                     tabIndex={-1}
                   >
                     {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -285,16 +278,16 @@ export default function Login() {
 
               {/* Remember + Forgot */}
               <div className="flex items-center justify-between">
-                <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+                <label className="flex items-center gap-2 text-step-1 text-ink-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-gray-300 accent-blue-900"
+                    className="w-4 h-4 rounded border-line accent-clay"
                   />
                   Remember me
                 </label>
                 <Link
                   to="/forgot-password"
-                  className="text-sm text-gray-900 hover:text-blue-900 font-medium transition-colors"
+                  className="text-step-1 text-ink hover:text-clay font-medium transition-colors"
                 >
                   Forgot Password
                 </Link>
@@ -304,7 +297,7 @@ export default function Login() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 rounded-lg bg-[#1e3a5f] hover:bg-[#152a45] text-white font-semibold text-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                className="w-full py-3.5 rounded-full bg-ink hover:bg-clay-deep text-paper font-semibold text-step-2 transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 {loading
                   ? <><Loader2 className="w-4 h-4 animate-spin" /> Signing in…</>
@@ -315,14 +308,14 @@ export default function Login() {
               {/* Divider */}
               <div className="relative flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
+                  <div className="w-full border-t border-line" />
                 </div>
-                <span className="relative bg-white px-3 text-sm text-gray-500"></span>
+                <span className="relative bg-paper px-3 text-step-1 text-ink-2"></span>
               </div>
             </form>
 
             {/* Create account */}
-            <p className="mt-8 text-center text-sm text-gray-400">
+            <p className="mt-8 text-center text-step-1 text-ink-2">
               Instructor accounts are created by administrators.
             </p>
           </div>

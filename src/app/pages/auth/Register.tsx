@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Eye, EyeOff, Loader2, UserCheck, CheckCircle2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from '../../components/editorial/ThemeToggle';
 
 interface FormData {
   name: string;
@@ -92,52 +93,60 @@ export default function Register() {
   };
 
   const fieldCls = (hasErr: boolean) =>
-    `w-full px-4 py-3 rounded-xl border text-sm outline-none transition-all ${
+    `w-full px-4 py-3 rounded-md border text-step-2 text-ink outline-none transition-all placeholder:text-ink-2/60 ${
       hasErr
         ? 'border-red-400 bg-red-50 focus:ring-2 focus:ring-red-100'
-        : 'border-gray-200 bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100'
+        : 'border-line bg-paper focus:border-clay focus:ring-1 focus:ring-clay'
     }`;
 
   return (
-    <div className="min-h-screen flex">
-      {/* ── Left branding panel ── */}
-      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 flex-col justify-between p-12 bg-gradient-to-br from-indigo-700 via-purple-700 to-indigo-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute -top-16 -left-16 w-72 h-72 bg-white/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-10 right-0 w-96 h-96 bg-purple-400/20 rounded-full blur-3xl" />
-        </div>
+    <div
+      className="min-h-screen flex bg-paper text-ink"
+      style={{ fontFamily: '"Inter Variable", Inter, system-ui, sans-serif' }}
+    >
+      {/* ── Left editorial branding panel ── */}
+      <div className="hidden lg:flex lg:w-5/12 xl:w-1/2 p-4">
+        <div className="relative flex h-full w-full flex-col justify-between overflow-hidden rounded-[18px] border border-line bg-paper-2 p-12">
+          <div>
+            <Link to="/" className="font-display ed-display text-step-4 leading-none text-ink">
+              APES
+            </Link>
+            <p className="eyebrow mt-3">Instructor Portal</p>
 
-        <div className="relative z-10">
-          <h1 className="text-4xl font-extrabold leading-tight mb-4">
-            Start teaching<br />smarter today
-          </h1>
-          <p className="text-indigo-200 text-base mb-12 max-w-xs">
-            Join thousands of educators using AI to create better learning experiences.
-          </p>
+            <h1 className="font-display ed-display text-step-6 text-ink mt-10">
+              Start teaching<br />smarter today
+            </h1>
+            <p className="mt-4 max-w-xs text-step-2 text-ink-2">
+              Join thousands of educators using AI to create better learning experiences.
+            </p>
 
-          <div className="space-y-4">
-            {[
-              'Create and manage courses with ease',
-              'AI-driven analytics for every student',
-              'Automated at-risk learner detection',
-              'Integrated gradebook & assessment tools',
-            ].map(t => (
-              <div key={t} className="flex items-center gap-3">
-                <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-                <p className="text-indigo-100 text-sm">{t}</p>
-              </div>
-            ))}
+            <div className="mt-10 space-y-4">
+              {[
+                'Create and manage courses with ease',
+                'AI-driven analytics for every student',
+                'Automated at-risk learner detection',
+                'Integrated gradebook & assessment tools',
+              ].map(t => (
+                <div key={t} className="flex items-center gap-3">
+                  <CheckCircle2 className="w-5 h-5 text-clay flex-shrink-0" />
+                  <p className="text-step-2 text-ink-2">{t}</p>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
 
-        <div className="relative z-10">
-          <div className="h-px bg-white/10 mb-4" />
-          <p className="text-indigo-400 text-xs">© 2026 EduAI LMS · GPT-o4 Analytics Pipeline</p>
+          <div>
+            <div className="h-px bg-line mb-4" />
+            <p className="eyebrow">© 2026 APES LMS · AI Analytics Pipeline</p>
+          </div>
         </div>
       </div>
 
       {/* ── Right form panel ── */}
-      <div className="flex-1 flex items-start sm:items-center justify-center p-6 sm:p-10 bg-gray-50 overflow-y-auto">
+      <div className="relative flex flex-1 items-start justify-center overflow-y-auto bg-paper p-6 pt-16 sm:items-center sm:p-10 sm:pt-16">
+        <div className="absolute right-5 top-5 z-10">
+          <ThemeToggle />
+        </div>
         <div className="w-full max-w-md py-6">
 
           {registered ? (
@@ -145,34 +154,35 @@ export default function Register() {
               <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Mail className="w-10 h-10 text-emerald-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Verify your email</h2>
-              <p className="text-gray-500 mb-6">
-                We've sent a 6-digit verification code to <strong>{registeredEmail}</strong>.
+              <h2 className="font-display ed-display text-step-5 text-ink mb-2">Verify your email</h2>
+              <p className="text-step-2 text-ink-2 mb-6">
+                We've sent a 6-digit verification code to <strong className="text-ink">{registeredEmail}</strong>.
                 Please check your inbox and enter the code below to activate your account.
               </p>
               <Link
                 to={`/verify-email?email=${encodeURIComponent(registeredEmail)}`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors mb-6"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-ink text-paper font-semibold text-step-2 hover:bg-clay-deep transition-colors mb-6"
               >
                 Enter Verification Code <ArrowRight className="w-4 h-4" />
               </Link>
-              <div className="p-4 rounded-xl bg-indigo-50 border border-indigo-200 mb-6">
-                <p className="text-sm text-indigo-700">
+              <div className="p-4 rounded-xl bg-paper-2 border border-line mb-6">
+                <p className="text-step-1 text-ink-2">
                   Didn't receive the email? Check your spam folder or{' '}
-                  <Link to="/login" className="font-semibold underline">try logging in</Link> to resend.
+                  <Link to="/login" className="font-semibold text-clay underline">try logging in</Link> to resend.
                 </p>
               </div>
               <Link
                 to="/login"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-full border border-line text-ink font-semibold text-step-2 hover:border-ink transition-colors"
               >
                 Go to Login
               </Link>
             </div>
           ) : (
             <>
-              <h2 className="text-2xl font-bold text-gray-900 mb-1">Create your account</h2>
-              <p className="text-sm text-gray-500 mb-7">Join the EduAI LMS instructor community</p>
+              <p className="eyebrow mb-3">Join APES</p>
+              <h2 className="font-display ed-display text-step-5 text-ink mb-1">Create your account</h2>
+              <p className="text-step-2 text-ink-2 mb-7">Join the APES LMS instructor community</p>
 
               {apiError && (
                 <div className="mb-5 p-4 rounded-xl bg-red-50 border border-red-200 text-sm text-red-700 flex items-start gap-2">
@@ -184,7 +194,7 @@ export default function Register() {
               <form onSubmit={handleSubmit} className="space-y-5" noValidate>
             {/* Full name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Full name</label>
+              <label className="block text-step-1 font-medium text-ink-2 mb-1.5">Full name</label>
               <input
                 type="text"
                 autoComplete="name"
@@ -198,7 +208,7 @@ export default function Register() {
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Email address</label>
+              <label className="block text-step-1 font-medium text-ink-2 mb-1.5">Email address</label>
               <input
                 type="email"
                 autoComplete="email"
@@ -212,17 +222,17 @@ export default function Register() {
 
             {/* Role (read-only display) */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Account type</label>
-              <div className="w-full px-4 py-3 rounded-xl border border-indigo-200 bg-indigo-50 text-sm text-indigo-700 font-medium flex items-center gap-2">
+              <label className="block text-step-1 font-medium text-ink-2 mb-1.5">Account type</label>
+              <div className="w-full px-4 py-3 rounded-md border border-line bg-paper-2 text-step-2 text-clay font-medium flex items-center gap-2">
                 <UserCheck className="w-4 h-4" />
                 Instructor
               </div>
-              <p className="mt-1.5 text-xs text-gray-400">Admin accounts are created by system administrators.</p>
+              <p className="mt-1.5 text-xs text-ink-2">Admin accounts are created by system administrators.</p>
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Password</label>
+              <label className="block text-step-1 font-medium text-ink-2 mb-1.5">Password</label>
               <div className="relative">
                 <input
                   type={showPass ? 'text' : 'password'}
@@ -235,7 +245,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowPass(p => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink transition-colors"
                   tabIndex={-1}
                 >
                   {showPass ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -246,7 +256,7 @@ export default function Register() {
                 {PASSWORD_RULES.map(r => {
                   const ok = form.password.length > 0 && r.test(form.password);
                   return (
-                    <span key={r.label} className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-400'}`}>
+                    <span key={r.label} className={`text-[11px] px-2 py-0.5 rounded-full font-medium ${ok ? 'bg-emerald-100 text-emerald-700' : 'bg-paper-2 text-ink-2'}`}>
                       {ok ? '✓' : '○'} {r.label}
                     </span>
                   );
@@ -257,7 +267,7 @@ export default function Register() {
 
             {/* Confirm password */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">Confirm password</label>
+              <label className="block text-step-1 font-medium text-ink-2 mb-1.5">Confirm password</label>
               <div className="relative">
                 <input
                   type={showConfirm ? 'text' : 'password'}
@@ -270,7 +280,7 @@ export default function Register() {
                 <button
                   type="button"
                   onClick={() => setShowConfirm(p => !p)}
-                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-2 hover:text-ink transition-colors"
                   tabIndex={-1}
                 >
                   {showConfirm ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -282,18 +292,18 @@ export default function Register() {
             </div>
 
             {/* Terms */}
-            <p className="text-xs text-gray-400 leading-relaxed">
+            <p className="text-xs text-ink-2 leading-relaxed">
               By creating an account, you agree to our{' '}
-              <span className="text-indigo-600 cursor-pointer hover:underline">Terms of Service</span>{' '}
+              <span className="text-clay cursor-pointer hover:underline">Terms of Service</span>{' '}
               and{' '}
-              <span className="text-indigo-600 cursor-pointer hover:underline">Privacy Policy</span>.
+              <span className="text-clay cursor-pointer hover:underline">Privacy Policy</span>.
             </p>
 
             {/* Submit */}
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold text-sm shadow-lg shadow-indigo-200 transition-all disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-full bg-ink hover:bg-clay-deep text-paper font-semibold text-step-2 transition-colors duration-300 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               {loading
                 ? <><Loader2 className="w-4 h-4 animate-spin" /> Creating account…</>
@@ -302,16 +312,16 @@ export default function Register() {
             </button>
           </form>
 
-          <div className="mt-6 space-y-3 text-center text-sm text-gray-500">
+          <div className="mt-6 space-y-3 text-center text-step-1 text-ink-2">
             <p>
               Already have an account?{' '}
-              <Link to="/login" className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
+              <Link to="/login" className="text-clay font-semibold hover:text-clay-deep transition-colors">
                 Sign in
               </Link>
             </p>
             <p>
               Student?{' '}
-              <a href={STUDENT_URL} className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">
+              <a href={STUDENT_URL} className="text-clay font-semibold hover:text-clay-deep transition-colors">
                 Go to student portal
               </a>
             </p>
