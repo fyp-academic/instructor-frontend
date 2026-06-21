@@ -2333,7 +2333,7 @@ export default function Administration() {
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
-                      <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="email@udom.com" />
+                      <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="email@lms.com" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
@@ -2485,7 +2485,7 @@ export default function Administration() {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-gray-500 mb-1">Email</label>
-                  <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="admin@udom.com" />
+                  <input type="email" value={String(editForm.email ?? '')} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" placeholder="admin@lms.com" />
                 </div>
               </div>
             )}
