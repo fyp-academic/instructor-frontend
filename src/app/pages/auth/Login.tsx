@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import instructorImage from '../../../assets/Instructor image.jfif';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Eye, EyeOff, Loader2, Mail, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { authApi } from '../../services/api';
 import ThemeToggle from '../../components/editorial/ThemeToggle';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 function validate(email: string, password: string) {
   const e: Record<string, string> = {};
@@ -33,10 +34,13 @@ function InstagramIcon({ className }: { className?: string }) {
 }
 
 export default function Login() {
+  usePageTitle('Instructor Login | APES LMS Instructor Portal');
   const { login, logout } = useAuth();
   const navigate   = useNavigate();
+  const [searchParams] = useSearchParams();
+  const fromStudent = searchParams.get('from') === 'student';
 
-  const [email,    setEmail]    = useState('');
+  const [email,    setEmail]    = useState(searchParams.get('email') ?? '');
   const [password, setPassword] = useState('');
   const [showPass, setShowPass] = useState(false);
   const [errors,   setErrors]   = useState<Record<string, string>>({});
@@ -66,8 +70,13 @@ export default function Login() {
       const user   = stored ? JSON.parse(stored) : null;
       const role   = String(user?.role ?? '');
       if (role === 'student') {
+        // Wrong portal: this account belongs on the student portal. Revoke the
+        // instructor-side token and hand the user over with their email pre-filled.
         await logout();
         setWrongRole(true);
+        setTimeout(() => {
+          window.location.href = `${STUDENT_URL}/login?email=${encodeURIComponent(email)}&from=instructor`;
+        }, 1500);
       } else {
         navigate('/dashboard');
       }
@@ -162,13 +171,23 @@ export default function Login() {
               Sign in to<br />APES
             </h1>
 
+            {/* Hand-off notice from the student portal */}
+            {fromStudent && !wrongRole && (
+              <div className="mb-5 p-4 rounded-xl bg-paper-2 border border-line text-sm">
+                <p className="font-semibold text-ink mb-1">Continue with your instructor account</p>
+                <p className="text-ink-2">
+                  Your account is for the instructor portal. Enter your password to sign in.
+                </p>
+              </div>
+            )}
+
             {/* Wrong-role banner */}
             {wrongRole && (
               <div className="mb-5 p-4 rounded-xl bg-amber-50 border border-amber-200 text-sm">
                 <p className="font-semibold text-amber-800 mb-1">Student account detected</p>
                 <p className="text-amber-700">
-                  This portal is for instructors &amp; admins. Please use the{' '}
-                  <a href={`${STUDENT_URL}/login`} className="text-clay font-semibold hover:underline">
+                  This portal is for instructors &amp; admins — taking you to the{' '}
+                  <a href={`${STUDENT_URL}/login?email=${encodeURIComponent(email)}&from=instructor`} className="text-clay font-semibold hover:underline">
                     student portal →
                   </a>
                 </p>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { Eye, EyeOff, Loader2, UserCheck, CheckCircle2, Mail, ArrowRight } from 'lucide-react';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from '../../components/editorial/ThemeToggle';
 
@@ -41,6 +42,7 @@ const PASSWORD_RULES = [
 ];
 
 export default function Register() {
+  usePageTitle('Instructor Registration | APES LMS Instructor Portal');
   const { register } = useAuth();
   const navigate      = useNavigate();
 

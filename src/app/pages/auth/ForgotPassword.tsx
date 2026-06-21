@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Loader2, Mail, ArrowLeft, CheckCircle, Eye, EyeOff, Lock } from 'lucide-react';
 import { authApi } from '../../services/api';
 import AuthShell from './AuthShell';
 
 export default function ForgotPassword() {
+  usePageTitle('Forgot Password | APES LMS Instructor Portal');
   const navigate = useNavigate();
   const [step, setStep] = useState<'email' | 'otp' | 'success'>('email');
 

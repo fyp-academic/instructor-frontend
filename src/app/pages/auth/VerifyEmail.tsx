@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Mail, CheckCircle, XCircle, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
 import { authApi } from '../../services/api';
 import AuthShell from './AuthShell';
 
 export default function VerifyEmail() {
+  usePageTitle('Verify Email | APES LMS Instructor Portal');
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');

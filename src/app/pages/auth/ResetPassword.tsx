@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import { Loader2, Eye, EyeOff, Lock, CheckCircle, ArrowLeft } from 'lucide-react';
 import { authApi } from '../../services/api';
 import AuthShell from './AuthShell';
@@ -25,6 +26,7 @@ const PASSWORD_RULES = [
 ];
 
 export default function ResetPassword() {
+  usePageTitle('Reset Password | APES LMS Instructor Portal');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const token = searchParams.get('token') || '';
