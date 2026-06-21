@@ -48,7 +48,7 @@ export default function Login() {
   const [resending, setResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
 
-  const STUDENT_URL = import.meta.env.VITE_STUDENT_URL ?? 'http://localhost:5173';
+  const STUDENT_URL = import.meta.env.VITE_STUDENT_URL ?? 'https://apesudom.codagenz.com';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
