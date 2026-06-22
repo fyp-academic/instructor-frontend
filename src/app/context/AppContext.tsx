@@ -9,15 +9,17 @@ import Pusher from 'pusher-js';
 let echoInstance: Echo<'reverb'> | null = null;
 function getEchoInstance(): Echo<'reverb'> | null {
   const appKey = import.meta.env.VITE_REVERB_APP_KEY;
-  if (!appKey) return null;
+  const host   = import.meta.env.VITE_REVERB_HOST;
+  const port   = Number(import.meta.env.VITE_REVERB_PORT);
+  if (!appKey || !host || !port) return null;
   if (!echoInstance) {
     (window as unknown as Record<string, unknown>).Pusher = Pusher;
     echoInstance = new Echo({
       broadcaster:  'reverb',
       key:          appKey,
-      wsHost:       import.meta.env.VITE_REVERB_HOST,
-      wsPort:       Number(import.meta.env.VITE_REVERB_PORT),
-      wssPort:      Number(import.meta.env.VITE_REVERB_PORT),
+      wsHost:       host,
+      wsPort:       port,
+      wssPort:      port,
       forceTLS:     true,
       enabledTransports: ['ws', 'wss'],
       authEndpoint: 'https://api.codagenz.com/api/broadcasting/auth',
@@ -310,7 +312,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const updateSection = useCallback(async (courseId: string, sectionId: string, updates: Partial<Section>) => {
     try {
-      await sectionsApi.update(sectionId, updates);
+      await sectionsApi.update(courseId, sectionId, updates);
     } catch (err) {
       console.error('Failed to update section:', err);
     }
@@ -321,7 +323,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const deleteSection = useCallback(async (courseId: string, sectionId: string) => {
-    await sectionsApi.remove(sectionId);
+    await sectionsApi.remove(courseId, sectionId);
     setCourses(prev => prev.map(c => {
       if (c.id !== courseId) return c;
       return { ...c, sections: c.sections.filter(s => s.id !== sectionId) };

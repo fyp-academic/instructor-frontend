@@ -83,8 +83,8 @@ export const coursesApi = {
 export const sectionsApi = {
   list:   (courseId: string)                    => api.get(`/courses/${courseId}/sections`),
   create: (courseId: string, data: Record<string, unknown>) => api.post(`/courses/${courseId}/sections`, data),
-  update: (id: string, data: Record<string, unknown>)       => api.put(`/sections/${id}`, data),
-  remove: (id: string)                          => api.delete(`/sections/${id}`),
+  update: (courseId: string, id: string, data: Record<string, unknown>) => api.put(`/courses/${courseId}/sections/${id}`, data),
+  remove: (courseId: string, id: string)                                => api.delete(`/courses/${courseId}/sections/${id}`),
 };
 
 export const activitiesApi = {

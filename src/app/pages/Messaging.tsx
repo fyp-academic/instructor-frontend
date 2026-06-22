@@ -9,21 +9,24 @@ import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
 
 // Initialise Reverb/Echo once (module-level singleton)
 let echo: Echo<'reverb'> | null = null;
-function getEcho(): Echo<'reverb'> {
-  if (!echo) {
-    (window as unknown as Record<string, unknown>).Pusher = Pusher;
-    echo = new Echo({
-      broadcaster:  'reverb',
-      key:          import.meta.env.VITE_REVERB_APP_KEY,
-      wsHost:       import.meta.env.VITE_REVERB_HOST,
-      wsPort:       Number(import.meta.env.VITE_REVERB_PORT),
-      wssPort:      Number(import.meta.env.VITE_REVERB_PORT),
-      forceTLS:     true,
-      enabledTransports: ['ws', 'wss'],
-      authEndpoint: 'https://api.codagenz.com/broadcasting/auth',
-      auth: { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` } },
-    } as ConstructorParameters<typeof Echo>[0]);
-  }
+function getEcho(): Echo<'reverb'> | null {
+  if (echo) return echo;
+  const key  = import.meta.env.VITE_REVERB_APP_KEY;
+  const host = import.meta.env.VITE_REVERB_HOST;
+  const port = Number(import.meta.env.VITE_REVERB_PORT);
+  if (!key || !host || !port) return null;
+  (window as unknown as Record<string, unknown>).Pusher = Pusher;
+  echo = new Echo({
+    broadcaster:  'reverb',
+    key,
+    wsHost:       host,
+    wsPort:       port,
+    wssPort:      port,
+    forceTLS:     true,
+    enabledTransports: ['ws', 'wss'],
+    authEndpoint: 'https://api.codagenz.com/broadcasting/auth',
+    auth: { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` } },
+  } as ConstructorParameters<typeof Echo>[0]);
   return echo;
 }
 
@@ -110,6 +113,7 @@ export default function Messaging() {
     }).catch(() => { /* pinned messages endpoint may not exist yet */ });
 
     const echoInstance = getEcho();
+    if (!echoInstance) return;
     const channel = echoInstance.private(`conversation.${selectedConvId}`);
 
     channel.listen('.message.sent', (data: ApiMessage) => {
@@ -170,6 +174,7 @@ export default function Messaging() {
   useEffect(() => {
     if (!user) return;
     const echoInstance = getEcho();
+    if (!echoInstance) return;
     type PresenceChannel = {
       here:   (fn: (members: { id: string }[]) => void) => PresenceChannel;
       joining:(fn: (member: { id: string }) => void)    => PresenceChannel;

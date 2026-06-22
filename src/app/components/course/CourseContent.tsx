@@ -93,6 +93,8 @@ export function CourseContent({ courseId }: CourseContentProps) {
   };
 
   const handleSaveActivity = async (sectionId: string, type: ActivityType, data: { name: string; description: string; settings: Record<string, unknown>; questions?: any[]; file?: File | null }) => {
+    // Close the modal immediately and show the "Saving…" overlay for feedback.
+    setActivityCreator(null);
     setIsSaving(true);
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     const dueDate = dueDateRaw ? String(dueDateRaw) : undefined;
@@ -288,10 +290,11 @@ export function CourseContent({ courseId }: CourseContentProps) {
     setIsSaving(false);
     const label = activityTypeInfo[type]?.label || type;
     showToast(`${label} created successfully`);
-    setActivityCreator(null);
   };
 
   const handleEditActivitySave = async (sectionId: string, activityId: string, data: { name: string; description: string; settings: Record<string, unknown>; file?: File | null }, type: ActivityType) => {
+    // Close the modal immediately and show the "Saving…" overlay for feedback.
+    setActivityCreator(null);
     setIsSaving(true);
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     try {
@@ -390,10 +393,11 @@ export function CourseContent({ courseId }: CourseContentProps) {
     setIsSaving(false);
     const label = activityTypeInfo[type]?.label || type;
     showToast(`${label} updated successfully`);
-    setActivityCreator(null);
   };
 
   const handleEditQuizSave = async (sectionId: string, activityId: string, data: { name: string; description: string; questions: any[]; settings: Record<string, unknown> }) => {
+    // Close the modal immediately and show the "Saving…" overlay for feedback.
+    setActivityCreator(null);
     setIsSaving(true);
     const dueDateRaw = data.settings?.dueDate || data.settings?.due_date;
     try {
@@ -475,7 +479,6 @@ export function CourseContent({ courseId }: CourseContentProps) {
     } else {
       showToast('Quiz updated successfully');
     }
-    setActivityCreator(null);
   };
 
 
@@ -485,14 +488,14 @@ export function CourseContent({ courseId }: CourseContentProps) {
     <div className="space-y-4">
       {/* Toast */}
       {toastMessage && (
-        <div className="fixed top-4 right-4 z-50 flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium transition-all">
+        <div className="fixed top-4 right-4 z-[130] flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg bg-green-50 border border-green-200 text-green-800 text-sm font-medium transition-all">
           <Check className="w-4 h-4" />
           {toastMessage}
         </div>
       )}
       {/* Saving overlay */}
       {isSaving && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/20">
           <div className="bg-white rounded-2xl px-6 py-4 flex items-center gap-3 shadow-xl">
             <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
             <span className="text-sm font-medium text-gray-700">Saving...</span>

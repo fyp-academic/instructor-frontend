@@ -70,22 +70,22 @@ export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <h2 className="text-lg font-bold text-gray-900">Add an activity or resource</h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 cursor-pointer">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tabs */}
         <div className="flex border-b border-gray-200 px-5">
-          <button onClick={() => setTab('activity')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === 'activity' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+          <button onClick={() => setTab('activity')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${tab === 'activity' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             Activity or Resource
           </button>
-          <button onClick={() => setTab('subsection')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${tab === 'subsection' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
+          <button onClick={() => setTab('subsection')} className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer ${tab === 'subsection' ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500 hover:text-gray-700'}`}>
             Subsection
           </button>
         </div>
@@ -96,7 +96,7 @@ export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
             <div className="w-48 border-r border-gray-200 overflow-y-auto p-3 space-y-0.5 flex-shrink-0">
               {categories.map(cat => (
                 <button key={cat.id} onClick={() => setActiveCategory(cat.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
                     activeCategory === cat.id ? 'bg-gray-900 text-white' : 'text-gray-600 hover:bg-gray-100'
                   }`}>
                   {cat.label}
@@ -168,7 +168,7 @@ export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {
                     }
                   }}
                   className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    selectedType ? 'bg-blue-500 text-white hover:bg-blue-600' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                    selectedType ? 'bg-blue-500 text-white hover:bg-blue-600 cursor-pointer' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                   }`}>
                   Add
                 </button>

@@ -56,14 +56,14 @@ export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCre
   const tabs = ['General', 'Availability', 'Submission Types', 'Feedback Types', 'Grade', 'Groups', 'Notifications'];
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-blue-100 rounded-lg flex items-center justify-center"><FileText className="w-5 h-5 text-blue-600" /></div>
             <h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Assignment</h2>
           </div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="flex border-b border-gray-200 px-5 overflow-x-auto flex-shrink-0">
           {tabs.map(t => (
@@ -189,8 +189,8 @@ export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCre
           </>}
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter assignment name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Assignment</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter assignment name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Assignment</button>
         </div>
       </div>
     </div>
@@ -212,11 +212,11 @@ export function ForumCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center"><MessageSquare className="w-5 h-5 text-green-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Forum</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Forum Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. General Discussion" className={inputCls} /></FormField>
@@ -251,8 +251,8 @@ export function ForumCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
           </FormField>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter forum name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Forum</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter forum name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Forum</button>
         </div>
       </div>
     </div>
@@ -271,11 +271,11 @@ export function UrlCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center"><Link className="w-5 h-5 text-cyan-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Add'} URL</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Python Documentation" className={inputCls} /></FormField>
@@ -292,8 +292,8 @@ export function UrlCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
           </FormField>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name || !form.url) { alert('Name and URL are required'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save URL</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name || !form.url) { alert('Name and URL are required'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save URL</button>
         </div>
       </div>
     </div>
@@ -327,11 +327,11 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center"><File className="w-5 h-5 text-gray-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Upload'} File</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="Display name for this file" className={inputCls} /></FormField>
@@ -383,8 +383,8 @@ export function FileCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
           </FormField>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: { ...s, ...form }, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save File</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: { ...s, ...form }, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save File</button>
         </div>
       </div>
     </div>
@@ -419,11 +419,11 @@ export function ScormCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-yellow-100 rounded-lg flex items-center justify-center"><Package className="w-5 h-5 text-yellow-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} SCORM Package</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="SCORM activity name" className={inputCls} /></FormField>
@@ -465,8 +465,8 @@ export function ScormCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
           </FormField>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save SCORM</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save SCORM</button>
         </div>
       </div>
     </div>
@@ -490,11 +490,11 @@ export function WorkshopCreator({ onClose, onSave, initialData }: Omit<BaseCreat
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-orange-100 rounded-lg flex items-center justify-center"><Users className="w-5 h-5 text-orange-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Workshop</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="Workshop name" className={inputCls} /></FormField>
@@ -535,8 +535,8 @@ export function WorkshopCreator({ onClose, onSave, initialData }: Omit<BaseCreat
           </div>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Workshop</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } onSave({ name: form.name, description: form.description, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Workshop</button>
         </div>
       </div>
     </div>
@@ -630,11 +630,11 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className={`bg-white rounded-2xl shadow-2xl w-full ${mode === 'author' ? 'max-w-5xl' : 'max-w-xl'} max-h-[92vh] flex flex-col overflow-hidden`}>
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-pink-100 rounded-lg flex items-center justify-center"><Layers className="w-5 h-5 text-pink-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} H5P Interactive Content</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
 
         <div className="flex border-b border-gray-200">
@@ -691,11 +691,11 @@ export function H5PCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPro
         </div>
 
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
           {mode === 'author' ? (
-            <button disabled={saving || !editorUrl} onClick={saveAuthored} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50">{saving ? 'Saving…' : 'Save H5P'}</button>
+            <button disabled={saving || !editorUrl} onClick={saveAuthored} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 cursor-pointer disabled:cursor-not-allowed">{saving ? 'Saving…' : 'Save H5P'}</button>
           ) : (
-            <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } if (!selectedFile) { alert('Please choose a .h5p file'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save H5P</button>
+            <button onClick={() => { if (!form.name) { alert('Please enter a name'); return; } if (!selectedFile) { alert('Please choose a .h5p file'); return; } onSave({ name: form.name, description: form.description, settings: form, file: selectedFile }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save H5P</button>
           )}
         </div>
       </div>
@@ -713,11 +713,11 @@ export function PageCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
   });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-indigo-100 rounded-lg flex items-center justify-center"><Layout className="w-5 h-5 text-indigo-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Page</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Page Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Week 1 Lecture Notes" className={inputCls} /></FormField>
@@ -730,8 +730,8 @@ export function PageCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
           </FormField>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter page name'); return; } onSave({ name: form.name, description: form.content, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Page</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter page name'); return; } onSave({ name: form.name, description: form.content, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Page</button>
         </div>
       </div>
     </div>
@@ -741,11 +741,11 @@ export function PageCreator({ onClose, onSave, initialData }: Omit<BaseCreatorPr
 export function LabelCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
   const [content, setContent] = useState(initialData?.name ?? '');
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3"><div className="w-9 h-9 bg-red-100 rounded-lg flex items-center justify-center"><Hash className="w-5 h-5 text-red-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Label</h2></div>
-          <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">
           <FormField label="Label Content" required>
@@ -753,8 +753,8 @@ export function LabelCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
           </FormField>
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-          <button onClick={() => { if (!content) { alert('Please enter label content'); return; } onSave({ name: content, description: content, settings: { content } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save Label</button>
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!content) { alert('Please enter label content'); return; } onSave({ name: content, description: content, settings: { content } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Label</button>
         </div>
       </div>
     </div>

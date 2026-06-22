@@ -15,8 +15,8 @@ interface BaseCreatorProps {
 
 const inputCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
 const selectCls = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white';
-const btnPrimary = 'px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700';
-const btnSecondary = 'px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50';
+const btnPrimary = 'px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer disabled:cursor-not-allowed disabled:opacity-60';
+const btnSecondary = 'px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer';
 
 function FormField({ label, required, children, hint }: { label: string; required?: boolean; children: React.ReactNode; hint?: string }) {
   return (
@@ -32,14 +32,14 @@ function ModalShell({ title, icon: Icon, iconColor, iconBg, onClose, children, o
   title: string; icon: React.ElementType; iconColor: string; iconBg: string; onClose: () => void; children: React.ReactNode; onSave: () => void; saveLabel?: string;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 ${iconBg} rounded-lg flex items-center justify-center`}><Icon className={`w-5 h-5 ${iconColor}`} /></div>
             <h2 className="text-lg font-bold text-gray-900">{title}</h2>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400 cursor-pointer"><X className="w-5 h-5" /></button>
         </div>
         <div className="overflow-y-auto flex-1 p-5 space-y-4">{children}</div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">

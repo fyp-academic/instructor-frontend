@@ -308,7 +308,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -528,11 +528,11 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
             </div>
 
             <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
-              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
               <button
                 type="button"
                 onClick={() => { if (!settings.name) { alert('Please enter a quiz name'); return; } setStep('questions'); }}
-                className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer"
               >
                 Next: Add Questions →
               </button>
@@ -737,7 +737,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
             <div className="flex items-center justify-between p-5 border-t border-gray-200 flex-shrink-0">
               <button type="button" onClick={() => setStep('settings')} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">← Back to Settings</button>
               <div className="flex gap-3">
-                <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
                 <button
                   type="button"
                   disabled={addingQuestion}
@@ -764,7 +764,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                     setValidationErrors({});
                     onSave({ name: settings.name, description: settings.description, questions, settings });
                   }}
-                  className={`px-6 py-2 text-sm font-semibold rounded-lg ${addingQuestion ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                  className={`px-6 py-2 text-sm font-semibold rounded-lg ${addingQuestion ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'}`}
                 >
                   Save Quiz ({questions.length} questions)
                 </button>
@@ -777,7 +777,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
       {/* Question type picker — separate overlay modal so it cannot click-through to Save Quiz */}
       {addingQuestion && (
         <div
-          className="fixed inset-0 bg-black/60 z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/60 z-[105] flex items-center justify-center p-4"
           onClick={() => setAddingQuestion(false)}
         >
           <div
