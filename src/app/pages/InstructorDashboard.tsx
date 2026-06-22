@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
   BookOpen, Users, Activity, TrendingUp, Plus, FolderPlus,
-  ChevronRight, Clock, Bell
+  ChevronRight, Clock, CalendarClock, ClipboardCheck, UserPlus, MessagesSquare
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { dashboardApi } from '../services/api';
@@ -44,10 +44,10 @@ export default function InstructorDashboard() {
 
   const statsObj = (snapshot?.stats ?? {}) as Record<string, number>;
   const quickStats = [
-    { label: 'Upcoming Deadlines', value: statsObj.upcoming_deadlines ?? '—', color: 'text-red-600 bg-red-50',     to: '/courses',        hint: 'View courses' },
-    { label: 'Pending Grading',    value: statsObj.pending_grading    ?? '—', color: 'text-amber-600 bg-amber-50', to: '/courses',        hint: 'Open gradebook' },
-    { label: 'New Enrollments',    value: statsObj.new_enrollments    ?? '—', color: 'text-green-600 bg-green-50', to: '/administration', hint: 'View students' },
-    { label: 'Forum Posts',        value: statsObj.forum_posts        ?? '—', color: 'text-indigo-600 bg-indigo-50', to: '/engagement',    hint: 'View engagement' },
+    { label: 'Upcoming Deadlines', value: statsObj.upcoming_deadlines ?? '—', icon: CalendarClock,  color: 'text-red-600 bg-red-50',     to: '/courses',        hint: 'View courses' },
+    { label: 'Pending Grading',    value: statsObj.pending_grading    ?? '—', icon: ClipboardCheck,  color: 'text-amber-600 bg-amber-50', to: '/courses',        hint: 'Open gradebook' },
+    { label: 'New Enrollments',    value: statsObj.new_enrollments    ?? '—', icon: UserPlus,        color: 'text-green-600 bg-green-50', to: '/administration', hint: 'View students' },
+    { label: 'Forum Posts',        value: statsObj.forum_posts        ?? '—', icon: MessagesSquare,  color: 'text-indigo-600 bg-indigo-50', to: '/engagement',    hint: 'View engagement' },
   ];
 
   const stats = [
@@ -56,13 +56,6 @@ export default function InstructorDashboard() {
     { label: 'Total Activities',   value: totalActivities,               sub: 'Quizzes, assignments & more',       icon: Activity,  color: 'bg-purple-500' },
     { label: 'Completion Rate',    value: completionRate,                sub: 'Average across all courses',        icon: TrendingUp,color: 'bg-amber-500' },
   ];
-
-  const activityFeed = notifications.slice(0, 5).map(n => ({
-    text:  (n as unknown as Record<string, string>).title   ?? '',
-    time:  (n as unknown as Record<string, string>).timestamp ?? '',
-    color: 'text-indigo-500',
-    icon:  Bell,
-  }));
 
   const getStatusBadge = (status: string) => {
     if (status === 'active') return 'bg-green-100 text-green-700';
@@ -73,10 +66,10 @@ export default function InstructorDashboard() {
   return (
     <div className="space-y-6">
       {/* Welcome banner */}
-      <div data-tour="dashboard-hero" className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl p-6 text-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div data-tour="dashboard-hero" className="bg-gradient-to-r from-indigo-600 to-indigo-800 rounded-2xl px-6 py-5 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">Welcome back, {String(currentUser.name ?? 'there').split(' ')[0]}! 👋</h1>
-          <p className="text-indigo-200 mt-1">Here's what's happening with your courses today.</p>
+          <h1 className="text-xl font-bold">Welcome back, {String(currentUser.name ?? 'there').split(' ')[0]} 👋</h1>
+          <p className="text-indigo-200 text-sm mt-0.5">Here's what's happening across your courses today.</p>
         </div>
         <div className="flex gap-3 flex-wrap">
           <button
@@ -87,22 +80,22 @@ export default function InstructorDashboard() {
           </button>
           <button
             onClick={() => navigate('/categories', { state: { openCreate: true } })}
-            className="flex items-center gap-2 bg-indigo-700 text-white border border-indigo-500 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors"
+            className="flex items-center gap-2 bg-indigo-700/80 text-white border border-indigo-400/60 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-600 transition-colors"
           >
             <FolderPlus className="w-4 h-4" /> Add Category
           </button>
         </div>
       </div>
 
-      {/* Stats cards */}
+      {/* KPI cards */}
       <div data-tour="dashboard-stats" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
-            <div className="flex items-start justify-between">
-              <div>
+          <div key={stat.label} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
                 <p className="text-xs text-gray-500 font-medium uppercase tracking-wide">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
-                <p className="text-xs text-gray-400 mt-0.5">{stat.sub}</p>
+                <p className="text-2xl font-bold text-gray-900 mt-1.5">{stat.value}</p>
+                <p className="text-xs text-gray-400 mt-1">{stat.sub}</p>
               </div>
               <div className={`w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center flex-shrink-0`}>
                 <stat.icon className="w-5 h-5 text-white" />
@@ -112,14 +105,13 @@ export default function InstructorDashboard() {
         ))}
       </div>
 
-      {/* Main content grid */}
+      {/* Row 1 — Engagement chart (main) + Needs attention (rail) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Engagement chart */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-5">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="font-semibold text-gray-900">Weekly Engagement</h2>
-              <p className="text-sm text-gray-500">Active students & submissions this week</p>
+              <h2 className="text-sm font-semibold text-gray-900">Weekly Engagement</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Active students &amp; submissions this week</p>
             </div>
             <select className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none">
               <option>This Week</option>
@@ -127,7 +119,7 @@ export default function InstructorDashboard() {
               <option>This Month</option>
             </select>
           </div>
-          <ResponsiveContainer width="100%" height={220}>
+          <ResponsiveContainer width="100%" height={240}>
             <AreaChart data={engagementData}>
               <defs>
                 <linearGradient id="colorActive" x1="0" y1="0" x2="0" y2="1">
@@ -149,111 +141,111 @@ export default function InstructorDashboard() {
           </ResponsiveContainer>
         </div>
 
-        {/* Recent activity */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-3">
-            {activityFeed.map((item, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <item.icon className={`w-4 h-4 mt-0.5 flex-shrink-0 ${item.color}`} />
-                <div className="min-w-0">
-                  <p className="text-sm text-gray-700 leading-snug">{item.text}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{item.time}</p>
-                </div>
-              </div>
+        {/* Needs attention — actionable workflow shortcuts */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">Needs attention</h2>
+          <div className="space-y-1.5">
+            {quickStats.map(item => (
+              <button
+                key={item.label}
+                type="button"
+                onClick={() => navigate(item.to)}
+                title={item.hint}
+                className="w-full flex items-center gap-3 p-2.5 rounded-xl border border-transparent hover:border-gray-200 hover:bg-gray-50 transition-colors group text-left"
+              >
+                <span className={`w-9 h-9 rounded-lg ${item.color} flex items-center justify-center flex-shrink-0`}>
+                  <item.icon className="w-4 h-4" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-medium text-gray-900 truncate">{item.label}</span>
+                  <span className="block text-xs text-gray-400 truncate">{item.hint}</span>
+                </span>
+                <span className="text-lg font-bold text-gray-900">{item.value}</span>
+                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500 flex-shrink-0" />
+              </button>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Recent Courses & Notifications */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Row 2 — Recent Courses (main) + Notifications (rail) */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Courses */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        <div className="lg:col-span-2 bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Recent Courses</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Recent Courses</h2>
             <button onClick={() => navigate('/courses')} className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
               View all <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-3">
-            {recentCourses.map(course => (
-              <div
-                key={course.id}
-                onClick={() => navigate(`/courses/${course.id}`)}
-                className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors group border border-transparent hover:border-gray-200"
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                  <BookOpen className="w-5 h-5 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate group-hover:text-indigo-700">{course.name}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusBadge((course as unknown as Record<string,string>).status ?? '')}`}>{(course as unknown as Record<string,string>).status}</span>
-                    <span className="text-xs text-gray-400 flex items-center gap-1"><Users className="w-3 h-3" />{(course as unknown as Record<string,number>).enrolled_students ?? (course as unknown as Record<string,number>).enrolledStudents ?? 0}</span>
+          {recentCourses.length === 0 ? (
+            <p className="text-sm text-gray-400 py-6 text-center">No courses yet. Create your first course to get started.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentCourses.map(course => (
+                <div
+                  key={course.id}
+                  onClick={() => navigate(`/courses/${course.id}`)}
+                  className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer transition-colors group border border-transparent hover:border-gray-200"
+                >
+                  <div className="w-10 h-10 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <BookOpen className="w-5 h-5 text-white" />
                   </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-indigo-700">{course.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${getStatusBadge((course as unknown as Record<string,string>).status ?? '')}`}>{(course as unknown as Record<string,string>).status}</span>
+                      <span className="text-xs text-gray-400 flex items-center gap-1"><Users className="w-3 h-3" />{(course as unknown as Record<string,number>).enrolled_students ?? (course as unknown as Record<string,number>).enrolledStudents ?? 0}</span>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500" />
                 </div>
-                <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-indigo-500" />
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Notifications Panel */}
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
+        {/* Notifications */}
+        <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="font-semibold text-gray-900">Notifications</h2>
+            <h2 className="text-sm font-semibold text-gray-900">Notifications</h2>
             <button onClick={() => navigate('/notifications')} className="text-sm text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
               View all <ChevronRight className="w-4 h-4" />
             </button>
           </div>
-          <div className="space-y-2">
-            {recentNotifs.map(n => {
-              const typeColors: Record<string, string> = {
-                info: 'bg-blue-50 border-blue-200',
-                warning: 'bg-amber-50 border-amber-200',
-                success: 'bg-green-50 border-green-200',
-                danger: 'bg-red-50 border-red-200',
-              };
-              const dotColors: Record<string, string> = {
-                info: 'bg-blue-400', warning: 'bg-amber-400', success: 'bg-green-400', danger: 'bg-red-400',
-              };
-              return (
-                <div key={n.id} className={`p-3 rounded-lg border ${typeColors[n.type]} ${!n.read ? 'opacity-100' : 'opacity-70'}`}>
-                  <div className="flex items-start gap-2">
-                    <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${dotColors[n.type]}`} />
-                    <div className="min-w-0">
-                      <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{n.title}</p>
-                      <p className="text-xs text-gray-500 truncate">{n.message}</p>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-400">{n.timestamp}</span>
+          {recentNotifs.length === 0 ? (
+            <p className="text-sm text-gray-400 py-6 text-center">You're all caught up.</p>
+          ) : (
+            <div className="space-y-2">
+              {recentNotifs.map(n => {
+                const typeColors: Record<string, string> = {
+                  info: 'bg-blue-50 border-blue-200',
+                  warning: 'bg-amber-50 border-amber-200',
+                  success: 'bg-green-50 border-green-200',
+                  danger: 'bg-red-50 border-red-200',
+                };
+                const dotColors: Record<string, string> = {
+                  info: 'bg-blue-400', warning: 'bg-amber-400', success: 'bg-green-400', danger: 'bg-red-400',
+                };
+                return (
+                  <div key={n.id} className={`p-3 rounded-lg border ${typeColors[n.type]} ${!n.read ? 'opacity-100' : 'opacity-70'}`}>
+                    <div className="flex items-start gap-2">
+                      <div className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${dotColors[n.type]}`} />
+                      <div className="min-w-0">
+                        <p className={`text-sm ${!n.read ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>{n.title}</p>
+                        <p className="text-xs text-gray-500 truncate">{n.message}</p>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <Clock className="w-3 h-3 text-gray-400" />
+                          <span className="text-xs text-gray-400">{n.timestamp}</span>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </div>
-      </div>
-
-      {/* Quick Stats Row — instructor workflow shortcuts */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {quickStats.map(item => (
-          <button
-            key={item.label}
-            type="button"
-            onClick={() => navigate(item.to)}
-            title={item.hint}
-            className={`${item.color} relative rounded-xl p-4 text-center cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-current group`}
-          >
-            <ChevronRight className="w-4 h-4 absolute top-3 right-3 opacity-0 group-hover:opacity-70 transition-opacity" />
-            <p className="text-2xl font-bold">{item.value}</p>
-            <p className="text-xs font-medium mt-1 opacity-80">{item.label}</p>
-            <p className="text-[10px] mt-1.5 font-medium opacity-0 group-hover:opacity-70 transition-opacity">{item.hint} →</p>
-          </button>
-        ))}
       </div>
     </div>
   );
