@@ -6,24 +6,23 @@ import { messagingApi } from '../services/api';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
+import { getReverbConfig } from '../lib/reverb';
 
 // Initialise Reverb/Echo once (module-level singleton)
 let echo: Echo<'reverb'> | null = null;
 function getEcho(): Echo<'reverb'> | null {
   if (echo) return echo;
-  const key  = import.meta.env.VITE_REVERB_APP_KEY;
-  const host = import.meta.env.VITE_REVERB_HOST;
-  const port = Number(import.meta.env.VITE_REVERB_PORT);
-  if (!key || !host || !port) return null;
+  const cfg = getReverbConfig();
+  if (!cfg.key) return null;
   (window as unknown as Record<string, unknown>).Pusher = Pusher;
   echo = new Echo({
     broadcaster:  'reverb',
-    key,
-    wsHost:       host,
-    wsPort:       port,
-    wssPort:      port,
-    forceTLS:     true,
-    enabledTransports: ['ws', 'wss'],
+    key:          cfg.key,
+    wsHost:       cfg.wsHost,
+    wsPort:       cfg.wsPort,
+    wssPort:      cfg.wsPort,
+    forceTLS:     cfg.forceTLS,
+    enabledTransports: cfg.enabledTransports,
     authEndpoint: 'https://api.codagenz.com/broadcasting/auth',
     auth: { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` } },
   } as ConstructorParameters<typeof Echo>[0]);

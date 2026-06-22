@@ -5,7 +5,7 @@ import {
   GraduationCap, Play, Plus, Trash2
 } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
-import { videoApi } from '../../services/api';
+import { videoApi, lessonApi } from '../../services/api';
 
 interface BaseCreatorProps {
   onClose: () => void;
@@ -452,20 +452,18 @@ export function LessonCreator({ onClose, onSave, initialData }: BaseCreatorProps
   useEffect(() => {
     if (initialData?.id) {
       setPagesLoading(true);
-      import('../../services/api').then(({ lessonApi }) => {
-        lessonApi.listPages(String(initialData.id))
-          .then((res: any) => {
-            const apiPages = res.data?.data ?? [];
-            if (apiPages.length > 0) {
-              setPages(apiPages.map((p: any) => ({
-                title: p.title ?? 'Page',
-                content: p.content ?? '',
-              })));
-            }
-          })
-          .catch(() => {})
-          .finally(() => setPagesLoading(false));
-      });
+      lessonApi.listPages(String(initialData.id))
+        .then((res: any) => {
+          const apiPages = res.data?.data ?? [];
+          if (apiPages.length > 0) {
+            setPages(apiPages.map((p: any) => ({
+              title: p.title ?? 'Page',
+              content: p.content ?? '',
+            })));
+          }
+        })
+        .catch(() => {})
+        .finally(() => setPagesLoading(false));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialData?.id]);

@@ -4,24 +4,23 @@ import { coursesApi, categoriesApi, notificationsApi, messagingApi, activitiesAp
 import { useAuth } from './AuthContext';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
+import { getReverbConfig } from '../lib/reverb';
 
 // Initialize Echo for real-time updates
 let echoInstance: Echo<'reverb'> | null = null;
 function getEchoInstance(): Echo<'reverb'> | null {
-  const appKey = import.meta.env.VITE_REVERB_APP_KEY;
-  const host   = import.meta.env.VITE_REVERB_HOST;
-  const port   = Number(import.meta.env.VITE_REVERB_PORT);
-  if (!appKey || !host || !port) return null;
+  const cfg = getReverbConfig();
+  if (!cfg.key) return null;
   if (!echoInstance) {
     (window as unknown as Record<string, unknown>).Pusher = Pusher;
     echoInstance = new Echo({
       broadcaster:  'reverb',
-      key:          appKey,
-      wsHost:       host,
-      wsPort:       port,
-      wssPort:      port,
-      forceTLS:     true,
-      enabledTransports: ['ws', 'wss'],
+      key:          cfg.key,
+      wsHost:       cfg.wsHost,
+      wsPort:       cfg.wsPort,
+      wssPort:      cfg.wsPort,
+      forceTLS:     cfg.forceTLS,
+      enabledTransports: cfg.enabledTransports,
       authEndpoint: 'https://api.codagenz.com/api/broadcasting/auth',
       auth: { headers: { Authorization: `Bearer ${localStorage.getItem('auth_token') ?? ''}` } },
     } as ConstructorParameters<typeof Echo>[0]);
