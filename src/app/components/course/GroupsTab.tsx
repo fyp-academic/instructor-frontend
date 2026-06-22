@@ -33,7 +33,11 @@ export function GroupsTab({ courseId }: GroupsTabProps) {
   const [newGroupName, setNewGroupName] = useState('');
   const [creating, setCreating] = useState(false);
   const [addingTo, setAddingTo] = useState<string | null>(null);
-  const [selectedStudent, setSelectedStudent] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
 
   const loadGroups = useCallback(() => {
     return groupsApi.list(courseId)
@@ -84,14 +88,18 @@ export function GroupsTab({ courseId }: GroupsTabProps) {
     catch { alert('Failed to rename group.'); }
   };
 
-  const handleAddStudent = async (groupName: string) => {
-    if (!selectedStudent) return;
+  const handleAddStudents = async (groupName: string) => {
+    if (selectedIds.length === 0) return;
+    setAdding(true);
     try {
-      await groupsApi.addStudent(courseId, groupName, { user_id: selectedStudent });
+      for (const id of selectedIds) {
+        await groupsApi.addStudent(courseId, groupName, { user_id: id });
+      }
       setAddingTo(null);
-      setSelectedStudent('');
+      setSelectedIds([]);
       await loadGroups();
-    } catch { alert('Failed to add student to group.'); }
+    } catch { alert('Failed to add student(s) to group.'); }
+    finally { setAdding(false); }
   };
 
   const handleRemoveStudent = async (groupName: string, userId: string) => {
@@ -138,8 +146,9 @@ export function GroupsTab({ courseId }: GroupsTabProps) {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {groups.map(group => {
-            const memberIds = new Set(group.members.map(m => m.user_id));
-            const available = students.filter(s => !memberIds.has(s.id));
+            // A student may belong to only ONE group — exclude anyone already in any group.
+            const groupedIds = new Set(groups.flatMap(g => g.members.map(m => m.user_id)));
+            const available = students.filter(s => !groupedIds.has(s.id));
             return (
               <div key={group.name} className="bg-white border border-gray-200 rounded-xl p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -165,20 +174,43 @@ export function GroupsTab({ courseId }: GroupsTabProps) {
                 </div>
 
                 {addingTo === group.name ? (
-                  <div className="flex gap-2">
-                    <select
-                      value={selectedStudent}
-                      onChange={e => setSelectedStudent(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                    >
-                      <option value="">Select a student…</option>
-                      {available.map(s => <option key={s.id} value={s.id}>{s.name} ({s.email})</option>)}
-                    </select>
-                    <button onClick={() => handleAddStudent(group.name)} disabled={!selectedStudent} className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60">Add</button>
-                    <button onClick={() => { setAddingTo(null); setSelectedStudent(''); }} className="px-2 py-1.5 text-sm text-gray-500 hover:text-gray-800">Cancel</button>
+                  <div className="space-y-2">
+                    {available.length === 0 ? (
+                      <p className="text-xs text-gray-400 italic">All enrolled students are already in a group.</p>
+                    ) : (
+                      <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 divide-y divide-gray-100">
+                        {available.map(s => (
+                          <label key={s.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-gray-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(s.id)}
+                              onChange={() => toggleSelected(s.id)}
+                              className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="min-w-0 flex-1 truncate text-gray-700">{s.name} <span className="text-gray-400">({s.email})</span></span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex flex-wrap justify-end gap-2">
+                      <button
+                        onClick={() => { setAddingTo(null); setSelectedIds([]); }}
+                        className="px-3 py-1.5 text-sm text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-50"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={() => handleAddStudents(group.name)}
+                        disabled={selectedIds.length === 0 || adding}
+                        className="flex items-center gap-1 px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+                      >
+                        {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                        Add{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
+                      </button>
+                    </div>
                   </div>
                 ) : (
-                  <button onClick={() => { setAddingTo(group.name); setSelectedStudent(''); }} className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                  <button onClick={() => { setAddingTo(group.name); setSelectedIds([]); }} className="flex items-center gap-1 text-sm text-indigo-600 hover:text-indigo-800 font-medium">
                     <UserPlus className="w-4 h-4" /> Add student
                   </button>
                 )}

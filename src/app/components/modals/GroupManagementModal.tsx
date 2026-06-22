@@ -39,8 +39,13 @@ export function GroupManagementModal({
   const [loading, setLoading] = useState(false);
   const [newGroupName, setNewGroupName] = useState('');
   const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const [creating, setCreating] = useState(false);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [studentToAdd, setStudentToAdd] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [adding, setAdding] = useState(false);
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds(prev => (prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]));
   const [renamingGroup, setRenamingGroup] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
 
@@ -63,25 +68,40 @@ export function GroupManagementModal({
   };
 
   const handleCreateGroup = async () => {
-   if (!newGroupName.trim()) return;
-    
-   // Group will be created implicitly when first student is added
-   // For now, just select it and prompt user to add a student
-   setSelectedGroup(newGroupName.trim());
-   setNewGroupName('');
-   setIsCreatingGroup(false);
-  };
-
-  const handleAddStudent = async () => {
-    if (!selectedGroup || !studentToAdd) return;
-
+    const name = newGroupName.trim();
+    if (!name) return;
+    setCreating(true);
     try {
-      await groupsApi.addStudent(courseId, selectedGroup, { user_id: studentToAdd });
-      await loadGroups();
-      setStudentToAdd('');
+      await groupsApi.create(courseId, { name });
+      await loadGroups();        // group now exists in the list
+      setSelectedGroup(name);    // → selectedGroupData is defined → add box renders
+      setSelectedIds([]);
+      setNewGroupName('');
+      setIsCreatingGroup(false);
       onGroupsUpdated?.();
     } catch (err) {
-      console.error('Failed to add student to group:', err);
+      console.error('Failed to create group:', err);
+      alert('Failed to create group. It may already exist.');
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const handleAddStudents = async () => {
+    if (!selectedGroup || selectedIds.length === 0) return;
+
+    setAdding(true);
+    try {
+      for (const id of selectedIds) {
+        await groupsApi.addStudent(courseId, selectedGroup, { user_id: id });
+      }
+      await loadGroups();
+      setSelectedIds([]);
+      onGroupsUpdated?.();
+    } catch (err) {
+      console.error('Failed to add student(s) to group:', err);
+    } finally {
+      setAdding(false);
     }
   };
 
@@ -133,9 +153,10 @@ export function GroupManagementModal({
   if (!isOpen) return null;
 
   const selectedGroupData = groups.find(g => g.name === selectedGroup);
+  // A student may belong to only ONE group — exclude anyone already in any group.
+  const groupedIds = new Set(groups.flatMap(g => g.members.map(m => m.user_id)));
   const availableStudents = participants.filter(
-    p => p.role === 'student' && 
-    (!selectedGroupData || !selectedGroupData.members.find(m => m.user_id === p.id))
+    p => p.role === 'student' && !groupedIds.has(p.id)
   );
 
   return (
@@ -192,10 +213,10 @@ export function GroupManagementModal({
                   />
                   <button
                     onClick={handleCreateGroup}
-                    disabled={!newGroupName.trim()}
-                    className="px-3 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!newGroupName.trim() || creating}
+                    className="px-3 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                   >
-                    Create
+                    {creating && <Loader2 className="w-3 h-3 animate-spin" />} Create
                   </button>
                   <button
                     onClick={() => {
@@ -216,7 +237,7 @@ export function GroupManagementModal({
                   groups.map(group => (
                     <button
                       key={group.name}
-                      onClick={() => setSelectedGroup(group.name)}
+                      onClick={() => { setSelectedGroup(group.name); setSelectedIds([]); }}
                       className={`w-full text-left px-3 py-2 rounded-lg transition-colors text-sm ${
                         selectedGroup === group.name
                           ? 'bg-indigo-100 text-indigo-700 font-medium'
@@ -291,26 +312,32 @@ export function GroupManagementModal({
 
                   {/* Add Student to Group */}
                   <div className="bg-slate-50 rounded-lg p-3 space-y-2">
-                    <label className="text-xs font-medium text-slate-600">Add Student to Group</label>
-                    <div className="flex gap-2">
-                      <select
-                        value={studentToAdd}
-                        onChange={e => setStudentToAdd(e.target.value)}
-                        className="flex-1 text-sm border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      >
-                        <option value="">Select a student...</option>
+                    <label className="text-xs font-medium text-slate-600">Add Students to Group</label>
+                    {availableStudents.length === 0 ? (
+                      <p className="text-xs text-slate-400 italic">All enrolled students are already in a group.</p>
+                    ) : (
+                      <div className="max-h-44 overflow-y-auto rounded-lg border border-slate-200 bg-white divide-y divide-slate-100">
                         {availableStudents.map(s => (
-                          <option key={s.id} value={s.id}>
-                            {s.name} ({s.email})
-                          </option>
+                          <label key={s.id} className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-slate-50 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={selectedIds.includes(s.id)}
+                              onChange={() => toggleSelected(s.id)}
+                              className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <span className="min-w-0 flex-1 truncate text-slate-700">{s.name} <span className="text-slate-400">({s.email})</span></span>
+                          </label>
                         ))}
-                      </select>
+                      </div>
+                    )}
+                    <div className="flex justify-end">
                       <button
-                        onClick={handleAddStudent}
-                        disabled={!studentToAdd}
+                        onClick={handleAddStudents}
+                        disabled={selectedIds.length === 0 || adding}
                         className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1"
                       >
-                        <Plus className="w-4 h-4" /> Add
+                        {adding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                        Add{selectedIds.length > 0 ? ` (${selectedIds.length})` : ''}
                       </button>
                     </div>
                   </div>
