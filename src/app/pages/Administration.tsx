@@ -573,18 +573,19 @@ export default function Administration() {
                   <UserPlus className="w-4 h-4" /> Add User
                 </button>
               </div>
+              <p className="sm:hidden text-xs text-gray-400">Swipe the table horizontally to see all columns →</p>
               <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm min-w-[600px]">
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full text-sm min-w-[760px]">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">User</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Email</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Role</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Reg. No</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">College</th>
-                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Programme</th>
-                        <th className="px-4 py-3"></th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap sticky left-0 bg-gray-50 z-10">User</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Email</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Role</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Reg. No</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">College</th>
+                        <th className="text-left px-3 sm:px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Programme</th>
+                        <th className="px-3 sm:px-4 py-3"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
@@ -603,21 +604,21 @@ export default function Administration() {
                         const ucollege = college ? college.code : '—';
                         const initials = uname.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                         return (
-                          <tr key={uid} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 whitespace-nowrap">
+                          <tr key={uid} className="group hover:bg-gray-50">
+                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap sticky left-0 bg-white group-hover:bg-gray-50 z-10">
                               <div className="flex items-center gap-2.5">
                                 <div className="w-8 h-8 bg-gradient-to-br from-indigo-400 to-purple-500 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">{initials}</div>
                                 <span className="font-medium text-gray-900 text-sm">{uname}</span>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-gray-500 text-sm whitespace-nowrap">{uemail}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-3 sm:px-4 py-3 text-gray-500 text-sm whitespace-nowrap">{uemail}</td>
+                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
                               <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${roleColors[urole] ?? 'bg-gray-100 text-gray-600'}`}>{urole}</span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ureg || '—'}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ucollege}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{uprog}</td>
-                            <td className="px-4 py-3 whitespace-nowrap">
+                            <td className="px-3 sm:px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ureg || '—'}</td>
+                            <td className="px-3 sm:px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ucollege}</td>
+                            <td className="px-3 sm:px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{uprog}</td>
+                            <td className="px-3 sm:px-4 py-3 whitespace-nowrap">
                               <div className="relative" onClick={e => e.stopPropagation()}>
                                 <button onClick={() => setMenuOpenId(menuOpenId === uid ? null : uid)} className="p-1.5 rounded hover:bg-gray-100 text-gray-400">
                                   <MoreVertical className="w-4 h-4" />
