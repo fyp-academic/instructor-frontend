@@ -35,13 +35,15 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
   const [imageAlign,  setImageAlign]  = useState<'left'|'center'|'right'|'full'>('center');
   const [showImageOpts,setShowImageOpts]= useState(false);
 
-  // Seed initial content once on mount — never re-sync from props to avoid the single-char reset bug
+  // Sync from props when the value changes externally (e.g. course data loads
+  // after mount). The innerHTML guard makes this a no-op during typing — onChange
+  // already set `value` to the live innerHTML — so the caret never resets.
   useEffect(() => {
-    if (editorRef.current && value) {
-      editorRef.current.innerHTML = value;
+    const el = editorRef.current;
+    if (el && (value ?? '') !== el.innerHTML) {
+      el.innerHTML = value ?? '';
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [value]);
 
   const exec = (command: string, val?: string) => {
     document.execCommand(command, false, val);
@@ -221,7 +223,7 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
                 key={cmd}
                 type="button"
                 title={title}
-                onMouseDown={e => { e.preventDefault(); exec(cmd); }}
+                onMouseDown={e => { e.preventDefault(); cmd === 'formatBlock' ? exec(cmd, 'pre') : exec(cmd); }}
                 className="p-1 rounded hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors"
               >
                 <Icon className="w-4 h-4" />
@@ -352,7 +354,7 @@ export function RichTextEditor({ value, onChange, placeholder = 'Type here...', 
         onInput={handleInput}
         data-placeholder={placeholder}
         style={{ minHeight }}
-        className="p-3 text-sm text-gray-800 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
+        className="rte-content p-3 text-sm text-gray-800 focus:outline-none empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400"
       />
     </div>
   );
