@@ -114,6 +114,10 @@ export default function Administration() {
   const [collegeLoading, setCollegeLoading] = useState(false);
   const [collegeError, setCollegeError] = useState('');
 
+  // Users filter state (college/programme by abbreviation)
+  const [collegeFilter, setCollegeFilter] = useState('');   // stores college id ('' = all)
+  const [programmeFilter, setProgrammeFilter] = useState(''); // stores programme id ('' = all)
+
   // Pagination state
   const [userPage, setUserPage] = useState(1);
   const usersPerPage = 20;
@@ -389,7 +393,15 @@ export default function Administration() {
     const name  = String(u.name ?? '').toLowerCase();
     const email = String(u.email ?? '').toLowerCase();
     const q     = userSearch.toLowerCase();
-    return name.includes(q) || email.includes(q);
+    if (!(name.includes(q) || email.includes(q))) return false;
+
+    const progId = String(u.degree_programme_id ?? '');
+    if (programmeFilter && progId !== programmeFilter) return false;
+    if (collegeFilter) {
+      const prog = programmes.find(p => p.id === progId);
+      if (!prog || prog.college_id !== collegeFilter) return false;
+    }
+    return true;
   });
 
   // Pagination calculations
@@ -522,9 +534,33 @@ export default function Administration() {
           {activeTab === 'users' && (
             <div className="space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex-1 max-w-md">
-                  <Search className="w-4 h-4 text-gray-400" />
-                  <input type="text" placeholder="Search users..." value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1); }} className="bg-transparent text-sm outline-none flex-1" />
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1">
+                  <div className="flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 flex-1 max-w-md">
+                    <Search className="w-4 h-4 text-gray-400" />
+                    <input type="text" placeholder="Search users..." value={userSearch} onChange={e => { setUserSearch(e.target.value); setUserPage(1); }} className="bg-transparent text-sm outline-none flex-1" />
+                  </div>
+                  <select
+                    value={collegeFilter}
+                    onChange={e => { setCollegeFilter(e.target.value); setProgrammeFilter(''); setUserPage(1); }}
+                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"
+                  >
+                    <option value="">All Colleges</option>
+                    {colleges.map(c => (
+                      <option key={c.id} value={c.id}>{c.code} — {c.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={programmeFilter}
+                    onChange={e => { setProgrammeFilter(e.target.value); setUserPage(1); }}
+                    className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none"
+                  >
+                    <option value="">All Programmes</option>
+                    {programmes
+                      .filter(p => !collegeFilter || p.college_id === collegeFilter)
+                      .map(p => (
+                        <option key={p.id} value={p.id}>{p.code} — {p.name}</option>
+                      ))}
+                  </select>
                 </div>
                 <button onClick={() => {
                   const defaultRole = isAdmin ? 'instructor' : 'student'; // Admins default to instructor, instructors can only add students
@@ -546,22 +582,25 @@ export default function Administration() {
                         <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Email</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Role</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Reg. No</th>
+                        <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">College</th>
                         <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase whitespace-nowrap">Programme</th>
                         <th className="px-4 py-3"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
                       {filteredUsers.length === 0 ? (
-                        <tr><td colSpan={6} className="px-4 py-8 text-center text-sm text-gray-400">No users found. Use "Add User" to create accounts.</td></tr>
+                        <tr><td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">No users found. Use "Add User" to create accounts.</td></tr>
                       ) : paginatedUsers.map((user, ui) => {
                         const uid     = String(user.id ?? ui);
                         const uname   = String(user.name ?? '');
                         const uemail  = String(user.email ?? '');
                         const urole   = String(user.role ?? 'student');
                         const ureg    = String(user.registration_number ?? '');
-                        const progId = user.degree_programme_id ?? '';
-                        const progName = Array.isArray(programmes) ? programmes.find(p => p.id === progId)?.name : undefined;
-                        const uprog   = progName ?? (progId ? progId.slice(0, 8) + '...' : '—');
+                        const progId = String(user.degree_programme_id ?? '');
+                        const prog    = Array.isArray(programmes) ? programmes.find(p => p.id === progId) : undefined;
+                        const uprog   = prog ? `${prog.code} — ${prog.name}` : (progId ? progId.slice(0, 8) + '...' : '—');
+                        const college = prog ? colleges.find(c => c.id === prog.college_id) : undefined;
+                        const ucollege = college ? college.code : '—';
                         const initials = uname.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
                         return (
                           <tr key={uid} className="hover:bg-gray-50">
@@ -576,6 +615,7 @@ export default function Administration() {
                               <span className={`text-xs px-2 py-1 rounded-full font-medium capitalize ${roleColors[urole] ?? 'bg-gray-100 text-gray-600'}`}>{urole}</span>
                             </td>
                             <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ureg || '—'}</td>
+                            <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{ucollege}</td>
                             <td className="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">{uprog}</td>
                             <td className="px-4 py-3 whitespace-nowrap">
                               <div className="relative" onClick={e => e.stopPropagation()}>
