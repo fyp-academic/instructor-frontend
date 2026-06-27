@@ -4,14 +4,15 @@ import {
   HelpCircle, FileText, MessageSquare, Link, File, Package,
   Layers, Users, Hash, Layout, GripVertical, Check, X, BookOpen,
   ClipboardList, Monitor, ListChecks, BarChart3, Award, Database,
-  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play, Loader2
+  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play, Loader2, Code2
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { Activity, ActivityType, activityTypeInfo } from '../../data/mockData';
 import { quizApi, lessonApi, videoApi, fileApi, scormApi, h5pApi } from '../../services/api';
 import { AddActivityModal } from '../modals/AddActivityModal';
+import { ActivityReviewModal } from '../modals/ActivityReviewModal';
 import { QuizCreator } from '../modals/QuizCreator';
-import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator, LabelCreator } from '../modals/ActivityCreators';
+import { AssignmentCreator, ForumCreator, UrlCreator, FileCreator, ScormCreator, WorkshopCreator, H5PCreator, PageCreator, LabelCreator, PracticalCreator, DiscussionCreator } from '../modals/ActivityCreators';
 import {
   AttendanceCreator, BigBlueButtonCreator, BookCreator, ChecklistCreator,
   ChoiceCreator, CertificateCreator, DatabaseCreator, FeedbackCreator,
@@ -42,6 +43,8 @@ const activityIcons: Record<ActivityType, React.ElementType> = {
   ims_content_package: Box,
   lesson: GraduationCap,
   video: Play,
+  practical: Code2,
+  discussion: MessageSquare,
 };
 
 interface CourseContentProps {
@@ -54,6 +57,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
 
   const [addActivityTarget, setAddActivityTarget] = useState<string | null>(null); // sectionId
   const [activityCreator, setActivityCreator] = useState<{ type: ActivityType; sectionId: string; activity?: Activity } | null>(null);
+  const [reviewActivity, setReviewActivity] = useState<Activity | null>(null);
   const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
   const [editSectionTitle, setEditSectionTitle] = useState('');
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set());
@@ -608,6 +612,11 @@ export function CourseContent({ courseId }: CourseContentProps) {
                         </div>
                       </div>
 
+                      {(activity.type === 'practical' || activity.type === 'discussion') && (
+                        <button onClick={() => setReviewActivity(activity)} className="px-2 py-1 text-[11px] font-medium text-indigo-600 border border-indigo-200 rounded hover:bg-indigo-50 flex-shrink-0">
+                          {activity.type === 'practical' ? 'Submissions' : 'View'}
+                        </button>
+                      )}
                       {editMode && (
                         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button onClick={() => { setActivityCreator({ type: activity.type, sectionId: section.id, activity }); }} className="p-1 rounded hover:bg-gray-200 text-gray-400 hover:text-gray-700">
@@ -729,6 +738,35 @@ export function CourseContent({ courseId }: CourseContentProps) {
           }}
           initialData={activityCreator.activity}
         />
+      )}
+      {activityCreator?.type === 'practical' && (
+        <PracticalCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'practical', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {activityCreator?.type === 'discussion' && (
+        <DiscussionCreator
+          onClose={() => setActivityCreator(null)}
+          onSave={(data) => {
+            if (activityCreator.activity) {
+              handleEditActivitySave(activityCreator.sectionId, activityCreator.activity.id, data, activityCreator.type);
+            } else {
+              handleSaveActivity(activityCreator.sectionId, 'discussion', data);
+            }
+          }}
+          initialData={activityCreator.activity}
+        />
+      )}
+      {reviewActivity && (
+        <ActivityReviewModal activity={reviewActivity} onClose={() => setReviewActivity(null)} />
       )}
       {activityCreator?.type === 'url' && (
         <UrlCreator

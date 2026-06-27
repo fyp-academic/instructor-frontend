@@ -109,6 +109,18 @@ export const assignmentsApi = {
   gradeSubmission: (submissionId: string, data: Record<string, unknown>) =>
     api.put(`/submissions/${submissionId}/grade`, data),
 };
+// ─── Practical Problem ───────────────────────────────────────────────────────
+export const practicalApi = {
+  submissions: (activityId: string) => api.get(`/activities/${activityId}/practical-submissions`),
+  submission:  (submissionId: string) => api.get(`/practical-submissions/${submissionId}`),
+  grade: (submissionId: string, data: { grade: number; feedback?: string }) =>
+    api.post(`/practical-submissions/${submissionId}/grade`, data),
+};
+// ─── Discussion ──────────────────────────────────────────────────────────────
+export const discussionApi = {
+  get:   (activityId: string) => api.get(`/activities/${activityId}/discussion`),
+  react: (postId: string, value: 1 | -1) => api.post(`/posts/${postId}/react`, { value }),
+};
 // ─── Categories ──────────────────────────────────────────────────────────────
 export const categoriesApi = {
   list:   ()                                     => api.get('/categories'),

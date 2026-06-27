@@ -48,7 +48,8 @@ export interface Section {
 export type ActivityType =
   | 'quiz' | 'assignment' | 'forum' | 'url' | 'file' | 'h5p' | 'scorm' | 'workshop' | 'label' | 'page'
   | 'attendance' | 'bigbluebutton' | 'book' | 'checklist' | 'choice' | 'certificate'
-  | 'database' | 'feedback' | 'folder' | 'glossary' | 'ims_content_package' | 'lesson' | 'video';
+  | 'database' | 'feedback' | 'folder' | 'glossary' | 'ims_content_package' | 'lesson' | 'video'
+  | 'practical' | 'discussion';
 
 export interface Activity {
   id: string;
@@ -466,4 +467,6 @@ export const activityTypeInfo: Record<ActivityType, { label: string; description
   ims_content_package: { label: 'IMS CP', description: 'Upload IMS content packages', color: 'bg-neutral-100', iconColor: 'text-neutral-600' },
   lesson: { label: 'Lesson', description: 'Create branching lessons with pages', color: 'bg-cyan-100', iconColor: 'text-cyan-700' },
   video: { label: 'Video', description: 'Upload or link a video resource', color: 'bg-red-50', iconColor: 'text-red-700' },
+  practical: { label: 'Practical Problem', description: 'Live coding task with editor + preview (HTML/CSS/JS)', color: 'bg-emerald-100', iconColor: 'text-emerald-600' },
+  discussion: { label: 'Discussion', description: 'Threaded discussion topic with likes and replies', color: 'bg-cyan-100', iconColor: 'text-cyan-600' },
 };

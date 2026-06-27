@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import {
   X, Search, FileText, HelpCircle, MessageSquare, Link, File, Package, Users, Hash, Layout, Layers,
   ClipboardList, Monitor, BookOpen, ListChecks, BarChart3, Award, Database as DatabaseIcon,
-  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play, Info, Star
+  MessageCircle, Folder, BookMarked, Box, GraduationCap, Play, Info, Star, Code2
 } from 'lucide-react';
 import { ActivityType, activityTypeInfo } from '../../data/mockData';
 
@@ -18,6 +18,7 @@ const activityIcons: Record<string, React.ElementType> = {
   checklist: ListChecks, choice: BarChart3, certificate: Award, database: DatabaseIcon,
   feedback: MessageCircle, folder: Folder, glossary: BookMarked,
   ims_content_package: Box, lesson: GraduationCap, video: Play,
+  practical: Code2, discussion: MessageSquare,
 };
 
 const categories: { id: string; label: string }[] = [
@@ -32,13 +33,13 @@ const categories: { id: string; label: string }[] = [
 ];
 
 const categoryMap: Record<string, string[]> = {
-  recommended: ['quiz', 'assignment', 'forum', 'page', 'url'],
+  recommended: ['quiz', 'assignment', 'forum', 'page', 'url', 'practical', 'discussion'],
   administration: ['attendance', 'certificate', 'label', 'checklist'],
-  assessment: ['quiz', 'assignment', 'workshop', 'choice', 'h5p', 'feedback'],
-  collaboration: ['forum', 'workshop', 'database', 'glossary'],
-  communication: ['forum', 'bigbluebutton', 'feedback', 'announcement'],
+  assessment: ['quiz', 'assignment', 'workshop', 'choice', 'h5p', 'feedback', 'practical'],
+  collaboration: ['forum', 'discussion', 'workshop', 'database', 'glossary'],
+  communication: ['forum', 'discussion', 'bigbluebutton', 'feedback', 'announcement'],
   resources: ['file', 'folder', 'url', 'page', 'book', 'video', 'ims_content_package', 'scorm'],
-  interactive: ['h5p', 'scorm', 'lesson', 'choice', 'lesson'],
+  interactive: ['h5p', 'scorm', 'lesson', 'choice', 'practical'],
 };
 
 export function AddActivityModal({ onClose, onSelect }: AddActivityModalProps) {

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout } from 'lucide-react';
+import { X, FileText, MessageSquare, Link, File, Package, Layers, Users, Hash, Layout, Code2 } from 'lucide-react';
 import { RichTextEditor } from '../RichTextEditor';
 import { ActivityType } from '../../data/mockData';
 import { h5pApi } from '../../services/api';
+import CodeWorkspace, { CodeFiles, EMPTY_FILES } from '../CodeWorkspace';
 
 interface BaseCreatorProps {
   type: ActivityType;
@@ -33,6 +34,7 @@ export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCre
     dueDate: s.dueDate ?? '',
     cutoffDate: s.cutoffDate ?? '',
     allowFromDate: s.allowFromDate ?? '',
+    timeLimit: s.timeLimit ?? '',
     submissionTypes: s.submissionTypes ?? ['file'],
     textOnlineEnabled: s.textOnlineEnabled ?? false,
     fileSubmissionEnabled: s.fileSubmissionEnabled ?? true,
@@ -81,6 +83,11 @@ export function AssignmentCreator({ onClose, onSave, initialData }: Omit<BaseCre
             <FormField label="Allow Submissions From"><input type="datetime-local" value={form.allowFromDate} onChange={e => setF('allowFromDate', e.target.value)} className={inputCls} /></FormField>
             <FormField label="Due Date"><input type="datetime-local" value={form.dueDate} onChange={e => setF('dueDate', e.target.value)} className={inputCls} /></FormField>
             <FormField label="Cut-off Date" hint="Submissions after this date will not be accepted"><input type="datetime-local" value={form.cutoffDate} onChange={e => setF('cutoffDate', e.target.value)} className={inputCls} /></FormField>
+            {form.textOnlineEnabled && !form.fileSubmissionEnabled && (
+              <FormField label="Time Limit (minutes)" hint="Times the student's written response; shows a countdown and auto-submits at zero. Only available for text-only submissions.">
+                <input type="number" min="0" value={form.timeLimit} onChange={e => setF('timeLimit', e.target.value)} placeholder="Leave empty for no limit" className={inputCls} />
+              </FormField>
+            )}
           </>}
           {tab === 'submission_types' && <>
             <FormField label="Submission Types">
@@ -755,6 +762,163 @@ export function LabelCreator({ onClose, onSave, initialData }: Omit<BaseCreatorP
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
           <button onClick={() => { if (!content) { alert('Please enter label content'); return; } onSave({ name: content, description: content, settings: { content } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Label</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const toggleRow = (label: string, hint: string, checked: boolean, onChange: (v: boolean) => void) => (
+  <label className="flex items-start gap-2 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+    <input type="checkbox" checked={checked} onChange={e => onChange(e.target.checked)} className="mt-0.5" />
+    <div><p className="text-sm font-medium text-gray-700">{label}</p>{hint && <p className="text-xs text-gray-400">{hint}</p>}</div>
+  </label>
+);
+
+export function PracticalCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [tab, setTab] = useState('details');
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    instructions: s.instructions ?? initialData?.description ?? '',
+    gradeMax: s.gradeMax ?? '100',
+    timeLimit: s.timeLimit ?? '',
+  });
+  const [sample, setSample] = useState<CodeFiles>({ ...EMPTY_FILES, ...(s.sample ?? {}) });
+  const [starter, setStarter] = useState<CodeFiles>({ ...EMPTY_FILES, ...(s.starter ?? {}) });
+  const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const tabs = ['Details', 'Sample (solution)', 'Starter code'];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-emerald-100 rounded-lg flex items-center justify-center"><Code2 className="w-5 h-5 text-emerald-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Practical Problem</h2></div>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
+        </div>
+        <div className="flex border-b border-gray-200 px-5 overflow-x-auto flex-shrink-0">
+          {tabs.map(t => (
+            <button key={t} onClick={() => setTab(t.toLowerCase().split(' ')[0])}
+              className={`px-3 py-3 text-xs font-medium border-b-2 whitespace-nowrap ${tab === t.toLowerCase().split(' ')[0] ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500'}`}>{t}</button>
+          ))}
+        </div>
+        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          {tab === 'details' && <>
+            <FormField label="Task Name" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. Build a responsive pricing card" className={inputCls} /></FormField>
+            <FormField label="Instructions" hint="Shown to the student next to the sample preview"><RichTextEditor value={form.instructions} onChange={v => setF('instructions', v)} placeholder="Describe what the student should build..." minHeight={140} /></FormField>
+            <FormField label="Maximum Grade"><input type="number" value={form.gradeMax} onChange={e => setF('gradeMax', e.target.value)} className={inputCls} /></FormField>
+            <FormField label="Time Limit (minutes)" hint="Optional. Shows a countdown and auto-submits the student's code at zero. Leave empty for untimed."><input type="number" min="0" value={form.timeLimit} onChange={e => setF('timeLimit', e.target.value)} placeholder="Leave empty for no limit" className={inputCls} /></FormField>
+          </>}
+          {tab === 'sample' && <>
+            <p className="text-xs text-gray-500">Build the sample page students will imitate. They see its live preview (not your code).</p>
+            <CodeWorkspace files={sample} onChange={setSample} previewHeight={240} editorHeight={240} />
+          </>}
+          {tab === 'starter' && <>
+            <p className="text-xs text-gray-500">Optional starter code the student's editor is pre-filled with.</p>
+            <CodeWorkspace files={starter} onChange={setStarter} previewHeight={200} editorHeight={240} />
+          </>}
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter task name'); return; } onSave({ name: form.name, description: form.instructions, settings: { ...form, sample, starter } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Practical</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DiscussionCreator({ onClose, onSave, initialData }: Omit<BaseCreatorProps, 'type'>) {
+  const s = (initialData?.settings ?? {}) as Record<string, any>;
+  const [tab, setTab] = useState('topic');
+  const [form, setForm] = useState({
+    name: initialData?.name ?? '',
+    content: initialData?.description ?? '',
+    not_published: s.not_published ?? false,
+    anonymous_mode: s.anonymous_mode ?? 'off',            // off | partial | full
+    disallow_threaded: s.disallow_threaded ?? false,
+    require_post_before_view: s.require_post_before_view ?? false,
+    podcast_feed: s.podcast_feed ?? false,
+    graded: s.graded ?? false,
+    gradeMax: s.gradeMax ?? '100',
+    allow_liking: s.allow_liking ?? true,
+    add_to_todo: s.add_to_todo ?? false,
+    is_group: s.is_group ?? false,
+    default_thread_state: s.default_thread_state ?? 'expanded',   // expanded | collapsed
+    lock_thread_state: s.lock_thread_state ?? false,
+    default_sort: s.default_sort ?? 'oldest',                     // oldest | newest
+    lock_sort: s.lock_sort ?? false,
+    available_from: s.available_from ?? '',
+    available_until: s.available_until ?? '',
+  });
+  const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
+  const tabs = ['Topic', 'Options', 'Availability'];
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[92vh] flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
+          <div className="flex items-center gap-3"><div className="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center"><MessageSquare className="w-5 h-5 text-cyan-600" /></div><h2 className="text-lg font-bold text-gray-900">{initialData ? 'Edit' : 'Create'} Discussion</h2></div>
+          <button onClick={onClose} className="cursor-pointer"><X className="w-5 h-5 text-gray-400" /></button>
+        </div>
+        <div className="flex border-b border-gray-200 px-5 overflow-x-auto flex-shrink-0">
+          {tabs.map(t => (
+            <button key={t} onClick={() => setTab(t.toLowerCase())}
+              className={`px-3 py-3 text-xs font-medium border-b-2 whitespace-nowrap ${tab === t.toLowerCase() ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-gray-500'}`}>{t}</button>
+          ))}
+        </div>
+        <div className="overflow-y-auto flex-1 p-5 space-y-4">
+          {tab === 'topic' && <>
+            <FormField label="Topic Title" required><input value={form.name} onChange={e => setF('name', e.target.value)} placeholder="e.g. What makes good UX?" className={inputCls} /></FormField>
+            <FormField label="Topic Content"><RichTextEditor value={form.content} onChange={v => setF('content', v)} placeholder="Write the discussion prompt..." minHeight={200} /></FormField>
+            {toggleRow('Not Published', 'Hide from students until you publish', form.not_published, v => setF('not_published', v))}
+          </>}
+          {tab === 'options' && <>
+            <FormField label="Anonymous Discussion" hint="Grading and groups are not supported in fully anonymous discussions">
+              <select value={form.anonymous_mode} onChange={e => setF('anonymous_mode', e.target.value)} className={inputCls}>
+                <option value="off">Off — names &amp; pictures are visible</option>
+                <option value="partial">Partial — students can choose to reveal themselves</option>
+                <option value="full">Full — names &amp; pictures are hidden</option>
+              </select>
+            </FormField>
+            <div className="space-y-2">
+              {toggleRow('Disallow threaded replies', 'Replies cannot be nested', form.disallow_threaded, v => setF('disallow_threaded', v))}
+              {toggleRow('Must respond before viewing other replies', 'Students post first to unlock the thread', form.require_post_before_view, v => setF('require_post_before_view', v))}
+              {toggleRow('Enable podcast feed', '', form.podcast_feed, v => setF('podcast_feed', v))}
+              {toggleRow('Allow liking', 'Students can like / dislike replies', form.allow_liking, v => setF('allow_liking', v))}
+              {toggleRow('Add to student to-do', '', form.add_to_todo, v => setF('add_to_todo', v))}
+              {toggleRow('This is a Group Discussion', '', form.is_group, v => setF('is_group', v))}
+              {form.anonymous_mode !== 'full' && toggleRow('Graded', 'Score replies into the gradebook', form.graded, v => setF('graded', v))}
+            </div>
+            {form.graded && form.anonymous_mode !== 'full' && (
+              <FormField label="Maximum Grade"><input type="number" value={form.gradeMax} onChange={e => setF('gradeMax', e.target.value)} className={inputCls} /></FormField>
+            )}
+            <FormField label="Default Thread State">
+              <div className="flex gap-3 items-center">
+                <select value={form.default_thread_state} onChange={e => setF('default_thread_state', e.target.value)} className={inputCls}>
+                  <option value="expanded">Expanded</option>
+                  <option value="collapsed">Collapsed</option>
+                </select>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap"><input type="checkbox" checked={form.lock_thread_state} onChange={e => setF('lock_thread_state', e.target.checked)} />Lock for students</label>
+              </div>
+            </FormField>
+            <FormField label="Default Sort Order">
+              <div className="flex gap-3 items-center">
+                <select value={form.default_sort} onChange={e => setF('default_sort', e.target.value)} className={inputCls}>
+                  <option value="oldest">Oldest First</option>
+                  <option value="newest">Newest First</option>
+                </select>
+                <label className="flex items-center gap-1.5 text-xs text-gray-600 whitespace-nowrap"><input type="checkbox" checked={form.lock_sort} onChange={e => setF('lock_sort', e.target.checked)} />Lock for students</label>
+              </div>
+            </FormField>
+          </>}
+          {tab === 'availability' && <>
+            <FormField label="Available From"><input type="datetime-local" value={form.available_from} onChange={e => setF('available_from', e.target.value)} className={inputCls} /></FormField>
+            <FormField label="Until"><input type="datetime-local" value={form.available_until} onChange={e => setF('available_until', e.target.value)} className={inputCls} /></FormField>
+          </>}
+        </div>
+        <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
+          <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter topic title'); return; } onSave({ name: form.name, description: form.content, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Discussion</button>
         </div>
       </div>
     </div>
