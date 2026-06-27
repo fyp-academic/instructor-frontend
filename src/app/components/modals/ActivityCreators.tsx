@@ -786,8 +786,19 @@ export function PracticalCreator({ onClose, onSave, initialData }: Omit<BaseCrea
   });
   const [sample, setSample] = useState<CodeFiles>({ ...EMPTY_FILES, ...(s.sample ?? {}) });
   const [starter, setStarter] = useState<CodeFiles>({ ...EMPTY_FILES, ...(s.starter ?? {}) });
+  const [proctoring, setProctoring] = useState({
+    enabled:        s.proctoring?.enabled        ?? false,
+    tab_blur:       s.proctoring?.tab_blur        ?? true,
+    fullscreen:     s.proctoring?.fullscreen      ?? true,
+    copy_paste:     s.proctoring?.copy_paste      ?? true,
+    webcam_ai:      s.proctoring?.webcam_ai       ?? true,
+    audio_noise:    s.proctoring?.audio_noise     ?? false,
+    camera_motion:  s.proctoring?.camera_motion   ?? false,
+    auto_submit_threshold: s.proctoring?.auto_submit_threshold ?? 5,
+  });
   const setF = (k: string, v: unknown) => setForm(p => ({ ...p, [k]: v }));
-  const tabs = ['Details', 'Sample (solution)', 'Starter code'];
+  const setProc = (k: string, v: unknown) => setProctoring(p => ({ ...p, [k]: v }));
+  const tabs = ['Details', 'Sample (solution)', 'Starter code', 'Proctoring'];
 
   return (
     <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
@@ -817,10 +828,37 @@ export function PracticalCreator({ onClose, onSave, initialData }: Omit<BaseCrea
             <p className="text-xs text-gray-500">Optional starter code the student's editor is pre-filled with.</p>
             <CodeWorkspace files={starter} onChange={setStarter} previewHeight={200} editorHeight={240} />
           </>}
+          {tab === 'proctoring' && <div className="space-y-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input type="checkbox" checked={proctoring.enabled} onChange={e => setProc('enabled', e.target.checked)} />
+              <span className="text-sm font-semibold text-gray-800">Enable proctoring for this practical</span>
+            </label>
+            {proctoring.enabled && (
+              <div className="space-y-2 pl-1 border-l-2 border-indigo-100 ml-1">
+                {[
+                  { k: 'tab_blur',      label: 'Tab switch / window blur', hint: 'Flag leaving the tab or window' },
+                  { k: 'fullscreen',    label: 'Fullscreen exit',          hint: 'Require and monitor fullscreen' },
+                  { k: 'copy_paste',    label: 'Copy / paste / right-click', hint: 'Block clipboard and context menu' },
+                  { k: 'webcam_ai',     label: 'Webcam AI (face / phone)',  hint: 'Periodic camera analysis for no-face / multiple faces / phone' },
+                  { k: 'audio_noise',   label: 'Background noise / sound',   hint: 'Off by default — only enable for controlled environments' },
+                  { k: 'camera_motion', label: 'Camera motion detection',   hint: 'Off by default — prone to false positives' },
+                ].map(item => (
+                  <label key={item.k} className="flex items-start gap-2 cursor-pointer p-3 border border-gray-200 rounded-lg hover:bg-gray-50 ml-2">
+                    <input type="checkbox" checked={(proctoring as Record<string, unknown>)[item.k] as boolean} onChange={e => setProc(item.k, e.target.checked)} className="mt-0.5" />
+                    <div><p className="text-sm font-medium text-gray-700">{item.label}</p><p className="text-xs text-gray-400">{item.hint}</p></div>
+                  </label>
+                ))}
+                <div className="ml-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Violations before auto-submit</label>
+                  <input type="number" min={1} max={20} value={proctoring.auto_submit_threshold} onChange={e => setProc('auto_submit_threshold', Number(e.target.value))} className={inputCls + ' w-32'} />
+                </div>
+              </div>
+            )}
+          </div>}
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter task name'); return; } onSave({ name: form.name, description: form.instructions, settings: { ...form, sample, starter } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Practical</button>
+          <button onClick={() => { if (!form.name) { alert('Please enter task name'); return; } onSave({ name: form.name, description: form.instructions, settings: { ...form, sample, starter, proctoring } }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Practical</button>
         </div>
       </div>
     </div>
