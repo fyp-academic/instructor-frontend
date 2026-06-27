@@ -37,6 +37,19 @@ export function ActivityReviewModal({ activity, onClose }: Props) {
   );
 }
 
+/** Round profile picture with a generated fallback when the user has none. */
+function Avatar({ name, src, size = 32 }: { name: string; src: string | null; size?: number }) {
+  const url = src || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=4f46e5&color=fff&size=64`;
+  return (
+    <img
+      src={url}
+      alt={name}
+      className="rounded-full object-cover flex-shrink-0 border border-gray-200"
+      style={{ width: size, height: size }}
+    />
+  );
+}
+
 function DiscussionReview({ activityId }: { activityId: string }) {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -54,21 +67,33 @@ function DiscussionReview({ activityId }: { activityId: string }) {
   return (
     <div className="space-y-4">
       <div className="rounded-lg border border-gray-200 p-4 bg-gray-50">
+        {data.topic_author && (
+          <div className="flex items-center gap-2 mb-2">
+            <Avatar name={data.topic_author.name ?? 'Instructor'} src={data.topic_author.avatar ?? null} size={34} />
+            <div>
+              <div className="text-sm font-semibold text-gray-800">{data.topic_author.name ?? 'Instructor'}</div>
+              <div className="text-xs text-gray-400">Topic author</div>
+            </div>
+          </div>
+        )}
         <h3 className="font-semibold text-gray-900 mb-1">{data.title}</h3>
         <div className="prose prose-sm max-w-none text-gray-700" dangerouslySetInnerHTML={{ __html: data.content || '' }} />
         <p className="text-xs text-gray-400 mt-2">{data.reply_count} replies · anonymity: {data.options?.anonymous_mode}</p>
       </div>
       {(data.replies ?? []).length === 0 && <p className="text-sm text-gray-500">No replies yet.</p>}
       {(data.replies ?? []).map((r: any) => (
-        <div key={r.id} className="rounded-lg border border-gray-200 p-3" style={{ marginLeft: Math.min((r.depth_level ?? 1) - 1, 4) * 20 }}>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-800">{r.author?.name ?? 'Anonymous'}</span>
-            <span className="text-xs text-gray-400">{r.created_at ? new Date(r.created_at).toLocaleString() : ''}</span>
-          </div>
-          <div className="text-sm text-gray-700 whitespace-pre-wrap">{r.content}</div>
-          <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-            <span className="inline-flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {r.likes_count ?? 0}</span>
-            <span className="inline-flex items-center gap-1"><ThumbsDown className="w-3.5 h-3.5" /> {r.dislikes_count ?? 0}</span>
+        <div key={r.id} className="rounded-lg border border-gray-200 p-3 flex gap-3" style={{ marginLeft: Math.min((r.depth_level ?? 1) - 1, 4) * 20 }}>
+          <Avatar name={r.author?.name ?? 'Anonymous'} src={r.author?.avatar ?? null} />
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-medium text-gray-800">{r.author?.name ?? 'Anonymous'}</span>
+              <span className="text-xs text-gray-400">{r.created_at ? new Date(r.created_at).toLocaleString() : ''}</span>
+            </div>
+            <div className="text-sm text-gray-700 whitespace-pre-wrap">{r.content}</div>
+            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+              <span className="inline-flex items-center gap-1"><ThumbsUp className="w-3.5 h-3.5" /> {r.likes_count ?? 0}</span>
+              <span className="inline-flex items-center gap-1"><ThumbsDown className="w-3.5 h-3.5" /> {r.dislikes_count ?? 0}</span>
+            </div>
           </div>
         </div>
       ))}

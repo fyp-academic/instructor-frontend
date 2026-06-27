@@ -3,12 +3,13 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft, Users, Settings, BookOpen, BarChart2, Activity,
   ChevronDown, Edit3, Eye, EyeOff, Star, MoreHorizontal,
-  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image, Sparkles
+  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image, Sparkles, Code
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CourseContent } from '../components/course/CourseContent';
 import { ParticipantsTab } from '../components/course/ParticipantsTab';
 import { GroupsTab } from '../components/course/GroupsTab';
+import { PracticalTab } from '../components/course/PracticalTab';
 import { QuestionBankPanel } from '../components/course/QuestionBankPanel';
 import { GradesTab } from '../components/course/GradesTab';
 import { ActivitiesTab } from '../components/course/ActivitiesTab';
@@ -17,7 +18,7 @@ import { AdaptationSettingsPanel } from '../components/instructor/AdaptationSett
 import { AdaptationAuditLog } from '../components/instructor/AdaptationAuditLog';
 import { RichTextEditor } from '../components/RichTextEditor';
 
-type Tab = 'course' | 'settings' | 'participants' | 'groups' | 'grades' | 'assignments' | 'activities' | 'more';
+type Tab = 'course' | 'settings' | 'participants' | 'groups' | 'practical' | 'grades' | 'assignments' | 'activities' | 'more';
 
 export default function CourseView() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +34,7 @@ export default function CourseView() {
 
   useEffect(() => {
     const tab = searchParams.get('tab');
-    if (tab && ['course', 'settings', 'participants', 'groups', 'grades', 'assignments', 'activities'].includes(tab)) {
+    if (tab && ['course', 'settings', 'participants', 'groups', 'practical', 'grades', 'assignments', 'activities'].includes(tab)) {
       setActiveTab(tab as Tab);
     }
   }, [searchParams]);
@@ -52,6 +53,7 @@ export default function CourseView() {
     { id: 'settings', label: 'Course Settings', icon: Settings },
     { id: 'participants', label: 'Participants', icon: Users },
     { id: 'groups', label: 'Groups', icon: LayoutGrid },
+    { id: 'practical', label: 'Practical', icon: Code },
     { id: 'grades', label: 'Grades', icon: BarChart2 },
     { id: 'assignments', label: 'Assignments', icon: FileText },
     { id: 'activities', label: 'Activities', icon: Activity },
@@ -172,6 +174,7 @@ export default function CourseView() {
           {activeTab === 'course' && <CourseContent courseId={course.id} />}
           {activeTab === 'participants' && <ParticipantsTab courseId={course.id} />}
           {activeTab === 'groups' && <GroupsTab courseId={course.id} />}
+          {activeTab === 'practical' && <PracticalTab courseId={course.id} />}
           {activeTab === 'grades' && <GradesTab courseId={course.id} />}
           {activeTab === 'assignments' && (
             <AssignmentsTab courseId={course.id} sectionId={activeSection || (course.sections?.[0]?.id as string) || ''} />

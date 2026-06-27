@@ -956,7 +956,16 @@ export function DiscussionCreator({ onClose, onSave, initialData }: Omit<BaseCre
         </div>
         <div className="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
           <button onClick={onClose} className="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer">Cancel</button>
-          <button onClick={() => { if (!form.name) { alert('Please enter topic title'); return; } onSave({ name: form.name, description: form.content, settings: form }); }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Discussion</button>
+          <button onClick={() => {
+            if (!form.name) { alert('Please enter topic title'); return; }
+            // Discussions carry NO marks unless the instructor explicitly enables grading
+            // (and grading is unavailable for fully-anonymous discussions). Otherwise we
+            // strip the grade so the activity isn't shown/stored as a 100-pt graded item.
+            const isGraded = form.graded && form.anonymous_mode !== 'full';
+            const { gradeMax, ...rest } = form;
+            const settings = isGraded ? { ...rest, graded: true, gradeMax } : { ...rest, graded: false };
+            onSave({ name: form.name, description: form.content, settings });
+          }} className="px-6 py-2 text-sm font-semibold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 cursor-pointer">Save Discussion</button>
         </div>
       </div>
     </div>
