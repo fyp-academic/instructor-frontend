@@ -112,6 +112,7 @@ export const assignmentsApi = {
 // ─── Practical Problem ───────────────────────────────────────────────────────
 export const practicalApi = {
   submissions: (activityId: string) => api.get(`/activities/${activityId}/practical-submissions`),
+  courseSubmissions: (courseId: string) => api.get(`/courses/${courseId}/practical-submissions`),
   submission:  (submissionId: string) => api.get(`/practical-submissions/${submissionId}`),
   grade: (submissionId: string, data: { grade: number; feedback?: string }) =>
     api.post(`/practical-submissions/${submissionId}/grade`, data),

@@ -40,6 +40,22 @@ function buildSrcDoc({ html, css, js }: PracticalFiles): string {
   return `<!DOCTYPE html><html><head><meta charset="utf-8" /><style>${css || ''}</style></head><body>${html || ''}<script>${js || ''}<\/script></body></html>`;
 }
 
+function mapSub(s: Record<string, unknown>): PracticalSub {
+  const student = (s.student ?? {}) as Record<string, unknown>;
+  return {
+    id: String(s.id),
+    studentId: String(s.student_id ?? ''),
+    studentName: String(student.name ?? 'Unknown'),
+    studentEmail: String(student.email ?? ''),
+    files: normFiles(s.files),
+    status: String(s.status ?? 'draft'),
+    autoSubmitted: s.auto_submitted === true,
+    submittedAt: String(s.submitted_at ?? ''),
+    grade: s.grade !== null && s.grade !== undefined ? Number(s.grade) : null,
+    feedback: String(s.feedback ?? ''),
+  };
+}
+
 export function PracticalTab({ courseId }: PracticalTabProps) {
   const [practicals, setPracticals] = useState<Practical[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,60 +65,87 @@ export function PracticalTab({ courseId }: PracticalTabProps) {
   const [gradingData, setGradingData] = useState({ grade: '', feedback: '' });
   const [gradeLoading, setGradeLoading] = useState(false);
   const [codeTab, setCodeTab] = useState<'html' | 'css' | 'js'>('html');
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => { loadPracticals(); }, [courseId]);
 
   const loadPracticals = async () => {
     setLoading(true);
+    setLoadError(false);
     try {
+      // 1) Enumerate practical activities from sections (so practicals with zero
+      //    submissions are still listed, and we keep sample/instructions/grade_max).
       const secRes = await sectionsApi.list(courseId);
       const sections: Record<string, unknown>[] = secRes.data.data ?? secRes.data ?? [];
-
       const perSection = await Promise.allSettled(sections.map(async (sec) => {
         const ar = await activitiesApi.list(String(sec.id));
         const acts: Record<string, unknown>[] = ar.data.data ?? ar.data ?? [];
-        const practicalActs = acts.filter(a => String(a.type ?? a.activity_type ?? '').toLowerCase() === 'practical');
-
-        return Promise.all(practicalActs.map(async (act) => {
-          const settings = (act.settings ?? {}) as Record<string, unknown>;
-          let submissions: PracticalSub[] = [];
-          try {
-            const subRes = await practicalApi.submissions(String(act.id));
-            const raw = (subRes.data.data ?? subRes.data ?? []) as Record<string, unknown>[];
-            submissions = raw.map(s => {
-              const student = (s.student ?? {}) as Record<string, unknown>;
-              return {
-                id: String(s.id),
-                studentId: String(s.student_id ?? ''),
-                studentName: String(student.name ?? 'Unknown'),
-                studentEmail: String(student.email ?? ''),
-                files: normFiles(s.files),
-                status: String(s.status ?? 'draft'),
-                autoSubmitted: s.auto_submitted === true,
-                submittedAt: String(s.submitted_at ?? ''),
-                grade: s.grade !== null && s.grade !== undefined ? Number(s.grade) : null,
-                feedback: String(s.feedback ?? ''),
-              } as PracticalSub;
-            });
-          } catch { /* leave empty */ }
-
-          return {
-            id: String(act.id),
-            name: String(act.name ?? act.title ?? 'Practical'),
-            sectionTitle: String(sec.title ?? sec.name ?? ''),
-            gradeMax: Number(act.grade_max ?? 100),
-            sample: settings.sample ? normFiles(settings.sample) : null,
-            instructions: String(settings.instructions ?? act.description ?? ''),
-            submissions,
-          } as Practical;
-        }));
+        return acts
+          .filter(a => String(a.type ?? a.activity_type ?? '').toLowerCase() === 'practical')
+          .map(act => {
+            const settings = (act.settings ?? {}) as Record<string, unknown>;
+            return {
+              id: String(act.id),
+              name: String(act.name ?? act.title ?? 'Practical'),
+              sectionTitle: String(sec.title ?? sec.name ?? ''),
+              gradeMax: Number(act.grade_max ?? 100),
+              sample: settings.sample ? normFiles(settings.sample) : null,
+              instructions: String(settings.instructions ?? act.description ?? ''),
+              submissions: [] as PracticalSub[],
+            } as Practical;
+          });
       }));
+      const enumerated = perSection.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
-      const flat = perSection.flatMap(r => r.status === 'fulfilled' ? r.value : []);
-      setPracticals(flat);
-      if (flat.length > 0) setSelected(flat[0]);
+      // 2) One course-level fetch of ALL practical submissions (same source as the
+      //    student Grade Book) — independent of the per-activity enumeration.
+      const subRes = await practicalApi.courseSubmissions(courseId);
+      const rawSubs = (subRes.data.data ?? subRes.data ?? []) as Record<string, unknown>[];
+
+      // 3) Group submissions by activity_id.
+      const byActivity = new Map<string, PracticalSub[]>();
+      const activityMeta = new Map<string, { name: string; gradeMax: number }>();
+      for (const s of rawSubs) {
+        const aid = String(s.activity_id ?? '');
+        if (!byActivity.has(aid)) byActivity.set(aid, []);
+        byActivity.get(aid)!.push(mapSub(s));
+        const a = (s.activity ?? {}) as Record<string, unknown>;
+        if (!activityMeta.has(aid)) {
+          activityMeta.set(aid, {
+            name: String(a.name ?? 'Practical'),
+            gradeMax: Number(a.grade_max ?? 100),
+          });
+        }
+      }
+
+      // 4) Attach submissions to enumerated practicals.
+      const byId = new Map(enumerated.map(p => [p.id, p]));
+      for (const [aid, subs] of byActivity) {
+        const p = byId.get(aid);
+        if (p) {
+          p.submissions = subs;
+        } else {
+          // Submission whose activity isn't in the section traversal (stale/moved/
+          // deleted) — synthesize an entry so it's never hidden from the instructor.
+          const meta = activityMeta.get(aid)!;
+          enumerated.push({
+            id: aid,
+            name: meta.name,
+            sectionTitle: '',
+            gradeMax: meta.gradeMax,
+            sample: null,
+            instructions: '',
+            submissions: subs,
+          });
+        }
+      }
+
+      setPracticals(enumerated);
+      // 5) Land on the first practical that actually has submissions.
+      setSelected(enumerated.find(p => p.submissions.length > 0) ?? enumerated[0] ?? null);
     } catch (err) {
       console.error('Failed to load practicals:', err);
+      setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -152,6 +195,16 @@ export function PracticalTab({ courseId }: PracticalTabProps) {
 
   if (loading) {
     return <div className="flex items-center justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-indigo-500" /></div>;
+  }
+
+  if (loadError) {
+    return (
+      <div className="text-center py-16 text-gray-400">
+        <AlertTriangle className="w-12 h-12 mx-auto mb-3 opacity-50 text-amber-400" />
+        <p className="text-sm">Couldn't load practical submissions.</p>
+        <button onClick={loadPracticals} className="mt-3 px-3 py-1.5 text-xs font-medium bg-indigo-50 text-indigo-700 rounded-lg hover:bg-indigo-100">Retry</button>
+      </div>
+    );
   }
 
   if (practicals.length === 0) {
