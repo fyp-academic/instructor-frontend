@@ -97,51 +97,61 @@ export function PracticalTab({ courseId }: PracticalTabProps) {
       }));
       const enumerated = perSection.flatMap(r => r.status === 'fulfilled' ? r.value : []);
 
-      // 2) One course-level fetch of ALL practical submissions (same source as the
-      //    student Grade Book) — independent of the per-activity enumeration.
-      const subRes = await practicalApi.courseSubmissions(courseId);
-      const rawSubs = (subRes.data.data ?? subRes.data ?? []) as Record<string, unknown>[];
+      // 2) Prefer ONE course-level fetch of all practical submissions (same source
+      //    as the student Grade Book). If that endpoint is unavailable (e.g. not yet
+      //    deployed), fall back to per-activity fetches so the tab still works.
+      let usedCourseLevel = false;
+      try {
+        const subRes = await practicalApi.courseSubmissions(courseId);
+        const rawSubs = (subRes.data.data ?? subRes.data ?? []) as Record<string, unknown>[];
 
-      // 3) Group submissions by activity_id.
-      const byActivity = new Map<string, PracticalSub[]>();
-      const activityMeta = new Map<string, { name: string; gradeMax: number }>();
-      for (const s of rawSubs) {
-        const aid = String(s.activity_id ?? '');
-        if (!byActivity.has(aid)) byActivity.set(aid, []);
-        byActivity.get(aid)!.push(mapSub(s));
-        const a = (s.activity ?? {}) as Record<string, unknown>;
-        if (!activityMeta.has(aid)) {
-          activityMeta.set(aid, {
-            name: String(a.name ?? 'Practical'),
-            gradeMax: Number(a.grade_max ?? 100),
-          });
+        // Group submissions by activity_id.
+        const byActivity = new Map<string, PracticalSub[]>();
+        const activityMeta = new Map<string, { name: string; gradeMax: number }>();
+        for (const s of rawSubs) {
+          const aid = String(s.activity_id ?? '');
+          if (!byActivity.has(aid)) byActivity.set(aid, []);
+          byActivity.get(aid)!.push(mapSub(s));
+          const a = (s.activity ?? {}) as Record<string, unknown>;
+          if (!activityMeta.has(aid)) {
+            activityMeta.set(aid, { name: String(a.name ?? 'Practical'), gradeMax: Number(a.grade_max ?? 100) });
+          }
         }
+
+        // Attach submissions to enumerated practicals.
+        const byId = new Map(enumerated.map(p => [p.id, p]));
+        for (const [aid, subs] of byActivity) {
+          const p = byId.get(aid);
+          if (p) {
+            p.submissions = subs;
+          } else {
+            // Submission whose activity isn't in the section traversal (stale/moved/
+            // deleted) — synthesize an entry so it's never hidden from the instructor.
+            const meta = activityMeta.get(aid)!;
+            enumerated.push({
+              id: aid, name: meta.name, sectionTitle: '', gradeMax: meta.gradeMax,
+              sample: null, instructions: '', submissions: subs,
+            });
+          }
+        }
+        usedCourseLevel = true;
+      } catch (e) {
+        console.warn('Course-level practical submissions unavailable; falling back to per-activity.', e);
       }
 
-      // 4) Attach submissions to enumerated practicals.
-      const byId = new Map(enumerated.map(p => [p.id, p]));
-      for (const [aid, subs] of byActivity) {
-        const p = byId.get(aid);
-        if (p) {
-          p.submissions = subs;
-        } else {
-          // Submission whose activity isn't in the section traversal (stale/moved/
-          // deleted) — synthesize an entry so it's never hidden from the instructor.
-          const meta = activityMeta.get(aid)!;
-          enumerated.push({
-            id: aid,
-            name: meta.name,
-            sectionTitle: '',
-            gradeMax: meta.gradeMax,
-            sample: null,
-            instructions: '',
-            submissions: subs,
-          });
-        }
+      // 2b) Fallback: fetch submissions per enumerated practical.
+      if (!usedCourseLevel) {
+        await Promise.allSettled(enumerated.map(async (p) => {
+          try {
+            const r = await practicalApi.submissions(p.id);
+            const raw = (r.data.data ?? r.data ?? []) as Record<string, unknown>[];
+            p.submissions = raw.map(mapSub);
+          } catch { /* leave this practical empty */ }
+        }));
       }
 
       setPracticals(enumerated);
-      // 5) Land on the first practical that actually has submissions.
+      // 3) Land on the first practical that actually has submissions.
       setSelected(enumerated.find(p => p.submissions.length > 0) ?? enumerated[0] ?? null);
     } catch (err) {
       console.error('Failed to load practicals:', err);
