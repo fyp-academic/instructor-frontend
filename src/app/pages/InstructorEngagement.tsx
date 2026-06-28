@@ -5,8 +5,7 @@ import {
   Send, Smartphone, TrendingDown, TrendingUp, Users, Zap,
 } from 'lucide-react';
 import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, RadarChart, Radar, PolarGrid, PolarAngleAxis,
+  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { instructorEngagementApi, coursesApi } from '../services/api';
 
@@ -47,7 +46,7 @@ interface LearnerDetail {
 interface ScoreHistoryEntry { week_number: number; engagement_score: number }
 interface LoginSession { id: string; started_at: string; ended_at: string | null; device_type: string; duration_seconds: number | null; ip_address: string | null; is_bounce: boolean }
 interface ActivityEvent { id: string; event_type: string; occurred_at: string; resource_type: string | null; value: number | null }
-interface Summary { total: number; engaged: number; at_risk: number; disengaged: number; avg_score: number }
+interface Summary { total: number; engaged: number; at_risk: number; disengaged: number; avg_score: number; avg_active_minutes?: number; coverage?: number }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const scoreColor  = (s: number) => s >= 70 ? '#16a34a' : s >= 40 ? '#f59e0b' : '#dc2626';
@@ -57,6 +56,58 @@ const riskIcon    = (r: string) => r === 'engaged' ? <CheckCircle className="w-4
 const fmtDate     = (d: string) => new Date(d).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtDuration = (s: number | null) => { if (!s) return '—'; const m = Math.floor(s / 60); return m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`; };
 const fmtSeconds  = (s: number) => { if (!s) return '0m'; if (s < 60) return `${s}s`; const m = Math.floor(s / 60); return m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`; };
+const fmtMinutes  = (m: number) => { if (!m) return '0m'; return m < 60 ? `${Math.round(m)}m` : `${Math.floor(m/60)}h ${Math.round(m%60)}m`; };
+
+// The six measured engagement signals, in formula order.
+const SIGNALS: [keyof ScoreBreakdown, string][] = [
+  ['login_consistency', 'Login'],
+  ['content_completion', 'Content'],
+  ['assessment_activity', 'Assessment'],
+  ['forum_participation', 'Forum'],
+  ['pacing', 'Pacing'],
+  ['live_session', 'Live'],
+];
+
+// Renders the six signals. `mini` = compact equalizer for table rows; `full` =
+// labeled horizontal bars. Absent (not-applicable) signals show as N/A, never 0.
+function SignalBars({ breakdown, variant = 'full' }: { breakdown?: ScoreBreakdown; variant?: 'mini' | 'full' }) {
+  if (!breakdown) return null;
+
+  if (variant === 'mini') {
+    return (
+      <div className="flex items-end gap-0.5 h-6" title="Login · Content · Assessment · Forum · Pacing · Live">
+        {SIGNALS.map(([key, label]) => {
+          const v = breakdown[key];
+          return (
+            <div key={key}
+              title={`${label}: ${v === null ? 'N/A' : Math.round(v) + '%'}`}
+              className="w-1.5 rounded-sm"
+              style={{ height: `${v === null ? 100 : Math.max(8, v)}%`, backgroundColor: v === null ? '#e5e7eb' : scoreColor(v) }} />
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {SIGNALS.map(([key, label]) => {
+        const v = breakdown[key];
+        return (
+          <div key={key} className="flex items-center gap-3">
+            <span className="w-24 text-xs text-gray-500 flex-shrink-0">{label}</span>
+            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+              {v !== null && <div className="h-full rounded-full" style={{ width: `${v}%`, backgroundColor: scoreColor(v) }} />}
+            </div>
+            <span className="w-12 text-right text-xs font-semibold flex-shrink-0" style={{ color: v === null ? '#9ca3af' : scoreColor(v) }}>
+              {v === null ? 'N/A' : Math.round(v)}
+            </span>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
 
 // Shows "based on N/6 signals" so the instructor knows the score reflects
 // measured data, not assumptions. Absent signals are listed on hover.
@@ -189,18 +240,6 @@ export default function InstructorEngagement() {
       return (b.inactive_days ?? 0) - (a.inactive_days ?? 0);
     });
 
-  // Component scores are already on a 0-100 scale. Prefer the API's
-  // score_breakdown (which marks absent signals as null) and skip those axes.
-  const bd = detail?.score_breakdown;
-  const radarData = bd ? ([
-    { subject: 'Login',      value: bd.login_consistency },
-    { subject: 'Content',    value: bd.content_completion },
-    { subject: 'Assessment', value: bd.assessment_activity },
-    { subject: 'Forum',      value: bd.forum_participation },
-    { subject: 'Pacing',     value: bd.pacing },
-    { subject: 'Live',       value: bd.live_session },
-  ].filter(d => d.value !== null) as { subject: string; value: number }[]) : [];
-
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
@@ -209,7 +248,7 @@ export default function InstructorEngagement() {
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <BarChart2 className="w-7 h-7 text-indigo-600" /> Learner Engagement
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">Monitor engagement, identify at-risk learners, and send AI-powered nudges.</p>
+          <p className="text-sm text-gray-500 mt-0.5">Measured engagement from real activity — six signals, at-risk detection, and AI nudges.</p>
         </div>
         {/* Course selector */}
         <div className="relative">
@@ -223,15 +262,17 @@ export default function InstructorEngagement() {
 
       {/* Summary cards */}
       {summary && (
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
           {[
             { label: 'Total', value: summary.total, color: 'text-gray-800', bg: 'bg-gray-50' },
             { label: 'Engaged', value: summary.engaged, color: 'text-green-700', bg: 'bg-green-50' },
             { label: 'At Risk', value: summary.at_risk, color: 'text-amber-700', bg: 'bg-amber-50' },
             { label: 'Disengaged', value: summary.disengaged, color: 'text-red-700', bg: 'bg-red-50' },
             { label: 'Avg Score', value: `${summary.avg_score}`, color: 'text-indigo-700', bg: 'bg-indigo-50' },
+            { label: 'Avg Active', value: fmtMinutes(summary.avg_active_minutes ?? 0), color: 'text-sky-700', bg: 'bg-sky-50', hint: 'Avg measured active time / learner (30d)' },
+            { label: 'Coverage', value: `${Math.round((summary.coverage ?? 0) * 100)}%`, color: 'text-violet-700', bg: 'bg-violet-50', hint: 'Avg share of the 6 signals actually measured' },
           ].map(c => (
-            <div key={c.label} className={`rounded-2xl ${c.bg} border border-gray-100 px-4 py-3 shadow-sm text-center`}>
+            <div key={c.label} title={c.hint} className={`rounded-2xl ${c.bg} border border-gray-100 px-4 py-3 shadow-sm text-center`}>
               <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">{c.label}</p>
               <p className={`text-2xl font-bold ${c.color}`}>{c.value}</p>
             </div>
@@ -288,6 +329,7 @@ export default function InstructorEngagement() {
                 <tr className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
                   <th className="text-left px-5 py-2.5">Learner</th>
                   <th className="text-left px-5 py-2.5">Engagement</th>
+                  <th className="text-left px-5 py-2.5 hidden lg:table-cell">Signals</th>
                   <th className="text-left px-5 py-2.5">Status</th>
                   <th className="text-left px-5 py-2.5">Streak</th>
                   <th className="text-left px-5 py-2.5">Last Login</th>
@@ -297,11 +339,11 @@ export default function InstructorEngagement() {
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {ovLoading ? (
-                  <tr><td colSpan={7} className="py-12 text-center text-gray-400">
+                  <tr><td colSpan={8} className="py-12 text-center text-gray-400">
                     <RefreshCw className="w-5 h-5 animate-spin mx-auto" />
                   </td></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><td colSpan={7} className="py-12 text-center text-gray-400">No learners found</td></tr>
+                  <tr><td colSpan={8} className="py-12 text-center text-gray-400">No learners found</td></tr>
                 ) : filtered.map(l => (
                   <tr key={l.user_id} className="hover:bg-gray-50/60">
                     <td className="px-5 py-3">
@@ -313,6 +355,9 @@ export default function InstructorEngagement() {
                       {l.has_data === false
                         ? <span className="text-[11px] text-gray-400 mt-1 inline-block">No data yet</span>
                         : <div className="mt-1"><ConfidenceChip confidence={l.confidence} /></div>}
+                    </td>
+                    <td className="px-5 py-3 hidden lg:table-cell">
+                      <SignalBars breakdown={l.score_breakdown} variant="mini" />
                     </td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${scoreBg(l.engagement_score)}`}>
@@ -378,6 +423,7 @@ export default function InstructorEngagement() {
                   <span className={`text-xs font-bold px-2 py-0.5 rounded-full border ${scoreBg(l.engagement_score)}`}>
                     Score: {l.engagement_score}
                   </span>
+                  <ConfidenceChip confidence={l.confidence} />
                   {nudgeDone.has(l.user_id) ? (
                     <span className="flex items-center gap-1 text-xs font-medium text-green-600 bg-green-50 px-3 py-1.5 rounded-lg border border-green-200">
                       <CheckCircle className="w-3.5 h-3.5" /> Nudge Sent
@@ -394,6 +440,11 @@ export default function InstructorEngagement() {
                   <button onClick={() => { setSelectedUser(l.user_id); setTab('detail'); }}
                     className="text-xs text-indigo-600 hover:underline font-medium">Detail →</button>
                 </div>
+              </div>
+              {/* Signal breakdown */}
+              <div className="px-5 pt-4">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Signal Breakdown</p>
+                <SignalBars breakdown={l.score_breakdown} />
               </div>
               {/* Risk reasons + interventions */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-5">
@@ -520,16 +571,12 @@ export default function InstructorEngagement() {
                 <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
                   <h3 className="font-semibold text-gray-700 mb-3 flex items-center gap-2">
                     <BarChart2 className="w-4 h-4 text-green-500" /> Signal Breakdown
+                    {detail.confidence && <span className="ml-auto"><ConfidenceChip confidence={detail.confidence} /></span>}
                   </h3>
-                  {radarData.some(d => d.value > 0) ? (
-                    <ResponsiveContainer width="100%" height={150}>
-                      <RadarChart data={radarData} cx="50%" cy="50%">
-                        <PolarGrid />
-                        <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
-                        <Radar dataKey="value" stroke="#6366f1" fill="#6366f1" fillOpacity={0.3} />
-                      </RadarChart>
-                    </ResponsiveContainer>
+                  {detail.score_breakdown ? (
+                    <SignalBars breakdown={detail.score_breakdown} />
                   ) : <div className="flex items-center justify-center h-36 text-gray-400 text-sm">No breakdown data</div>}
+                  <p className="text-[11px] text-gray-400 mt-3">Signals marked N/A aren't applicable to this course (e.g. no forum or live session) and are excluded from the score.</p>
                 </div>
               </div>
 
