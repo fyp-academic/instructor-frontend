@@ -315,7 +315,7 @@ export const AiQuizGenerator: React.FC<Props> = ({ courseId, sections, onPublish
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
               <h3 style={{ margin: '0 0 8px', fontSize: 18, fontWeight: 700, color: '#1e293b' }}>Quiz published!</h3>
               <p style={{ color: '#64748b', fontSize: 14, margin: '0 0 24px' }}>
-                The quiz has been saved as a hidden activity. Make it visible when you're ready.
+                The quiz is now live and visible to students in this section. You can edit or hide it anytime from Activities.
               </p>
               <button onClick={onClose} style={{ ...btnPrimary }}>Close</button>
             </div>
