@@ -516,6 +516,14 @@ export const instructorEngagementApi = {
     api.post(`/instructor/courses/${courseId}/learners/${userId}/nudge`, message ? { message } : {}),
 };
 
+// ─── Course Activity Logs (Moodle-style student log) ──────────────────────────
+export const courseLogsApi = {
+  list:   (courseId: string, params?: Record<string, unknown>) =>
+    api.get(`/instructor/courses/${courseId}/logs`, { params }),
+  export: (courseId: string, params?: Record<string, unknown>) =>
+    api.get(`/instructor/courses/${courseId}/logs/export`, { params, responseType: 'blob' }),
+};
+
 // ─── Instructor Proctoring ────────────────────────────────────────────────────
 export const instructorProctoringApi = {
   sessions: (courseId: string, params?: { status?: string; flagged_only?: boolean }) =>

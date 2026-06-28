@@ -16,6 +16,7 @@ import { ActivitiesTab } from '../components/course/ActivitiesTab';
 import { AssignmentsTab } from '../components/course/AssignmentsTab';
 import { AdaptationSettingsPanel } from '../components/instructor/AdaptationSettingsPanel';
 import { AdaptationAuditLog } from '../components/instructor/AdaptationAuditLog';
+import { CourseLogs } from '../components/course/CourseLogs';
 import { RichTextEditor } from '../components/RichTextEditor';
 
 type Tab = 'course' | 'settings' | 'participants' | 'groups' | 'practical' | 'grades' | 'assignments' | 'activities' | 'more';
@@ -29,6 +30,14 @@ export default function CourseView() {
   const [activeSection, setActiveSection] = useState<string>('');
   const [moreOpen, setMoreOpen] = useState(false);
   const [moreSubTab, setMoreSubTab] = useState<string>('reports');
+  const [logsUserId, setLogsUserId] = useState<string>('');
+
+  // Open the course Logs sub-tab, optionally pre-filtered to one learner.
+  const openLogsForUser = (userId: string) => {
+    setLogsUserId(userId);
+    setMoreSubTab('logs');
+    setActiveTab('more');
+  };
 
   const course = getCourse(id || '');
 
@@ -183,7 +192,7 @@ export default function CourseView() {
         {/* Tab Content */}
         <div className="p-5">
           {activeTab === 'course' && <CourseContent courseId={course.id} />}
-          {activeTab === 'participants' && <ParticipantsTab courseId={course.id} />}
+          {activeTab === 'participants' && <ParticipantsTab courseId={course.id} onViewLogs={openLogsForUser} />}
           {activeTab === 'groups' && <GroupsTab courseId={course.id} />}
           {activeTab === 'practical' && <PracticalTab courseId={course.id} />}
           {activeTab === 'grades' && <GradesTab courseId={course.id} />}
@@ -192,7 +201,7 @@ export default function CourseView() {
           )}
           {activeTab === 'activities' && <ActivitiesTab courseId={course.id} />}
           {activeTab === 'settings' && <CourseSettingsInline course={course} updateCourse={updateCourse} />}
-          {activeTab === 'more' && <MoreTabContent subTab={moreSubTab} course={course} />}
+          {activeTab === 'more' && <MoreTabContent subTab={moreSubTab} course={course} logsUserId={logsUserId} />}
         </div>
       </div>
     </div>
@@ -555,9 +564,11 @@ function CourseSettingsInline({ course, updateCourse }: { course: ReturnType<Ret
   );
 }
 
-function MoreTabContent({ subTab, course }: { subTab: string; course: any }) {
+function MoreTabContent({ subTab, course, logsUserId }: { subTab: string; course: any; logsUserId?: string }) {
   const sections: { id: string; title: string }[] =
     course?.sections?.map((s: any) => ({ id: s.id, title: s.title })) ?? [];
+
+  if (subTab === 'logs') return <CourseLogs courseId={course.id} initialUserId={logsUserId} />;
 
   if (subTab === 'reports') return (
     <div className="space-y-4">

@@ -13,15 +13,21 @@ import { instructorEngagementApi, coursesApi } from '../services/api';
 // ── Types ────────────────────────────────────────────────────────────────────
 interface Course { id: string; name: string }
 interface ScoreBreakdown {
-  login_consistency: number; content_completion: number;
-  assessment_activity: number; forum_participation: number;
-  pacing: number; live_session: number;
+  login_consistency: number | null; content_completion: number | null;
+  assessment_activity: number | null; forum_participation: number | null;
+  pacing: number | null; live_session: number | null;
 }
+// Measured-vs-assumed confidence — which of the 6 signals were actually measured.
+interface Confidence {
+  measured: string[]; absent: string[]; confidence: number; label: string;
+}
+interface TimeOnTaskResource { resource_type: string | null; resource_id: string | null; seconds: number }
+interface TimeOnTask { total_seconds: number; by_resource: TimeOnTaskResource[] }
 interface LearnerRow {
   user_id: string; name: string; email: string; profile_image?: string;
-  engagement_score: number; risk_level: 'engaged' | 'at_risk' | 'disengaged';
+  engagement_score: number; has_data?: boolean; risk_level: 'engaged' | 'at_risk' | 'disengaged';
   streak: number; last_login: string | null; inactive_days: number | null;
-  week_number: number | null; score_breakdown: ScoreBreakdown;
+  week_number: number | null; score_breakdown: ScoreBreakdown; confidence?: Confidence;
 }
 interface AtRiskEntry extends LearnerRow {
   interventions: Intervention[]; reasons: string[];
@@ -36,6 +42,7 @@ interface LearnerDetail {
   inactive_days: number | null; score_history: ScoreHistoryEntry[];
   login_history: LoginSession[]; activity_log: ActivityEvent[];
   device_breakdown: Record<string, number>; interventions: Intervention[];
+  score_breakdown?: ScoreBreakdown; confidence?: Confidence; time_on_task?: TimeOnTask;
 }
 interface ScoreHistoryEntry { week_number: number; engagement_score: number }
 interface LoginSession { id: string; started_at: string; ended_at: string | null; device_type: string; duration_seconds: number | null; ip_address: string | null; is_bounce: boolean }
@@ -49,6 +56,21 @@ const scoreBg     = (s: number) => s >= 70 ? 'bg-green-50 text-green-700 border-
 const riskIcon    = (r: string) => r === 'engaged' ? <CheckCircle className="w-4 h-4 text-green-500" /> : r === 'at_risk' ? <AlertTriangle className="w-4 h-4 text-amber-500" /> : <TrendingDown className="w-4 h-4 text-red-500" />;
 const fmtDate     = (d: string) => new Date(d).toLocaleDateString(undefined, { day: '2-digit', month: 'short', year: 'numeric' });
 const fmtDuration = (s: number | null) => { if (!s) return '—'; const m = Math.floor(s / 60); return m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`; };
+const fmtSeconds  = (s: number) => { if (!s) return '0m'; if (s < 60) return `${s}s`; const m = Math.floor(s / 60); return m < 60 ? `${m}m` : `${Math.floor(m/60)}h ${m%60}m`; };
+
+// Shows "based on N/6 signals" so the instructor knows the score reflects
+// measured data, not assumptions. Absent signals are listed on hover.
+function ConfidenceChip({ confidence }: { confidence?: Confidence }) {
+  if (!confidence || !confidence.label) return null;
+  const full = confidence.confidence >= 1;
+  return (
+    <span
+      title={confidence.absent.length ? `Not measured: ${confidence.absent.map(s => s.replace(/_/g, ' ')).join(', ')}` : 'All signals measured'}
+      className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full border ${full ? 'bg-green-50 text-green-600 border-green-200' : 'bg-gray-50 text-gray-500 border-gray-200'}`}>
+      <Info className="w-3 h-3" /> based on {confidence.label}
+    </span>
+  );
+}
 
 const intColors: Record<string, string> = {
   danger: 'bg-red-50 border-red-200 text-red-700',
@@ -167,15 +189,17 @@ export default function InstructorEngagement() {
       return (b.inactive_days ?? 0) - (a.inactive_days ?? 0);
     });
 
-  const lastScoreEntry = detail?.score_history[detail.score_history.length - 1] as Record<string, number> | undefined;
-  const radarData = detail ? [
-    { subject: 'Login',      value: ((lastScoreEntry?.login_consistency_score   ?? 0) * 100) },
-    { subject: 'Content',    value: ((lastScoreEntry?.content_completion_score  ?? 0) * 100) },
-    { subject: 'Assessment', value: ((lastScoreEntry?.assessment_activity_score ?? 0) * 100) },
-    { subject: 'Forum',      value: ((lastScoreEntry?.forum_participation_score ?? 0) * 100) },
-    { subject: 'Pacing',     value: ((lastScoreEntry?.pacing_score             ?? 0) * 100) },
-    { subject: 'Live',       value: ((lastScoreEntry?.live_session_score        ?? 0) * 100) },
-  ] : [];
+  // Component scores are already on a 0-100 scale. Prefer the API's
+  // score_breakdown (which marks absent signals as null) and skip those axes.
+  const bd = detail?.score_breakdown;
+  const radarData = bd ? ([
+    { subject: 'Login',      value: bd.login_consistency },
+    { subject: 'Content',    value: bd.content_completion },
+    { subject: 'Assessment', value: bd.assessment_activity },
+    { subject: 'Forum',      value: bd.forum_participation },
+    { subject: 'Pacing',     value: bd.pacing },
+    { subject: 'Live',       value: bd.live_session },
+  ].filter(d => d.value !== null) as { subject: string; value: number }[]) : [];
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
@@ -284,7 +308,12 @@ export default function InstructorEngagement() {
                       <p className="font-medium text-gray-800">{l.name}</p>
                       <p className="text-xs text-gray-400">{l.email}</p>
                     </td>
-                    <td className="px-5 py-3 min-w-36"><MiniGauge score={l.engagement_score} /></td>
+                    <td className="px-5 py-3 min-w-36">
+                      <MiniGauge score={l.engagement_score} />
+                      {l.has_data === false
+                        ? <span className="text-[11px] text-gray-400 mt-1 inline-block">No data yet</span>
+                        : <div className="mt-1"><ConfidenceChip confidence={l.confidence} /></div>}
+                    </td>
                     <td className="px-5 py-3">
                       <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full border ${scoreBg(l.engagement_score)}`}>
                         {riskIcon(l.risk_level)} {scoreLabel(l.engagement_score)}
@@ -319,7 +348,7 @@ export default function InstructorEngagement() {
       {tab === 'atrisk' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <p className="text-sm text-gray-500">Students with engagement score &lt; 70 or inactive &gt; 5 days.</p>
+            <p className="text-sm text-gray-500">Learners flagged at-risk or disengaged by measured engagement signals.</p>
             <button onClick={loadAtRisk} className="text-gray-400 hover:text-red-500">
               <RefreshCw className={`w-4 h-4 ${arLoading ? 'animate-spin' : ''}`} />
             </button>
@@ -456,6 +485,7 @@ export default function InstructorEngagement() {
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${scoreBg(detail.engagement_score)}`}>
                     {scoreLabel(detail.engagement_score)}
                   </span>
+                  <ConfidenceChip confidence={detail.confidence} />
                   {nudgeDone.has(detail.user.id) ? (
                     <span className="flex items-center gap-1 text-xs font-medium text-green-600">
                       <CheckCircle className="w-3.5 h-3.5" /> Nudge Sent
@@ -501,6 +531,39 @@ export default function InstructorEngagement() {
                     </ResponsiveContainer>
                   ) : <div className="flex items-center justify-center h-36 text-gray-400 text-sm">No breakdown data</div>}
                 </div>
+              </div>
+
+              {/* Real active time-on-task (measured, not estimated) */}
+              <div className="bg-white rounded-2xl border border-gray-100 p-5 shadow-sm">
+                <h3 className="font-semibold text-gray-700 mb-1 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-indigo-500" /> Active Time on Task
+                  <span className="text-xs text-gray-400">(last 30 days, measured)</span>
+                </h3>
+                <p className="text-3xl font-black text-indigo-600 mb-3">
+                  {fmtSeconds(detail.time_on_task?.total_seconds ?? 0)}
+                  <span className="text-sm font-medium text-gray-400 ml-2">total active</span>
+                </p>
+                {detail.time_on_task && detail.time_on_task.by_resource.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {[...detail.time_on_task.by_resource]
+                      .sort((a, b) => b.seconds - a.seconds)
+                      .slice(0, 6)
+                      .map((r, i) => {
+                        const max = detail.time_on_task!.by_resource.reduce((m, x) => Math.max(m, x.seconds), 1);
+                        return (
+                          <div key={i} className="flex items-center gap-3 text-xs">
+                            <span className="w-24 text-gray-500 capitalize truncate">{(r.resource_type ?? 'page').replace(/_/g, ' ')}</span>
+                            <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full bg-indigo-400 rounded-full" style={{ width: `${Math.round((r.seconds / max) * 100)}%` }} />
+                            </div>
+                            <span className="w-14 text-right font-medium text-gray-600">{fmtSeconds(r.seconds)}</span>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">No active time recorded yet — the learner hasn't generated tracked activity in this window.</p>
+                )}
               </div>
 
               {/* AI Interventions */}

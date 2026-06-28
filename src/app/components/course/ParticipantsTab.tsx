@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Search, UserPlus, Trash2, Shield, Mail, MoreVertical, Loader2, Users } from 'lucide-react';
+import { Search, UserPlus, Trash2, Shield, Mail, MoreVertical, Loader2, Users, ScrollText } from 'lucide-react';
 import { Participant } from '../../data/mockData';
 import { coursesApi } from '../../services/api';
 import { GroupManagementModal } from '../modals/GroupManagementModal';
 
 interface ParticipantsTabProps {
   courseId: string;
+  onViewLogs?: (userId: string) => void;
 }
 
-export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
+export function ParticipantsTab({ courseId, onViewLogs }: ParticipantsTabProps) {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -202,6 +203,12 @@ export function ParticipantsTab({ courseId }: ParticipantsTabProps) {
                         <div className="absolute right-0 top-8 w-44 bg-white border border-gray-200 rounded-xl shadow-xl z-20 py-1">
                           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Mail className="w-4 h-4 text-gray-400" /> Message</button>
                           <button className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"><Shield className="w-4 h-4 text-gray-400" /> Change Role</button>
+                          {onViewLogs && (
+                            <button onClick={() => { setMenuOpenId(null); onViewLogs(p.id); }}
+                              className="w-full flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                              <ScrollText className="w-4 h-4 text-gray-400" /> View Logs
+                            </button>
+                          )}
                           <div className="border-t border-gray-100 mt-1 pt-1">
                             <button onClick={() => {
                               coursesApi.unenroll(courseId, p.id).catch(() => {});
