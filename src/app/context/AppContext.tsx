@@ -114,6 +114,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const courses = (r.data.data ?? r.data ?? []).map((c: any) => ({
           ...c,
           enrolledStudents: c.enrolled_students ?? c.enrolledStudents ?? 0,
+          shortName: c.short_name ?? c.shortName ?? '',
+          categoryName: c.category_name ?? c.categoryName ?? c.category?.name ?? '',
           sections: (c.sections ?? [
             { id: 'sec_general', title: 'General', visible: true, activities: [] },
             { id: 'sec_topic1', title: 'Topic 1', visible: true, activities: [] },

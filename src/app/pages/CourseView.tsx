@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft, Users, Settings, BookOpen, BarChart2, Activity,
-  ChevronDown, Edit3, Eye, EyeOff, Star, MoreHorizontal,
+  ChevronDown, ChevronRight, Edit3, Eye, EyeOff, Star, MoreHorizontal,
   FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image, Sparkles, Code
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
@@ -72,15 +72,26 @@ export default function CourseView() {
   return (
     <div className="space-y-4" onClick={() => setMoreOpen(false)}>
       {/* Breadcrumb + back */}
-      <div className="flex items-center gap-2 text-sm text-gray-500">
-        <button onClick={() => navigate('/courses')} className="flex items-center gap-1 hover:text-indigo-600 transition-colors">
-          <ArrowLeft className="w-4 h-4" /> My Courses
-        </button>
-        <span>/</span>
-        <span className="text-gray-400">{course.categoryName}</span>
-        <span>/</span>
-        <span className="text-gray-700 font-medium truncate">{course.shortName}</span>
-      </div>
+      {(() => {
+        const categoryName = String((course as any).category_name ?? course.categoryName ?? '');
+        const shortName    = String((course as any).short_name ?? course.shortName ?? '');
+        const courseLabel  = String(course.name || shortName || 'Course');
+        return (
+          <nav className="flex items-center gap-1.5 text-sm text-gray-500">
+            <button onClick={() => navigate('/courses')} className="inline-flex items-center gap-1 hover:text-indigo-600 transition-colors">
+              <ArrowLeft className="w-4 h-4" /> My Courses
+            </button>
+            {categoryName && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+                <span className="text-gray-400 truncate max-w-[12rem]">{categoryName}</span>
+              </>
+            )}
+            <ChevronRight className="w-3.5 h-3.5 text-gray-300 flex-shrink-0" />
+            <span className="text-gray-700 font-medium truncate max-w-[18rem]">{courseLabel}</span>
+          </nav>
+        );
+      })()}
 
       {/* Course Header */}
       <div className="bg-gradient-to-r from-indigo-700 to-indigo-900 rounded-2xl p-6 text-white">
