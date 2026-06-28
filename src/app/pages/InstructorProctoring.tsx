@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   AlertTriangle, ShieldAlert, ShieldCheck, ShieldOff, Eye,
-  RefreshCw, ChevronDown, X, Clock, Flag, BookOpen, FileText,
+  RefreshCw, ChevronDown, X, Clock, Flag, BookOpen, FileText, Code2,
   Camera, Copy, MousePointer, Keyboard, Monitor, Smartphone,
   Volume2, Bot, Users, CheckCircle, Loader2, Activity, WifiOff,
 } from 'lucide-react';
@@ -15,7 +15,7 @@ interface ProcSession {
   student: { id: string; name: string; email: string; profile_image_url?: string } | null;
   activity_name: string | null;
   activity_type: string | null;
-  context_type: 'quiz' | 'assignment';
+  context_type: 'quiz' | 'assignment' | 'practical';
   status: 'active' | 'ended' | 'force_submitted';
   violation_count: number;
   is_flagged: boolean;
@@ -55,6 +55,18 @@ const fmtDur = (s: number | null) => {
   const m = Math.floor(s / 60);
   return m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60}m`;
 };
+
+// Label the proctored activity by its real type, preferring the activity's type
+// and falling back to the session's context_type (which survives activity edits).
+const TYPE_META: Record<string, { label: string; icon: React.ElementType }> = {
+  quiz:       { label: 'Quiz',       icon: BookOpen },
+  assignment: { label: 'Assignment', icon: FileText },
+  practical:  { label: 'Practical',  icon: Code2 },
+};
+const typeMeta = (activityType: string | null | undefined, contextType: string) =>
+  TYPE_META[(activityType || '').toLowerCase()]
+    ?? TYPE_META[(contextType || '').toLowerCase()]
+    ?? { label: 'Activity', icon: FileText };
 
 const VIOLATION_INFO: Record<string, { label: string; icon: React.ElementType; color: string }> = {
   tab_switch:           { label: 'Tab Switch',          icon: Monitor,      color: '#f59e0b' },
@@ -204,10 +216,15 @@ function SessionDetailModal({ sessionId, onClose }: { sessionId: string; onClose
                         <Flag size={10} /> Flagged
                       </span>
                     )}
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
-                      {detail.context_type === 'quiz' ? <BookOpen size={11} /> : <FileText size={11} />}
-                      {detail.context_type === 'quiz' ? 'Quiz' : 'Assignment'}
-                    </span>
+                    {(() => {
+                      const m = typeMeta(detail.activity_type, detail.context_type);
+                      const TypeIcon = m.icon;
+                      return (
+                        <span className="text-xs text-gray-500 flex items-center gap-1">
+                          <TypeIcon size={11} /> {m.label}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
@@ -503,10 +520,15 @@ export default function InstructorProctoring() {
                     </td>
                     {/* Type */}
                     <td className="px-4 py-3">
-                      <span className="flex items-center gap-1 text-xs font-medium text-gray-600">
-                        {s.context_type === 'quiz' ? <BookOpen size={12} /> : <FileText size={12} />}
-                        {s.context_type === 'quiz' ? 'Quiz' : 'Assignment'}
-                      </span>
+                      {(() => {
+                        const m = typeMeta(s.activity_type, s.context_type);
+                        const TypeIcon = m.icon;
+                        return (
+                          <span className="flex items-center gap-1 text-xs font-medium text-gray-600">
+                            <TypeIcon size={12} /> {m.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     {/* Status */}
                     <td className="px-4 py-3">
