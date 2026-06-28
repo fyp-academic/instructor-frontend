@@ -39,7 +39,7 @@ export const instructorTour: TourStep[] = [
     icon: BookOpen,
     target: '[data-tour="nav-courses"]',
     tip: 'Enable Edit Mode first to add or rearrange content inside a course.',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'edit-mode',
@@ -55,7 +55,7 @@ export const instructorTour: TourStep[] = [
     body: 'Schedule and launch live video classes for your students, complete with recording and attendance.',
     icon: Video,
     target: '[data-tour="nav-sessions"]',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'nav-engagement',
@@ -63,7 +63,7 @@ export const instructorTour: TourStep[] = [
     body: 'See who’s active, who’s falling behind, and which activities drive participation — AI surfaces at-risk students automatically.',
     icon: BarChart2,
     target: '[data-tour="nav-engagement"]',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'nav-proctoring',
@@ -71,7 +71,7 @@ export const instructorTour: TourStep[] = [
     body: 'Monitor quiz and exam integrity with live proctoring sessions and flagged-event review.',
     icon: ShieldAlert,
     target: '[data-tour="nav-proctoring"]',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'nav-administration',
@@ -79,7 +79,7 @@ export const instructorTour: TourStep[] = [
     body: 'Manage the students and courses assigned to your programme from one place.',
     icon: GraduationCap,
     target: '[data-tour="nav-administration"]',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'search',
@@ -145,7 +145,7 @@ export const adminTour: TourStep[] = [
     body: 'This is your command center for users, courses, colleges, programmes, and system settings.',
     icon: Settings,
     target: '[data-tour="nav-administration"]',
-    placement: 'bottom',
+    placement: 'right',
   },
   {
     id: 'admin-stats',

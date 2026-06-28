@@ -1,29 +1,36 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router';
+import { useNavigate } from 'react-router';
 import {
-  Bell, MessageSquare, User, ChevronDown, Search, BookOpen,
-  LayoutDashboard, Settings, LogOut, Edit3, X,
-  CheckCheck, Menu, BellRing, Video, BarChart2, ShieldAlert, GraduationCap
+  Bell, MessageSquare, User, ChevronDown, Search, Settings,
+  LogOut, Edit3, X, CheckCheck, Menu, BellRing,
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 
-export function Header() {
+interface HeaderProps {
+  onMenuClick: () => void;
+}
+
+/**
+ * Slim utility top bar. Primary navigation now lives in the Sidebar, so the
+ * header only carries search and account-level actions on a clean light surface.
+ */
+export function Header({ onMenuClick }: HeaderProps) {
   const navigate = useNavigate();
-  const location = useLocation();
   const { logout, isAdmin } = useAuth();
-  const { editMode, toggleEditMode, unreadCount, totalUnreadMessages, notifications, markNotificationRead, markAllRead, setGlobalSearch, globalSearch, currentUser, conversations } = useApp();
+  const {
+    editMode, toggleEditMode, unreadCount, totalUnreadMessages, notifications,
+    markNotificationRead, markAllRead, setGlobalSearch, globalSearch, currentUser, conversations,
+  } = useApp();
 
   const handleLogout = async () => {
     await logout();
-    // Instructor app has no landing page — send users to the shared public landing.
     window.location.href = import.meta.env.VITE_STUDENT_URL ?? 'https://apesudom.codagenz.com';
   };
 
   const [notifOpen, setNotifOpen] = useState(false);
   const [msgOpen, setMsgOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
 
   const notifRef = useRef<HTMLDivElement>(null);
@@ -40,63 +47,22 @@ export function Header() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Role-aware navigation: admins handle administration & oversight; instructors
-  // handle course delivery. Each role only sees what it is allowed to use.
-  const navLinks = isAdmin
-    ? [
-        { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
-        { to: '/administration', label: 'Administration', icon: Settings, tourId: 'nav-administration' },
-        { to: '/logs', label: 'Logs', icon: Bell, tourId: 'nav-logs' },
-      ]
-    : [
-        { to: '/', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
-        { to: '/courses', label: 'My Courses', icon: BookOpen, tourId: 'nav-courses' },
-        { to: '/sessions', label: 'Live Sessions', icon: Video, tourId: 'nav-sessions' },
-        { to: '/engagement', label: 'Engagement', icon: BarChart2, tourId: 'nav-engagement' },
-        { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert, tourId: 'nav-proctoring' },
-        { to: '/administration', label: 'Programme Management', icon: GraduationCap, tourId: 'nav-administration' },
-      ];
-
-  const isActive = (path: string) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
-
-  const recentUnread = notifications.filter(n => !n.read).slice(0, 5);
+  const iconBtn = 'relative p-2 rounded-lg text-gray-500 hover:bg-gray-100 hover:text-gray-900 transition-colors';
 
   return (
-    <header className="bg-indigo-900 text-white shadow-lg z-50 fixed top-0 left-0 right-0">
-      <div className="max-w-screen-2xl mx-auto px-4 h-14 flex items-center gap-4">
-        {/* Logo */}
-        <div
-          className="flex items-center cursor-pointer flex-shrink-0"
-          onClick={() => navigate('/')}
-        >
-          <span className="text-lg font-bold tracking-wide">APES LMS</span>
-        </div>
-
-        {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-1 ml-2">
-          {navLinks.map(link => (
-            <button
-              key={link.to}
-              data-tour={link.tourId}
-              onClick={() => navigate(link.to)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-                isActive(link.to)
-                  ? 'bg-indigo-700 text-white'
-                  : 'text-indigo-200 hover:bg-indigo-800 hover:text-white'
-              }`}
-            >
-              <link.icon className="w-4 h-4" />
-              {link.label}
-            </button>
-          ))}
-        </nav>
+    <header className="sticky top-0 z-30 bg-white border-b border-gray-200">
+      <div className="h-14 flex items-center gap-3 px-4">
+        {/* Hamburger — opens the sidebar drawer on mobile */}
+        <button onClick={onMenuClick} className="lg:hidden p-2 -ml-1 rounded-lg text-gray-600 hover:bg-gray-100" aria-label="Open menu">
+          <Menu className="w-5 h-5" />
+        </button>
 
         {/* Search */}
-        <div data-tour="search" className={`hidden sm:flex items-center gap-2 bg-indigo-800 rounded-lg px-3 py-1.5 ml-auto transition-all ${searchFocused ? 'ring-2 ring-indigo-400' : ''}`}>
-          <Search className="w-4 h-4 text-indigo-300 flex-shrink-0" />
+        <div
+          data-tour="search"
+          className={`flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2 flex-1 max-w-md transition-all ${searchFocused ? 'ring-2 ring-indigo-400 bg-white' : ''}`}
+        >
+          <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
           <input
             type="text"
             placeholder="Search courses, activities..."
@@ -104,25 +70,25 @@ export function Header() {
             onChange={e => setGlobalSearch(e.target.value)}
             onFocus={() => setSearchFocused(true)}
             onBlur={() => setSearchFocused(false)}
-            className="bg-transparent text-sm text-white placeholder-indigo-400 outline-none w-48 lg:w-64"
+            className="bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none w-full"
           />
           {globalSearch && (
-            <button onClick={() => setGlobalSearch('')} className="text-indigo-400 hover:text-white">
-              <X className="w-3 h-3" />
+            <button onClick={() => setGlobalSearch('')} className="text-gray-400 hover:text-gray-700">
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Right side actions */}
-        <div className="flex items-center gap-1 ml-auto sm:ml-2">
-          {/* Edit Mode Toggle */}
+        {/* Right actions */}
+        <div className="flex items-center gap-1 ml-auto">
+          {/* Edit Mode */}
           <button
             data-tour="edit-mode"
             onClick={toggleEditMode}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${
-              editMode ? 'bg-amber-500 text-white' : 'text-indigo-200 hover:bg-indigo-800'
-            }`}
             title="Toggle Edit Mode"
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              editMode ? 'bg-amber-100 text-amber-700' : 'text-gray-600 hover:bg-gray-100'
+            }`}
           >
             <Edit3 className="w-4 h-4" />
             <span className="hidden lg:block">{editMode ? 'Editing' : 'Edit Mode'}</span>
@@ -130,19 +96,16 @@ export function Header() {
 
           {/* Notifications */}
           <div className="relative" ref={notifRef} data-tour="notifications">
-            <button
-              onClick={() => { setNotifOpen(!notifOpen); setMsgOpen(false); setProfileOpen(false); }}
-              className="relative p-2 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
-            >
+            <button onClick={() => { setNotifOpen(!notifOpen); setMsgOpen(false); setProfileOpen(false); }} className={iconBtn}>
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center font-bold">
+                <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </span>
               )}
             </button>
             {notifOpen && (
-              <div className="absolute right-0 top-full mt-1 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                   <span className="text-sm font-semibold text-gray-800">Notifications</span>
                   <button onClick={markAllRead} className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
@@ -176,19 +139,16 @@ export function Header() {
 
           {/* Messaging */}
           <div className="relative" ref={msgRef} data-tour="messages">
-            <button
-              onClick={() => { setMsgOpen(!msgOpen); setNotifOpen(false); setProfileOpen(false); }}
-              className="relative p-2 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
-            >
+            <button onClick={() => { setMsgOpen(!msgOpen); setNotifOpen(false); setProfileOpen(false); }} className={iconBtn}>
               <MessageSquare className="w-5 h-5" />
               {totalUnreadMessages > 0 && (
-                <span className="absolute top-1 right-1 w-4 h-4 bg-green-500 rounded-full text-[10px] flex items-center justify-center font-bold">
+                <span className="absolute top-0.5 right-0.5 min-w-4 h-4 px-1 bg-green-500 rounded-full text-[10px] text-white flex items-center justify-center font-bold">
                   {totalUnreadMessages}
                 </span>
               )}
             </button>
             {msgOpen && (
-              <div className="absolute right-0 top-full mt-1 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
                   <span className="text-sm font-semibold text-gray-800">Messages</span>
                   <span className="text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-full">{totalUnreadMessages} unread</span>
@@ -227,39 +187,31 @@ export function Header() {
           <div className="relative" ref={profileRef} data-tour="profile">
             <button
               onClick={() => { setProfileOpen(!profileOpen); setNotifOpen(false); setMsgOpen(false); }}
-              className="flex items-center gap-2 pl-2 pr-1 py-1 rounded-md text-indigo-200 hover:bg-indigo-800 hover:text-white transition-colors"
+              className="flex items-center gap-2 pl-1.5 pr-2 py-1 rounded-lg hover:bg-gray-100 transition-colors"
             >
               {currentUser.profile_image_url ? (
-                <img
-                  src={currentUser.profile_image_url}
-                  alt={currentUser.name}
-                  className="w-7 h-7 rounded-full object-cover border border-indigo-400"
-                />
+                <img src={currentUser.profile_image_url} alt={currentUser.name} className="w-8 h-8 rounded-full object-cover border border-gray-200" />
               ) : (
-                <div className="w-7 h-7 bg-indigo-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
+                <div className="w-8 h-8 bg-indigo-500 rounded-full flex items-center justify-center text-xs font-bold text-white">
                   {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                 </div>
               )}
-              <ChevronDown className="w-3 h-3 hidden sm:block" />
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 hidden sm:block" />
             </button>
             {profileOpen && (
-              <div className="absolute right-0 top-full mt-1 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden">
                 <div className="px-4 py-3 border-b border-gray-100">
                   <div className="flex items-center gap-3">
                     {currentUser.profile_image_url ? (
-                      <img
-                        src={currentUser.profile_image_url}
-                        alt={currentUser.name}
-                        className="w-10 h-10 rounded-full object-cover"
-                      />
+                      <img src={currentUser.profile_image_url} alt={currentUser.name} className="w-10 h-10 rounded-full object-cover" />
                     ) : (
                       <div className="w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center text-sm font-bold text-white">
                         {currentUser.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
                       </div>
                     )}
-                    <div>
-                      <p className="text-sm font-semibold text-gray-900">{currentUser.name}</p>
-                      <p className="text-xs text-gray-500">{currentUser.email}</p>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 truncate">{currentUser.name}</p>
+                      <p className="text-xs text-gray-500 truncate">{currentUser.email}</p>
                     </div>
                   </div>
                   <span className="inline-block mt-2 text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full capitalize">{currentUser.role}</span>
@@ -283,41 +235,8 @@ export function Header() {
               </div>
             )}
           </div>
-
-          {/* Mobile menu */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="md:hidden p-2 rounded-md text-indigo-200 hover:bg-indigo-800"
-          >
-            <Menu className="w-5 h-5" />
-          </button>
         </div>
       </div>
-
-      {/* Mobile Nav */}
-      {mobileMenuOpen && (
-        <div className="md:hidden bg-indigo-800 border-t border-indigo-700 px-4 py-2">
-          {navLinks.map(link => (
-            <button
-              key={link.to}
-              onClick={() => { navigate(link.to); setMobileMenuOpen(false); }}
-              className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium mb-1 ${
-                isActive(link.to) ? 'bg-indigo-700 text-white' : 'text-indigo-200'
-              }`}
-            >
-              <link.icon className="w-4 h-4" />
-              {link.label}
-            </button>
-          ))}
-          <button
-            onClick={() => { toggleEditMode(); setMobileMenuOpen(false); }}
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium mb-1 ${editMode ? 'bg-amber-500 text-white' : 'text-indigo-200'}`}
-          >
-            <Edit3 className="w-4 h-4" />
-            {editMode ? 'Exit Edit Mode' : 'Enable Edit Mode'}
-          </button>
-        </div>
-      )}
     </header>
   );
 }

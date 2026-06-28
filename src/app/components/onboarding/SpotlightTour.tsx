@@ -153,17 +153,26 @@ export function SpotlightTour({ steps, badge, onClose, onComplete }: SpotlightTo
   // Coach-card position.
   let cardTop: number;
   let cardLeft: number;
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(v, max));
   if (!rect) {
     cardTop = vh / 2 - cardSize.h / 2;
     cardLeft = vw / 2 - cardSize.w / 2;
+  } else if (step.placement === 'left' || step.placement === 'right') {
+    // Horizontal placement — sit beside the target (used for the left sidebar),
+    // vertically centred on it. Prefer the requested side, fall back if it
+    // doesn't fit (e.g. a collapsed rail near the screen edge).
+    const fitsRight = sx + sw + GAP + cardSize.w <= vw - 12;
+    const fitsLeft = sx - GAP - cardSize.w >= 12;
+    const placeRight = step.placement === 'right' ? (fitsRight || !fitsLeft) : !fitsLeft;
+    cardLeft = placeRight ? sx + sw + GAP : sx - GAP - cardSize.w;
+    cardLeft = clamp(cardLeft, 12, vw - cardSize.w - 12);
+    cardTop = clamp(sy + sh / 2 - cardSize.h / 2, 12, vh - 12 - cardSize.h);
   } else {
     const wantBottom = step.placement === 'bottom'
       || (step.placement !== 'top' && sy + sh + GAP + cardSize.h < vh);
     cardTop = wantBottom ? sy + sh + GAP : sy - cardSize.h - GAP;
-    if (cardTop < 12) cardTop = 12;
-    if (cardTop + cardSize.h > vh - 12) cardTop = vh - 12 - cardSize.h;
-    cardLeft = sx + sw / 2 - cardSize.w / 2;
-    cardLeft = Math.max(12, Math.min(cardLeft, vw - cardSize.w - 12));
+    cardTop = clamp(cardTop, 12, vh - 12 - cardSize.h);
+    cardLeft = clamp(sx + sw / 2 - cardSize.w / 2, 12, vw - cardSize.w - 12);
   }
 
   const Icon = step.icon ?? Sparkles;
