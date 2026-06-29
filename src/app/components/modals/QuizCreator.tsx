@@ -9,6 +9,10 @@ interface QuizCreatorProps {
   onSave: (quizData: { name: string; description: string; questions: QuizQuestion[]; settings: Record<string, unknown> }) => void;
   initialData?: { name: string; description?: string; settings?: Record<string, unknown> };
   activityId?: string;
+  /** Pre-seed the question list (e.g. AI-generated draft awaiting review). */
+  initialQuestions?: QuizQuestion[];
+  /** Override the primary save-button label (e.g. "Publish Quiz"). */
+  saveLabel?: string;
 }
 
 const questionTypeLabels: Record<string, string> = {
@@ -60,10 +64,10 @@ const questionTypeIcon = (type: string) => {
   }
 };
 
-export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCreatorProps) {
+export function QuizCreator({ onClose, onSave, initialData, activityId, initialQuestions, saveLabel }: QuizCreatorProps) {
   const [step, setStep] = useState<'settings' | 'questions'>('settings');
   const [activeTab, setActiveTab] = useState('general');
-  const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  const [questions, setQuestions] = useState<QuizQuestion[]>(initialQuestions ?? []);
   const [addingQuestion, setAddingQuestion] = useState(false);
   const [newQType, setNewQType] = useState<QuizQuestion['type']>('multiple_choice');
   const [expandedQ, setExpandedQ] = useState<string | null>(null);
@@ -103,7 +107,8 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
   const setProc = (k: string, v: unknown) => setSettings(p => ({ ...p, proctoring: { ...p.proctoring, [k]: v } }));
 
   useEffect(() => {
-    if (!activityId) return;
+    // Pre-seeded drafts (e.g. AI-generated) take precedence over fetching.
+    if (!activityId || initialQuestions) return;
     quizApi.listQuestions(activityId)
       .then(r => {
         const raw = r.data.data ?? r.data ?? [];
@@ -766,7 +771,7 @@ export function QuizCreator({ onClose, onSave, initialData, activityId }: QuizCr
                   }}
                   className={`px-6 py-2 text-sm font-semibold rounded-lg ${addingQuestion ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-700 cursor-pointer'}`}
                 >
-                  Save Quiz ({questions.length} questions)
+                  {saveLabel ?? 'Save Quiz'} ({questions.length} questions)
                 </button>
               </div>
             </div>

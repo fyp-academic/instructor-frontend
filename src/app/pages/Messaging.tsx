@@ -1,8 +1,10 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { MessageSquare, Send, Search, Plus, ArrowLeft, Paperclip, Smile, X, Download, Trash2, Pin, Check, CheckCheck, BookOpen, GraduationCap, Users, MoreHorizontal } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
 import { messagingApi } from '../services/api';
+import { EmojiButton } from '../components/EmojiButton';
+import { VoiceRecorderButton } from '../components/VoiceRecorderButton';
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 import EmojiPicker, { EmojiClickData, Theme } from 'emoji-picker-react';
@@ -204,6 +206,13 @@ export default function Messaging() {
       setSending(false);
     }
   }, [messageText, filePreview, selectedConvId, sending]);
+
+  // Object URL for previewing a pending audio voice-note before it is sent.
+  const filePreviewUrl = useMemo(
+    () => (filePreview && filePreview.type.startsWith('audio/') ? URL.createObjectURL(filePreview) : null),
+    [filePreview]
+  );
+  useEffect(() => () => { if (filePreviewUrl) URL.revokeObjectURL(filePreviewUrl); }, [filePreviewUrl]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
@@ -547,16 +556,22 @@ export default function Messaging() {
                           <>
                             {msg.content && <span>{msg.content}</span>}
                             {msg.attachment_path && (
-                              <div className={`mt-2 flex items-center gap-2 text-xs rounded-lg px-2 py-1.5 ${isOwn ? 'bg-indigo-700' : 'bg-gray-100'}`}>
-                                <Paperclip className="w-3 h-3 flex-shrink-0" />
-                                <span className="truncate max-w-[140px]">{msg.attachment_name}</span>
-                                <a
-                                  href={`${import.meta.env.VITE_API_URL?.replace('/api/v1', '')}/storage/${msg.attachment_path}`}
-                                  target="_blank" rel="noreferrer"
-                                  className="ml-auto flex-shrink-0">
-                                  <Download className="w-3 h-3" />
-                                </a>
-                              </div>
+                              msg.attachment_type?.startsWith('audio/') ? (
+                                <audio controls
+                                  src={`${import.meta.env.VITE_API_URL?.replace('/api/v1', '')}/storage/${msg.attachment_path}`}
+                                  className="mt-2 h-9 w-full max-w-[240px]" />
+                              ) : (
+                                <div className={`mt-2 flex items-center gap-2 text-xs rounded-lg px-2 py-1.5 ${isOwn ? 'bg-indigo-700' : 'bg-gray-100'}`}>
+                                  <Paperclip className="w-3 h-3 flex-shrink-0" />
+                                  <span className="truncate max-w-[140px]">{msg.attachment_name}</span>
+                                  <a
+                                    href={`${import.meta.env.VITE_API_URL?.replace('/api/v1', '')}/storage/${msg.attachment_path}`}
+                                    target="_blank" rel="noreferrer"
+                                    className="ml-auto flex-shrink-0">
+                                    <Download className="w-3 h-3" />
+                                  </a>
+                                </div>
+                              )
                             )}
                           </>
                         )}
@@ -669,11 +684,17 @@ export default function Messaging() {
               </div>
             )}
 
-            {/* File preview bar */}
+            {/* File / voice-note preview bar */}
             {filePreview && (
               <div className="px-4 py-2 border-t border-gray-100 bg-gray-50 flex items-center gap-2 text-sm text-gray-600">
-                <Paperclip className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                <span className="truncate flex-1">{filePreview.name}</span>
+                {filePreviewUrl ? (
+                  <audio controls src={filePreviewUrl} className="h-9 flex-1 max-w-[260px]" />
+                ) : (
+                  <>
+                    <Paperclip className="w-4 h-4 text-indigo-500 flex-shrink-0" />
+                    <span className="truncate flex-1">{filePreview.name}</span>
+                  </>
+                )}
                 <button onClick={() => setFilePreview(null)} className="text-gray-400 hover:text-red-500">
                   <X className="w-4 h-4" />
                 </button>
@@ -695,6 +716,8 @@ export default function Messaging() {
                   rows={1}
                   className="flex-1 border border-gray-300 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[44px] max-h-24"
                   style={{ fieldSizing: 'content' } as React.CSSProperties} />
+                <EmojiButton onPick={(emoji) => setMessageText(prev => prev + emoji)} />
+                <VoiceRecorderButton onRecorded={(f) => setFilePreview(f)} accent="bg-indigo-600 hover:bg-indigo-700" />
                 <button onClick={handleSend} disabled={(!messageText.trim() && !filePreview) || sending}
                   className={`p-2 sm:p-2.5 rounded-xl transition-colors flex-shrink-0 ${(messageText.trim() || filePreview) && !sending ? 'bg-indigo-600 text-white hover:bg-indigo-700' : 'bg-gray-100 text-gray-400 cursor-not-allowed'}`}>
                   <Send className="w-5 h-5" />

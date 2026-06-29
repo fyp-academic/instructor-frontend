@@ -9,13 +9,13 @@ import {
 } from 'recharts';
 import { useApp } from '../context/AppContext';
 import { aiApi, instructorEngagementApi } from '../services/api';
+import AiQuestionStudio from '../components/AiQuestionStudio';
 
 // ─── Types (real API shapes) ──────────────────────────────────────────────
 interface WeekPoint { week: string; avg: number; completion: number; engagement: number }
 interface SkillPoint { subject: string; A: number; fullMark: number }
 interface Suggestion { title: string; desc: string; impact?: string }
 interface ContentRec { title: string; type: string; relevance: number; source: string }
-interface GeneratedQ { text: string; type: string; difficulty: string }
 
 interface Confidence { measured: string[]; absent: string[]; confidence: number; label: string }
 interface Intervention { type: string; title: string; suggestion: string }
@@ -62,6 +62,22 @@ function ConfidenceChip({ confidence }: { confidence?: Confidence }) {
   );
 }
 
+// ─── Response mappers (shared by initial load & manual regenerate) ──────────
+const mapSuggestions = (d: Record<string, unknown>[]): Suggestion[] =>
+  d.map(s => ({
+    title:  String(s.title ?? ''),
+    desc:   String(s.description ?? s.desc ?? s.suggestion ?? ''),
+    impact: s.impact_level ? String(s.impact_level) : undefined,
+  }));
+
+const mapContentRecs = (d: Record<string, unknown>[]): ContentRec[] =>
+  d.map(c => ({
+    title:     String(c.title ?? ''),
+    type:      String(c.content_type ?? c.type ?? ''),
+    relevance: Math.round(Number(c.relevance_score ?? c.relevance ?? 0)),
+    source:    String(c.source ?? ''),
+  }));
+
 // ─── Component ────────────────────────────────────────────────────────────
 export default function AIInsights() {
   const { courses } = useApp();
@@ -70,8 +86,6 @@ export default function AIInsights() {
     const c = activeCourses[0] as unknown as Record<string, unknown>;
     return c ? String(c.id) : '';
   });
-  const [generating, setGenerating] = useState(false);
-  const [generatedItems, setGeneratedItems] = useState<GeneratedQ[]>([]);
   const [activeInsight, setActiveInsight] = useState<'performance' | 'atRisk' | 'recommendations' | 'generate'>('performance');
   const [loading, setLoading] = useState(false);
   const [nudging, setNudging] = useState<string | null>(null);
@@ -113,22 +127,11 @@ export default function AIInsights() {
       }).catch(() => {}),
 
       aiApi.suggestions(id).then(r => {
-        const d: Record<string, unknown>[] = r.data.data ?? r.data ?? [];
-        setRecs(d.map(s => ({
-          title: String(s.title ?? ''),
-          desc:  String(s.desc ?? s.suggestion ?? ''),
-          impact: s.impact ? String(s.impact) : undefined,
-        })));
+        setRecs(mapSuggestions(r.data.data ?? r.data ?? []));
       }).catch(() => {}),
 
       aiApi.contentRecs(id).then(r => {
-        const d: Record<string, unknown>[] = r.data.data ?? r.data ?? [];
-        setContentRecs(d.map(c => ({
-          title: String(c.title ?? ''),
-          type:  String(c.type ?? ''),
-          relevance: Number(c.relevance ?? 0),
-          source: String(c.source ?? ''),
-        })));
+        setContentRecs(mapContentRecs(r.data.data ?? r.data ?? []));
       }).catch(() => {}),
     ];
 
@@ -137,13 +140,26 @@ export default function AIInsights() {
 
   useEffect(() => { load(); }, [load]);
 
-  const handleGenerate = () => {
-    if (!selectedCourse) return;
-    setGenerating(true);
-    aiApi.generatedQuestions(selectedCourse)
-      .then(r => setGeneratedItems((r.data.data ?? r.data ?? []) as GeneratedQ[]))
-      .catch(() => setGeneratedItems([]))
-      .finally(() => setGenerating(false));
+  // ── Force Gemini to regenerate the cached AI panels (refresh=1) ──
+  const [regenSug, setRegenSug] = useState(false);
+  const [regenContent, setRegenContent] = useState(false);
+
+  const regenerateSuggestions = () => {
+    if (!selectedCourse || regenSug) return;
+    setRegenSug(true);
+    aiApi.suggestions(selectedCourse, true)
+      .then(r => setRecs(mapSuggestions(r.data.data ?? r.data ?? [])))
+      .catch(() => {})
+      .finally(() => setRegenSug(false));
+  };
+
+  const regenerateContent = () => {
+    if (!selectedCourse || regenContent) return;
+    setRegenContent(true);
+    aiApi.contentRecs(selectedCourse, true)
+      .then(r => setContentRecs(mapContentRecs(r.data.data ?? r.data ?? [])))
+      .catch(() => {})
+      .finally(() => setRegenContent(false));
   };
 
   const handleNudge = async (userId: string) => {
@@ -268,8 +284,21 @@ export default function AIInsights() {
 
           {/* Content recommendations */}
           <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h3 className="font-semibold text-gray-900 mb-1">AI Content Recommendations</h3>
-            <p className="text-xs text-gray-400 mb-4">Suggested resources based on measured performance patterns</p>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="font-semibold text-gray-900 mb-1">AI Content Recommendations</h3>
+                <p className="text-xs text-gray-400 mb-4">Suggested resources based on measured performance patterns</p>
+              </div>
+              <button
+                onClick={regenerateContent}
+                disabled={regenContent}
+                title="Regenerate from the latest measured data"
+                className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg px-2.5 py-1.5 hover:bg-indigo-50 disabled:opacity-50 flex-shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${regenContent ? 'animate-spin' : ''}`} />
+                {regenContent ? 'Generating…' : 'Regenerate'}
+              </button>
+            </div>
             {contentRecs.length > 0 ? (
               <div className="space-y-3">
                 {contentRecs.map((rec, i) => (
@@ -400,6 +429,18 @@ export default function AIInsights() {
       {/* ══ AI Suggestions ══ */}
       {activeInsight === 'recommendations' && (
         <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-gray-500">Actionable suggestions generated from this course's measured data.</p>
+            <button
+              onClick={regenerateSuggestions}
+              disabled={regenSug}
+              title="Regenerate from the latest measured data"
+              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 border border-indigo-200 rounded-lg px-2.5 py-1.5 hover:bg-indigo-50 disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${regenSug ? 'animate-spin' : ''}`} />
+              {regenSug ? 'Generating…' : recs.length === 0 ? 'Generate' : 'Regenerate'}
+            </button>
+          </div>
           {recs.length === 0 ? (
             <EmptyState icon={Lightbulb} title="No AI suggestions yet" hint="Suggestions are generated from measured engagement and grade data." />
           ) : (
@@ -434,60 +475,9 @@ export default function AIInsights() {
         </div>
       )}
 
-      {/* ══ Generate Questions ══ */}
+      {/* ══ Generate Questions — module/topic picker → AI draft → full settings ══ */}
       {activeInsight === 'generate' && (
-        <div className="space-y-4">
-          <div className="bg-white border border-gray-200 rounded-xl p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">AI Question Generator</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Topic / Chapter</label>
-                <input type="text" placeholder="e.g. Object-Oriented Programming" className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Question Types</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option>Mixed</option><option>Multiple Choice</option><option>True/False</option><option>Essay</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Number of Questions</label>
-                <select className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                  <option>4</option><option>8</option><option>15</option><option>20</option>
-                </select>
-              </div>
-            </div>
-            <button
-              onClick={handleGenerate}
-              disabled={generating}
-              className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-semibold transition-all ${generating ? 'bg-gray-400 text-white cursor-not-allowed' : 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700'}`}
-            >
-              {generating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Brain className="w-4 h-4" /> Generate Questions</>}
-            </button>
-          </div>
-
-          {generatedItems.length > 0 && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Generated Questions</h3>
-              </div>
-              {generatedItems.map((q, i) => (
-                <div key={i} className="bg-white border border-gray-200 rounded-xl p-4">
-                  <div className="flex items-start gap-3">
-                    <span className="w-7 h-7 bg-indigo-100 rounded-full flex items-center justify-center text-xs font-bold text-indigo-700 flex-shrink-0">{i + 1}</span>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-medium">{q.type}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${q.difficulty === 'Easy' ? 'bg-green-100 text-green-700' : q.difficulty === 'Hard' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{q.difficulty}</span>
-                      </div>
-                      <p className="text-sm text-gray-800">{q.text}</p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+        <AiQuestionStudio key={selectedCourse} courseId={selectedCourse} />
       )}
     </div>
   );
