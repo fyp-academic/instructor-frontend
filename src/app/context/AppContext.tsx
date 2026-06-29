@@ -97,7 +97,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(
     () => localStorage.getItem('onboarding_done') === '1'
@@ -107,7 +107,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Fetch all base data on mount when authenticated
   useEffect(() => {
-    if (!user) return;
+    if (!user) { setIsLoading(false); return; }
     setIsLoading(true);
     Promise.allSettled([
       coursesApi.list().then(r => {

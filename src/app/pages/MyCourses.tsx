@@ -1,11 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Plus, Search, Filter, BookOpen, Users, Grid, List, MoreVertical, Edit, Trash2, Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Plus, Search, Filter, BookOpen, Users, Grid, List, MoreVertical, Edit, Trash2, Eye, EyeOff, ChevronDown, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function MyCourses() {
   const navigate = useNavigate();
-  const { courses, deleteCourse, updateCourse, categories } = useApp();
+  const { courses, deleteCourse, updateCourse, categories, isLoading } = useApp();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -225,7 +225,11 @@ export default function MyCourses() {
       </div>
 
       {/* Course grid/list */}
-      {filtered.length === 0 ? (
+      {isLoading && courses.length === 0 ? (
+        <div className="flex items-center justify-center py-24">
+          <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
           <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <h3 className="text-gray-500 font-medium">No courses found</h3>

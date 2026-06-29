@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router';
 import {
   ArrowLeft, Users, Settings, BookOpen, BarChart2, Activity,
   ChevronDown, ChevronRight, Edit3, Eye, EyeOff, Star, MoreHorizontal,
-  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image, Sparkles, Code
+  FileText, Award, BarChart, Flag, CheckSquare, Database, Tag, Globe, LayoutGrid, Image, Sparkles, Code, Loader2
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { CourseContent } from '../components/course/CourseContent';
@@ -25,7 +25,7 @@ export default function CourseView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { getCourse, updateCourse, editMode, toggleEditMode } = useApp();
+  const { getCourse, updateCourse, editMode, toggleEditMode, isLoading } = useApp();
   const [activeTab, setActiveTab] = useState<Tab>('course');
   const [activeSection, setActiveSection] = useState<string>('');
   const [moreOpen, setMoreOpen] = useState(false);
@@ -47,6 +47,14 @@ export default function CourseView() {
       setActiveTab(tab as Tab);
     }
   }, [searchParams]);
+
+  if (isLoading && !course) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+      </div>
+    );
+  }
 
   if (!course) {
     return (
