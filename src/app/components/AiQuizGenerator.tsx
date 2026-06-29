@@ -61,6 +61,7 @@ export const AiQuizGenerator: React.FC<Props> = ({ courseId, sections, onPublish
   // ── Step 3: publish ─────────────────────────────────────────────────────────
   const [activityName, setActivityName] = useState('');
   const [gradeMax, setGradeMax] = useState(10);
+  const [timeLimit, setTimeLimit] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [publishedId, setPublishedId] = useState<string | null>(null);
@@ -121,6 +122,9 @@ export const AiQuizGenerator: React.FC<Props> = ({ courseId, sections, onPublish
         activity_name: activityName,
         grade_max: gradeMax,
         questions,
+        // Persist the time limit the same way the manual QuizCreator does
+        // (settings.timeLimit, minutes) so the student timer shows for AI quizzes too.
+        settings: { timeLimit: timeLimit.trim() === '' ? '' : Number(timeLimit) },
       });
       setPublishedId(res.data.activity_id);
       onPublished?.(res.data.activity_id, res.data.activity_name);
@@ -298,6 +302,10 @@ export const AiQuizGenerator: React.FC<Props> = ({ courseId, sections, onPublish
                   <div>
                     <label style={labelStyle}>Total marks</label>
                     <input type="number" min={1} value={gradeMax} onChange={e => setGradeMax(+e.target.value)} style={{ ...inputStyle, width: 80 }} />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Time limit (min)</label>
+                    <input type="number" min={0} value={timeLimit} onChange={e => setTimeLimit(e.target.value)} placeholder="No limit" style={{ ...inputStyle, width: 110 }} />
                   </div>
                 </div>
                 {publishError && (
