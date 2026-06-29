@@ -20,6 +20,7 @@ import Profile from './pages/Profile';
 import InstructorSessions from './pages/InstructorSessions';
 import Conference from './pages/Conference';
 import InstructorEngagement from './pages/InstructorEngagement';
+import Calendar from './pages/Calendar';
 import InstructorProctoring from './pages/InstructorProctoring';
 import AdminLogs from './pages/AdminLogs';
 import Login from './pages/auth/Login';
@@ -169,6 +170,7 @@ export const router = createBrowserRouter([
       { path: 'admin/notifications', element: <Layout><Notifications /></Layout> },
       { path: 'messaging', element: <Layout><Messaging /></Layout> },
       { path: 'sessions', element: instructorOnly(<Layout><InstructorSessions /></Layout>) },
+      { path: 'calendar', element: instructorOnly(<Layout><Calendar /></Layout>) },
       { path: 'conference/:id', element: instructorOnly(<Conference />) },
       { path: 'profile', element: <Layout><Profile /></Layout> },
       { path: 'notification-preferences', element: <Layout><NotificationPreferences /></Layout> },

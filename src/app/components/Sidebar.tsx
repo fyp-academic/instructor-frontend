@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import {
   LayoutDashboard, BookOpen, Video, BarChart2, ShieldAlert,
-  GraduationCap, Settings, Bell, ChevronLeft, ChevronRight, X, Sparkles,
+  GraduationCap, Settings, Bell, ChevronLeft, ChevronRight, X, Sparkles, Calendar,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -34,6 +34,7 @@ export function Sidebar({ collapsed, mobileOpen, onMobileClose, onToggleCollapse
         { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, tourId: 'nav-dashboard' },
         { to: '/courses', label: 'My Courses', icon: BookOpen, tourId: 'nav-courses' },
         { to: '/sessions', label: 'Live Sessions', icon: Video, tourId: 'nav-sessions' },
+        { to: '/calendar', label: 'Calendar', icon: Calendar, tourId: 'nav-calendar' },
         { to: '/engagement', label: 'Engagement', icon: BarChart2, tourId: 'nav-engagement' },
         { to: '/ai-insights', label: 'AI Insights', icon: Sparkles, tourId: 'nav-ai-insights' },
         { to: '/proctoring', label: 'Proctoring', icon: ShieldAlert, tourId: 'nav-proctoring' },

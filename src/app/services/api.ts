@@ -295,6 +295,8 @@ export const quizApi = {
 export const aiQuizApi = {
   generate: (courseId: string, data: {
     section_id: string;
+    activity_id?: string | null;
+    topic?: string | null;
     question_count?: number;
     question_types?: string[];
     difficulty?: 'easy' | 'medium' | 'hard';
@@ -305,6 +307,9 @@ export const aiQuizApi = {
     activity_name: string;
     description?: string;
     grade_max?: number;
+    due_date?: string | null;
+    visible?: boolean;
+    settings?: Record<string, unknown>;
     existing_activity_id?: string | null;
     questions: Array<{
       type: string;
@@ -392,18 +397,21 @@ export const h5pApi = {
 
 // ─── AI Insights ─────────────────────────────────────────────────────────────
 export const aiApi = {
-  snapshots:          (courseId: string) => api.get(`/ai/courses/${courseId}/performance-snapshots`),
-  skillMetrics:       (courseId: string) => api.get(`/ai/courses/${courseId}/skill-metrics`),
-  atRisk:             (courseId: string) => api.get(`/ai/courses/${courseId}/at-risk`),
-  suggestions:        (courseId: string) => api.get(`/ai/courses/${courseId}/suggestions`),
-  contentRecs:        (courseId: string) => api.get(`/ai/courses/${courseId}/content-recommendations`),
+  snapshots:          (courseId: string) => api.get(`/courses/${courseId}/ai/performance`),
+  skillMetrics:       (courseId: string) => api.get(`/courses/${courseId}/ai/skills`),
+  atRisk:             (courseId: string) => api.get(`/courses/${courseId}/ai/at-risk`),
+  // AI-generated pedagogical suggestions (backend: ai/recommendations). refresh=1 regenerates.
+  suggestions:        (courseId: string, refresh = false) =>
+    api.get(`/courses/${courseId}/ai/recommendations${refresh ? '?refresh=1' : ''}`),
+  contentRecs:        (courseId: string, refresh = false) =>
+    api.get(`/courses/${courseId}/ai/content${refresh ? '?refresh=1' : ''}`),
   generateQuestions:  (courseId: string, data: Record<string, unknown>) =>
-    api.post(`/ai/courses/${courseId}/generate-questions`, data),
-  generatedQuestions: (courseId: string) => api.get(`/ai/courses/${courseId}/generated-questions`),
+    api.post(`/courses/${courseId}/ai/generate-questions`, data),
+  generatedQuestions: (courseId: string) => api.get(`/courses/${courseId}/ai/generated-questions`),
   updateQuestion:     (id: string, status: string) =>
     api.patch(`/ai/generated-questions/${id}`, { status }),
-  activityPerformance:(courseId: string) => api.get(`/ai/courses/${courseId}/activity-performance`),
-  weeklyEngagement:   (courseId: string) => api.get(`/ai/courses/${courseId}/weekly-engagement`),
+  activityPerformance:(courseId: string) => api.get(`/courses/${courseId}/ai/activity-performance`),
+  weeklyEngagement:   (courseId: string) => api.get(`/courses/${courseId}/ai/engagement`),
 };
 
 // ─── Learner Analytics Pipeline ───────────────────────────────────────────────
@@ -574,5 +582,15 @@ export const essayGradingApi = {
   getEssayAttempts: (activityId: string) => api.get(`/activities/${activityId}/essay-attempts`),
   gradeResponse:    (responseId: string, data: Record<string, unknown>) =>
     api.put(`/quiz-attempt-responses/${responseId}/grade`, data),
+};
+
+// ─── Calendar / Scheduler ─────────────────────────────────────────────────────
+export const calendarApi = {
+  feed:      (params: { start: string; end: string; course_ids?: string[] }) =>
+    api.get('/calendar/events', { params }),
+  calendars: () => api.get('/calendar/calendars'),
+  create:    (data: Record<string, unknown>) => api.post('/calendar/events', data),
+  update:    (id: string, data: Record<string, unknown>) => api.put(`/calendar/events/${id}`, data),
+  remove:    (id: string) => api.delete(`/calendar/events/${id}`),
 };
 
